@@ -1,6 +1,8 @@
-public struct NewsmanCoreDataModel {
-    public private(set) var text = "Hello, World!"
-
-    public init() {
-    }
+public final class NMCoreDataModel
+{
+  public static let instance = NMCoreDataModel()
+ 
+  private init() {
+   
+  }
 }

@@ -22,7 +22,12 @@ let package = Package(
             name: "NewsmanCoreDataModel",
             dependencies: []),
         .testTarget(
-            name: "NewsmanCoreDataModelTests",
+            name: "NewsmanCoreDataModelBasicTests",
             dependencies: ["NewsmanCoreDataModel"]),
+
+        .testTarget(
+             name: "NewsmanCoreDataModelTests",
+             dependencies: ["NewsmanCoreDataModel"]),
+        
     ]
 )
