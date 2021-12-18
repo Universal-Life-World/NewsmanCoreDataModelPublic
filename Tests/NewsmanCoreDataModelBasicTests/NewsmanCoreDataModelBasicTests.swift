@@ -8,45 +8,53 @@ final class NMCoreDataModelBasicTests: XCTestCase
  
  override class func setUp()
  {
-  print("CLASS function", #function)
+  //print("CLASS function", #function)
  }
  
  override func setUpWithError() throws
  {
-  print(#function)
+  //print(#function)
  }
  
  override func setUp()
  {
-  print(#function)
-  sut = NMCoreDataModel.instance
+  //print(#function)
+ // sut = NMCoreDataModel(for: .inMemorySQLight)
  }
  
  override func tearDown()
  {
-  print(#function)
+  //print(#function)
   sut = nil
  }
  
  override func tearDownWithError() throws
  {
-  print(#function)
+  //print(#function)
  }
 
  override class func tearDown()
  {
-  print("CLASS function", #function)
+  //print("CLASS function", #function)
  }
 
- func test_that_this_model_is_singleton() throws
+ func test_that_in_memory_model_loaded_with_default_MOM() throws
  {
-
-  let newSut = NMCoreDataModel.instance
- 
-  XCTAssertTrue(newSut === sut, "The model is not a singleton")
- 
- 
+  sut = NMCoreDataModel(for: .inMemorySQLight)
+  XCTAssertNotNil(sut.context.persistentStoreCoordinator)
+  XCTAssertEqual(sut.context.persistentStoreCoordinator!.persistentStores.count, 1)
+  XCTAssertEqual(sut.context.persistentStoreCoordinator!.managedObjectModel.entities.count, 0)
  }
+ 
+ 
+ func test_that_in_memory_model_loaded_with_named_MOM() throws
+ {
+  sut = NMCoreDataModel(name: "Newsman", for: .inMemorySQLight)
+  XCTAssertNotNil(sut.context.persistentStoreCoordinator)
+  XCTAssertEqual(sut.context.persistentStoreCoordinator!.persistentStores.count, 1)
+  XCTAssertEqual(sut.context.persistentStoreCoordinator!.managedObjectModel.entities.count, 10)
+ }
+ 
  
 // func test_that_this_model() throws
 // {
