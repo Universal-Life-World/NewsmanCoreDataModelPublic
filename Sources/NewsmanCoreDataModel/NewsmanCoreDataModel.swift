@@ -16,7 +16,7 @@ public final class NMCoreDataModel
   let mom = { () -> NSManagedObjectModel in
    let defaultMOM = NSManagedObjectModel()
    
-   guard let momURL = Bundle(for: NMCoreDataModel.self).url(forResource: name, withExtension: "momd") else
+   guard let momURL = Bundle.module.url(forResource: name, withExtension: "momd") else
    {
     return defaultMOM
    }
