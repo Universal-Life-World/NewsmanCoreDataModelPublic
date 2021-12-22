@@ -5,6 +5,7 @@ final class NMCoreDataModelBasicTests: XCTestCase
 {
  
  var sut: NMCoreDataModel!
+ var kvo_tokens = Set<NSKeyValueObservation>()
  
  override class func setUp()
  {
@@ -20,6 +21,7 @@ final class NMCoreDataModelBasicTests: XCTestCase
  {
   //print(#function)
   sut = NMCoreDataModel(name: "Newsman", for: .inMemorySQLight)
+  
  
  }
  
@@ -27,6 +29,7 @@ final class NMCoreDataModelBasicTests: XCTestCase
  {
   //print(#function)
   sut = nil
+  kvo_tokens.removeAll()
  }
  
  override func tearDownWithError() throws
@@ -83,17 +86,14 @@ final class NMCoreDataModelBasicTests: XCTestCase
  func test_that_when_loaded_with_named_MOM_PS_contains_saved_objects() async throws
  {
   let MOC = sut.context
- 
   let entityName = "NMBaseSnippet"
   
- 
   let modelObjects = try await MOC.perform { () throws -> [NSManagedObject] in
+   
    let objs = (1...10).map{ _ -> NSManagedObject in
-     let ob = NSEntityDescription.insertNewObject(forEntityName: entityName, into: MOC)
-     ob.setValue(UUID(), forKey: "id")
-     ob.setValue(Date(), forKey: "date")
-     ob.setValue(entityName, forKey: "type")
-     return ob
+     
+    let ob = NMBaseSnippet(context: MOC)
+    return ob
    }
    
    try MOC.save()
@@ -106,7 +106,157 @@ final class NMCoreDataModelBasicTests: XCTestCase
   let pred = NSPredicate(format: "SELF.type == %@", entityName)
   fr.predicate = pred
   let count = try MOC.count(for: fr)
+ 
   XCTAssertEqual(count, modelObjects.count)
+ }
+ 
+ @available(macOS 12.0.0, *)
+ func test_object_saved_and_fetched_MO_has_the_same_identity() async throws
+ {
+  let MOC = sut.context
+  let baseSnippet = try await MOC.perform{ () throws -> NMBaseSnippet in
+   
+   let ob = NMBaseSnippet(context: MOC)
+   XCTAssertTrue(ob.objectID.isTemporaryID)
+   try MOC.save()
+   XCTAssertFalse(ob.objectID.isTemporaryID)
+   return ob
+  }
+  
+ 
+  let baseRequest = NMBaseSnippet.fetchRequest()
+  let baseFetched = try XCTUnwrap( MOC.fetch(baseRequest).first)
+  XCTAssertEqual(baseFetched.id,  baseSnippet.id)
+  XCTAssertEqual(baseSnippet.objectID,  baseFetched.objectID)
+
+ }
+ 
+ @available(macOS 12.0.0, *)
+ func test_primitive_properties_does_not_send_KVO_nonifications() async  throws
+ {
+ 
+  let MOC = sut.context
+  //insert new NMBaseSnippet into context & save changes into persistent store.
+  try await MOC.perform { () throws -> () in
+   let _ = NMBaseSnippet(context: MOC)
+   try MOC.save()
+  }
+
+  // fetch this single object
+  let fr = NMBaseSnippet.fetchRequest()
+  let base = try XCTUnwrap(MOC.fetch(fr).first)
+  
+  let ex1 = XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.nameTag), object: base)
+  let ex2 = XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.about), object: base)
+  let ex3 = XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.status), object: base)
+  let ex4 = XCTKVOExpectation(keyPath: NMBaseSnippet.typeKey, object: base)
+ 
+  ex1.isInverted = true
+  ex2.isInverted = true
+  ex3.isInverted = true
+  ex4.isInverted = true
+ 
+  // mutate async its primitive properties...
+  Task.detached {
+   await withTaskGroup(of: Void.self, returning: Void.self)
+   { group in
+     group.addTask {
+      await MOC.perform {
+       base.setPrimitiveValue("Test", forKey: #keyPath(NMBaseSnippet.nameTag))
+      }
+     }
+     group.addTask {
+      await MOC.perform {
+       base.setPrimitiveValue("About", forKey: #keyPath(NMBaseSnippet.about))
+      }
+     }
+     group.addTask {
+      await MOC.perform{
+       base.setPrimitiveValue("New", forKey: #keyPath(NMBaseSnippet.status))
+      }
+     }
+    
+     group.addTask {
+     await MOC.perform {
+      base.setPrimitiveValue(5, forKey: NMBaseSnippet.typeKey)
+     }
+    }
+   }
+  
+  }
+ 
+  // await for KVO notifivations of above mutations...
+  let result = XCTWaiter.wait(for: [ex1, ex2, ex3, ex4], timeout: 0.1)
+ 
+  // MARK: ASSERT: There are no KVO notifications!
+  XCTAssertEqual(result, .completed)
+ 
+  // MARK: its properties have been properly mutated!
+  XCTAssertEqual(base.nameTag, "Test")
+  XCTAssertEqual(base.about,   "About")
+  XCTAssertEqual(base.status,  "New")
+  XCTAssertEqual(base.type,    .mixed)
+ }
+ 
+ 
+ @available(macOS 12.0.0, *)
+ func test_primitive_properties_does_not_send_Context_Did_Change_notifications() async throws
+ {
+ 
+  let MOC = sut.context
+  //insert new NMBaseSnippet into context & save changes into persistent store.
+  try await MOC.perform { () throws -> () in
+   let _ = NMBaseSnippet(context: MOC)
+   try MOC.save()
+  }
+
+  // fetch this single object
+  let fr = NMBaseSnippet.fetchRequest()
+  let base = try XCTUnwrap(MOC.fetch(fr).first)
+  
+  let expect = XCTNSNotificationExpectation(name: .NSManagedObjectContextObjectsDidChange,
+                                            object: MOC,
+                                            notificationCenter: .default)
+ 
+  Task.detached {
+   await withTaskGroup(of: Void.self, returning: Void.self)
+   { group in
+     group.addTask {
+      await MOC.perform {
+       base.setPrimitiveValue("Test", forKey: #keyPath(NMBaseSnippet.nameTag))
+      }
+     }
+     group.addTask {
+      await MOC.perform {
+       base.setPrimitiveValue("About", forKey: #keyPath(NMBaseSnippet.about))
+      }
+     }
+     group.addTask {
+      await MOC.perform{
+       base.setPrimitiveValue("New", forKey: #keyPath(NMBaseSnippet.status))
+      }
+     }
+    
+     group.addTask {
+      await MOC.perform {
+       base.setPrimitiveValue(5, forKey: NMBaseSnippet.typeKey)
+      }
+     }
+   }
+  
+  }
+ 
+  // await for NSManagedObjectContextObjectsDidChange notifivations of above mutations...
+  let result = XCTWaiter.wait(for: [expect], timeout: 0.1)
+ 
+  //MARK: ASSERT! There are no NSManagedObjectContextObjectsDidChange notifications!
+  XCTAssertNotEqual(result, .completed)
+ 
+  //MARK: ASSERT! its properties have been mutated properly!
+  XCTAssertEqual(base.nameTag, "Test")
+  XCTAssertEqual(base.about,   "About")
+  XCTAssertEqual(base.status,  "New")
+  XCTAssertEqual(base.type,    .mixed)
  }
  
 }

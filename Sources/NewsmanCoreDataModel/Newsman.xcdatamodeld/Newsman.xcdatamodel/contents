@@ -6,28 +6,28 @@
         <relationship name="reports" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMReport" inverseName="audios" inverseEntity="NMReport"/>
     </entity>
     <entity name="NMBaseContent" representedClassName="NMBaseContent" isAbstract="YES" syncable="YES"/>
-    <entity name="NMBaseSnippet" representedClassName="NMBaseSnippet" isAbstract="YES" syncable="YES" codeGenerationType="class">
+    <entity name="NMBaseSnippet" representedClassName="NMBaseSnippet" isAbstract="YES" syncable="YES">
         <attribute name="about" attributeType="String" defaultValueString=""/>
         <attribute name="archivedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="ck_metadata" optional="YES" attributeType="Binary"/>
         <attribute name="contentElementsGroupingType" attributeType="String" defaultValueString="Manually"/>
-        <attribute name="contentElementsInRow" attributeType="Integer 16" defaultValueString="3" usesScalarValueType="NO"/>
+        <attribute name="contentElementsInRow" attributeType="Integer 16" defaultValueString="3" usesScalarValueType="YES"/>
         <attribute name="contentElementsSortOrder" optional="YES" attributeType="String"/>
         <attribute name="contentElemetsSortingType" optional="YES" attributeType="String"/>
         <attribute name="date" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="dateSearchFormatIndex" optional="YES" attributeType="String"/>
         <attribute name="deletedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
-        <attribute name="hiddenSectionsBitset" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="NO"/>
-        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="hiddenSectionsBitset" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="id" attributeType="UUID" usesScalarValueType="YES"/>
         <attribute name="isDragAnimated" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
-        <attribute name="isHidden" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="NO"/>
-        <attribute name="isSelected" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="NO"/>
+        <attribute name="isHidden" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="isSelected" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <attribute name="isShowingDisclosedCell" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <attribute name="lastAccessedTimeStamp" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="lastModifiedTimeStamp" attributeType="Date" usesScalarValueType="NO"/>
-        <attribute name="latitude" attributeType="Double" defaultValueString="0" usesScalarValueType="NO"/>
+        <attribute name="latitude" attributeType="Double" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="location" attributeType="String" defaultValueString="Undefined Location"/>
-        <attribute name="logitude" attributeType="Double" defaultValueString="0.0" usesScalarValueType="NO"/>
+        <attribute name="logitude" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="nameTag" attributeType="String" defaultValueString="Unnamed Snippet"/>
         <attribute name="priority" attributeType="String" defaultValueString="Normal"/>
         <attribute name="publishedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
@@ -35,7 +35,7 @@
         <attribute name="sectionDateIndex" optional="YES" attributeType="String"/>
         <attribute name="sectionPriorityIndex" optional="YES" attributeType="String"/>
         <attribute name="status" attributeType="String" defaultValueString="New"/>
-        <attribute name="type" attributeType="String" customClassName=".SnippetType"/>
+        <attribute name="type" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES" customClassName=".SnippetType"/>
     </entity>
     <entity name="NMPhoto" representedClassName="NMPhoto" syncable="YES">
         <attribute name="arrowMenuPosition" optional="YES" attributeType="Transformable" valueTransformerName="NSValueDataSecureTransformer" customClassName="NSValue"/>
@@ -99,13 +99,13 @@
     <fetchRequest name="Snippets" entity="NMBaseSnippet" predicateString="type == $p1"/>
     <elements>
         <element name="NMAudioSnippet" positionX="-131.00146484375" positionY="-539.6266174316406" width="128" height="88"/>
-        <element name="NMBaseSnippet" positionX="-431.1163330078125" positionY="-731.452880859375" width="128" height="478"/>
+        <element name="NMBaseContent" positionX="-246.6732788085938" positionY="-757.5287933349609" width="128" height="43"/>
+        <element name="NMBaseSnippet" positionX="-431.1163330078125" positionY="-731.452880859375" width="128" height="464"/>
         <element name="NMPhoto" positionX="-897.3057250976562" positionY="-703.8289337158203" width="163.2216186523438" height="283"/>
         <element name="NMPhotoFolder" positionX="-889.2792358398438" positionY="-379.4385070800781" width="137" height="283"/>
         <element name="NMPhotoSnippet" positionX="-627.8906860351562" positionY="-668.0148468017578" width="141.6079711914062" height="88"/>
         <element name="NMReport" positionX="-413.56298828125" positionY="-240.1938323974609" width="128" height="148"/>
         <element name="NMTextSnippet" positionX="-409.437744140625" positionY="-350.9020690917969" width="122.7568359375" height="88"/>
         <element name="NMVideoSnippet" positionX="-200.19384765625" positionY="-353.1556091308594" width="128" height="73"/>
-        <element name="NMBaseContent" positionX="-246.6732788085938" positionY="-757.5287933349609" width="128" height="43"/>
     </elements>
 </model>
