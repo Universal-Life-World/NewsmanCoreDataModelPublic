@@ -1,19 +1,42 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="19461" systemVersion="21C5045a" minimumToolsVersion="Xcode 11.0" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+    <entity name="NMAudioRecordingSettings" representedClassName="NMAudioRecordingSettings" parentEntity="NMContentCreationBaseSettings" syncable="YES">
+        <relationship name="appliedToAudioSnippets" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMAudioSnippet" inverseName="appliedAudioRecordingSettings" inverseEntity="NMAudioSnippet"/>
+        <relationship name="appliedToMixedSnippets" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMMixedSnippet" inverseName="appliedAudioCaptureSettings" inverseEntity="NMMixedSnippet"/>
+    </entity>
     <entity name="NMAudioSnippet" representedClassName="NMAudioSnippet" parentEntity="NMBaseSnippet" syncable="YES">
         <attribute name="audioElementsPreviewMode" attributeType="String" defaultValueString="Shows Static Waves"/>
-        <attribute name="isShowingAudioDuration" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="NO"/>
+        <attribute name="audioElementsShowsDuration" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="NO"/>
+        <attribute name="audioElementsShowsPlayProgress" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
+        <attribute name="audioFoldersPreviewMode" attributeType="String" defaultValueString="Shows Audio Wave Forms Collection View "/>
+        <relationship name="appliedAudioRecordingSettings" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMAudioRecordingSettings" inverseName="appliedToAudioSnippets" inverseEntity="NMAudioRecordingSettings"/>
         <relationship name="reports" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMReport" inverseName="audios" inverseEntity="NMReport"/>
     </entity>
-    <entity name="NMBaseContent" representedClassName="NMBaseContent" isAbstract="YES" syncable="YES"/>
+    <entity name="NMBaseContent" representedClassName="NMBaseContent" isAbstract="YES" syncable="YES">
+        <attribute name="arrowMenuPosition" optional="YES" attributeType="Transformable" valueTransformerName="NSValueDataSecureTransformer" customClassName="NSValue"/>
+        <attribute name="arrowMenuScaleFactor" attributeType="Double" defaultValueString="1" usesScalarValueType="YES"/>
+        <attribute name="arrowMenuTouchPoint" optional="YES" attributeType="Transformable" valueTransformerName="NSValueDataSecureTransformer" customClassName="NSValue"/>
+        <attribute name="ck_metadata" optional="YES" attributeType="Binary"/>
+        <attribute name="colorFlag" optional="YES" attributeType="Transformable" valueTransformerName="UIColorDataSecureTransformer" customClassName="UIColor"/>
+        <attribute name="date" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="isArrowMenuShowing" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="isDragAnimating" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="isHidden" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="isSelected" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="positions" optional="YES" attributeType="Transformable" valueTransformerName="NSSecureUnarchiveFromDataTransformer" customClassName=".NSMutableDictionary"/>
+        <attribute name="priority" attributeType="String" defaultValueString="Normal"/>
+        <attribute name="status" attributeType="String" defaultValueString="New"/>
+        <attribute name="tag" attributeType="String" defaultValueString=""/>
+    </entity>
     <entity name="NMBaseSnippet" representedClassName="NMBaseSnippet" isAbstract="YES" syncable="YES">
-        <attribute name="about" attributeType="String" defaultValueString=""/>
+        <attribute name="about" attributeType="String"/>
         <attribute name="archivedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="ck_metadata" optional="YES" attributeType="Binary"/>
         <attribute name="contentElementsGroupingType" attributeType="String" defaultValueString="Manually"/>
         <attribute name="contentElementsInRow" attributeType="Integer 16" defaultValueString="3" usesScalarValueType="YES"/>
+        <attribute name="contentElementsSortingType" optional="YES" attributeType="String"/>
         <attribute name="contentElementsSortOrder" optional="YES" attributeType="String"/>
-        <attribute name="contentElemetsSortingType" optional="YES" attributeType="String"/>
         <attribute name="date" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="dateSearchFormatIndex" optional="YES" attributeType="String"/>
         <attribute name="deletedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
@@ -34,46 +57,67 @@
         <attribute name="sectionAlphaIndex" optional="YES" attributeType="String"/>
         <attribute name="sectionDateIndex" optional="YES" attributeType="String"/>
         <attribute name="sectionPriorityIndex" optional="YES" attributeType="String"/>
+        <attribute name="showsContentElementsPositions" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
+        <attribute name="showsHiddenContentElements" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <attribute name="status" attributeType="String" defaultValueString="New"/>
         <attribute name="type" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES" customClassName=".SnippetType"/>
     </entity>
-    <entity name="NMPhoto" representedClassName="NMPhoto" syncable="YES">
-        <attribute name="arrowMenuPosition" optional="YES" attributeType="Transformable" valueTransformerName="NSValueDataSecureTransformer" customClassName="NSValue"/>
-        <attribute name="arrowMenuTouchPoint" optional="YES" attributeType="Transformable" valueTransformerName="NSValueDataSecureTransformer" customClassName="NSValue"/>
+    <entity name="NMContentCreationBaseSettings" representedClassName="NMContentCreationBaseSettings" isAbstract="YES" syncable="YES">
+        <attribute name="about" attributeType="String" defaultValueString=""/>
+        <attribute name="applicationTier" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="ck_metadata" optional="YES" attributeType="Binary"/>
-        <attribute name="date" attributeType="Date" usesScalarValueType="NO"/>
-        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
-        <attribute name="isArrowMenuShowing" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
-        <attribute name="isClouded" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
-        <attribute name="isDragAnimating" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
-        <attribute name="isSelected" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
-        <attribute name="plainPosition" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
-        <attribute name="position" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
-        <attribute name="positions" optional="YES" attributeType="Transformable" valueTransformerName="NSSecureUnarchiveFromDataTransformer" customClassName="NSMutableDictionary"/>
-        <attribute name="priorityFlag" optional="YES" attributeType="String"/>
-        <attribute name="tag" optional="YES" attributeType="String"/>
+        <attribute name="date" attributeType="Date" usesScalarValueType="YES"/>
+        <attribute name="id" attributeType="UUID" usesScalarValueType="YES"/>
+        <attribute name="isActive" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
+        <attribute name="nameTag" attributeType="String" defaultValueString="Snippet Content Creation Settings"/>
+        <attribute name="type" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+    </entity>
+    <entity name="NMMixedSnippet" representedClassName="NMMixedSnippet" parentEntity="NMBaseSnippet" syncable="YES">
+        <attribute name="audioElementsPreviewMode" attributeType="String" defaultValueString="Shows Static Waves"/>
+        <attribute name="audioElementsShowsDuration" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
+        <attribute name="audioElementsShowsPlayProgress" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="audioFoldersPreviewMode" attributeType="String" defaultValueString="Shows Audio Wave Forms Collection View "/>
+        <attribute name="photoElementsPictureQualityType" attributeType="String" defaultValueString="DPI"/>
+        <attribute name="photoElementsShowsPictureQuality" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="photoElementsShowsTimeStamp" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="photoFoldersPreviewMode" attributeType="String" defaultValueString="Shows Photos Collection View"/>
+        <attribute name="textElementsPreviewMode" optional="YES" attributeType="String"/>
+        <attribute name="textElementsShowingSymbolsCount" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="textFoldersPreviewMode" attributeType="String" defaultValueString="Shows Rendered Pictures Collection View"/>
+        <attribute name="videoElementsPreviewMode" attributeType="String" defaultValueString="Shows First Frame Preview"/>
+        <attribute name="videoElementsShowsDuration" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
+        <attribute name="videoElementsShowsPlayProgress" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="videoFoldersPreviewMode" attributeType="String" defaultValueString="Shows Frames Previews Collection View"/>
+        <relationship name="appliedAudioCaptureSettings" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMAudioRecordingSettings" inverseName="appliedToMixedSnippets" inverseEntity="NMAudioRecordingSettings"/>
+        <relationship name="appliedPhotoCaptureSettings" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMPhotoCaptureSettings" inverseName="appliedToMixedSnippets" inverseEntity="NMPhotoCaptureSettings"/>
+        <relationship name="appliedVideoShootingSettings" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMVideoShootingSettings"/>
+    </entity>
+    <entity name="NMPhoto" representedClassName="NMPhoto" parentEntity="NMBaseContent" syncable="YES">
+        <attribute name="defaultPictureQualityType" attributeType="String" defaultValueString="DPI"/>
+        <attribute name="showsCaptureQuality" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="showsCaptureTimeStamp" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
+        <relationship name="appliedCaptureSettings" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMPhotoCaptureSettings" inverseName="appliedToPhotos" inverseEntity="NMPhotoCaptureSettings"/>
         <relationship name="folder" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMPhotoFolder" inverseName="photos" inverseEntity="NMPhotoFolder"/>
         <relationship name="photoSnippet" maxCount="1" deletionRule="Nullify" destinationEntity="NMPhotoSnippet" inverseName="photos" inverseEntity="NMPhotoSnippet"/>
     </entity>
-    <entity name="NMPhotoFolder" representedClassName="NMPhotoFolder" syncable="YES">
-        <attribute name="arrowMenuPosition" optional="YES" attributeType="Transformable" valueTransformerName="NSValueDataSecureTransformer" customClassName="NSValue"/>
-        <attribute name="arrowMenuTouchPoint" optional="YES" attributeType="Transformable" valueTransformerName="NSValueDataSecureTransformer" customClassName="NSValue"/>
-        <attribute name="ck_metadata" optional="YES" attributeType="Binary"/>
-        <attribute name="date" attributeType="Date" usesScalarValueType="NO"/>
-        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
-        <attribute name="isArrowMenuShowing" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
-        <attribute name="isClouded" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
-        <attribute name="isDragAnimating" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
-        <attribute name="isSelected" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
-        <attribute name="plainPosition" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
-        <attribute name="position" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
-        <attribute name="positions" optional="YES" attributeType="Transformable" valueTransformerName="NSSecureUnarchiveFromDataTransformer" customClassName="NSMutableDictionary"/>
-        <attribute name="priorityFlag" optional="YES" attributeType="String"/>
-        <attribute name="tag" optional="YES" attributeType="String"/>
+    <entity name="NMPhotoCaptureSettings" representedClassName="NMPhotoCaptureSettings" parentEntity="NMContentCreationBaseSettings" syncable="YES">
+        <relationship name="appliedToMixedSnippets" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMMixedSnippet" inverseName="appliedPhotoCaptureSettings" inverseEntity="NMMixedSnippet"/>
+        <relationship name="appliedToPhotoFolders" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMPhotoFolder" inverseName="appliedCaptureSettings" inverseEntity="NMPhotoFolder"/>
+        <relationship name="appliedToPhotos" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMPhoto" inverseName="appliedCaptureSettings" inverseEntity="NMPhoto"/>
+        <relationship name="appliedToPhotoSnippets" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMPhotoSnippet" inverseName="appliedCaptureSettings" inverseEntity="NMPhotoSnippet"/>
+    </entity>
+    <entity name="NMPhotoFolder" representedClassName="NMPhotoFolder" parentEntity="NMBaseContent" syncable="YES">
+        <attribute name="defaultContentPreviewMode" attributeType="String" defaultValueString="Shows Photos Collection View"/>
+        <relationship name="appliedCaptureSettings" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMPhotoCaptureSettings" inverseName="appliedToPhotoFolders" inverseEntity="NMPhotoCaptureSettings"/>
         <relationship name="photos" toMany="YES" deletionRule="Cascade" destinationEntity="NMPhoto" inverseName="folder" inverseEntity="NMPhoto"/>
         <relationship name="photoSnippet" maxCount="1" deletionRule="Nullify" destinationEntity="NMPhotoSnippet" inverseName="folders" inverseEntity="NMPhotoSnippet"/>
     </entity>
     <entity name="NMPhotoSnippet" representedClassName="NMPhotoSnippet" parentEntity="NMBaseSnippet" syncable="YES">
+        <attribute name="photoElementsPictureQualityType" attributeType="String" defaultValueString="DPI"/>
+        <attribute name="photoElementsShowsPictureQuality" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="photoElementsShowsTimeStamp" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
+        <attribute name="photoFoldersPreviewMode" attributeType="String" defaultValueString="Shows Photos Collection View"/>
+        <relationship name="appliedCaptureSettings" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMPhotoCaptureSettings" inverseName="appliedToPhotoSnippets" inverseEntity="NMPhotoCaptureSettings"/>
         <relationship name="folders" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="NMPhotoFolder" inverseName="photoSnippet" inverseEntity="NMPhotoFolder"/>
         <relationship name="photos" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="NMPhoto" inverseName="photoSnippet" inverseEntity="NMPhoto"/>
         <relationship name="reports" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMReport" inverseName="photos" inverseEntity="NMReport"/>
@@ -87,25 +131,45 @@
         <relationship name="texts" toMany="YES" deletionRule="Nullify" destinationEntity="NMTextSnippet" inverseName="reports" inverseEntity="NMTextSnippet"/>
         <relationship name="videos" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMVideoSnippet" inverseName="reports" inverseEntity="NMVideoSnippet"/>
     </entity>
+    <entity name="NMTextEditingSettings" representedClassName="NMTextEditingSettings" parentEntity="NMContentCreationBaseSettings" syncable="YES"/>
     <entity name="NMTextSnippet" representedClassName="NMTextSnippet" parentEntity="NMBaseSnippet" syncable="YES">
-        <attribute name="isShowingSymbolsCount" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <attribute name="textElementsPreviewMode" attributeType="String" defaultValueString="Shows Text Preview"/>
+        <attribute name="textElementsShowingSymbolsCount" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
+        <attribute name="textFoldersPreviewMode" attributeType="String" defaultValueString="Shows Rendered Pictures Collection View"/>
         <relationship name="reports" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMReport" inverseName="texts" inverseEntity="NMReport"/>
+    </entity>
+    <entity name="NMVideo" representedClassName="NMVideo" parentEntity="NMBaseContent" syncable="YES">
+        <relationship name="appliedShootingSettings" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMVideoShootingSettings" inverseName="appliedToVideos" inverseEntity="NMVideoShootingSettings"/>
+    </entity>
+    <entity name="NMVideoShootingSettings" representedClassName="NMVideoShootingSettings" parentEntity="NMContentCreationBaseSettings" syncable="YES">
+        <relationship name="appliedToVideos" toMany="YES" deletionRule="Nullify" destinationEntity="NMVideo" inverseName="appliedShootingSettings" inverseEntity="NMVideo"/>
+        <relationship name="appliedToVideoSnippets" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMVideoSnippet" inverseName="appliedShootingSettings" inverseEntity="NMVideoSnippet"/>
     </entity>
     <entity name="NMVideoSnippet" representedClassName="NMVideoSnippet" parentEntity="NMBaseSnippet" syncable="YES">
         <attribute name="videoElementsPreviewMode" attributeType="String" defaultValueString="Shows First Frame Preview"/>
+        <attribute name="videoElementsShowsDuration" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
+        <attribute name="videoElementsShowsPlayProgress" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
+        <attribute name="videoFoldersPreviewMode" attributeType="String" defaultValueString="Shows Frames Previews Collection View"/>
+        <relationship name="appliedShootingSettings" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMVideoShootingSettings" inverseName="appliedToVideoSnippets" inverseEntity="NMVideoShootingSettings"/>
         <relationship name="reports" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMReport" inverseName="videos" inverseEntity="NMReport"/>
     </entity>
     <fetchRequest name="Snippets" entity="NMBaseSnippet" predicateString="type == $p1"/>
     <elements>
-        <element name="NMAudioSnippet" positionX="-131.00146484375" positionY="-539.6266174316406" width="128" height="88"/>
-        <element name="NMBaseContent" positionX="-246.6732788085938" positionY="-757.5287933349609" width="128" height="43"/>
-        <element name="NMBaseSnippet" positionX="-431.1163330078125" positionY="-731.452880859375" width="128" height="464"/>
-        <element name="NMPhoto" positionX="-897.3057250976562" positionY="-703.8289337158203" width="163.2216186523438" height="283"/>
-        <element name="NMPhotoFolder" positionX="-889.2792358398438" positionY="-379.4385070800781" width="137" height="283"/>
-        <element name="NMPhotoSnippet" positionX="-627.8906860351562" positionY="-668.0148468017578" width="141.6079711914062" height="88"/>
-        <element name="NMReport" positionX="-413.56298828125" positionY="-240.1938323974609" width="128" height="148"/>
-        <element name="NMTextSnippet" positionX="-409.437744140625" positionY="-350.9020690917969" width="122.7568359375" height="88"/>
-        <element name="NMVideoSnippet" positionX="-200.19384765625" positionY="-353.1556091308594" width="128" height="73"/>
+        <element name="NMAudioRecordingSettings" positionX="-610.3389282226562" positionY="-1438.549270629883" width="227.2418823242188" height="43"/>
+        <element name="NMAudioSnippet" positionX="-593.8116149902344" positionY="-1248.789169311524" width="192.1865539550781" height="43"/>
+        <element name="NMBaseContent" positionX="-380.5022583007812" positionY="-695.4243011474609" width="168.7405395507812" height="43"/>
+        <element name="NMBaseSnippet" positionX="-379.0608520507812" positionY="-1664.189620971679" width="263.5743408203125" height="43"/>
+        <element name="NMContentCreationBaseSettings" positionX="-633.9591369628906" positionY="-1661.802322387695" width="223.6532287597656" height="43"/>
+        <element name="NMMixedSnippet" positionX="73.16561889648435" positionY="-1246.768432617187" width="203.1658020019531" height="43"/>
+        <element name="NMPhoto" positionX="-798.5112915039062" positionY="-1044.81982421875" width="180.5287475585938" height="43"/>
+        <element name="NMPhotoCaptureSettings" positionX="-822.5904541015625" positionY="-1439.800765991211" width="192.5828247070312" height="43"/>
+        <element name="NMPhotoFolder" positionX="-790.6926574707031" positionY="-815.5915985107422" width="172.822021484375" height="43"/>
+        <element name="NMPhotoSnippet" positionX="-802.4134216308594" positionY="-1270.656860351562" width="193.8644409179688" height="43"/>
+        <element name="NMReport" positionX="84.728515625" positionY="-846.4902496337891" width="254.142578125" height="148"/>
+        <element name="NMTextEditingSettings" positionX="-115.4010314941406" positionY="-1439.476409912109" width="165.4420471191406" height="29"/>
+        <element name="NMTextSnippet" positionX="-167.6192626953125" positionY="-1246.455093383789" width="203.1217041015625" height="43"/>
+        <element name="NMVideo" positionX="-388.9205322265626" positionY="-1068.503128051758" width="186.7887573242188" height="43"/>
+        <element name="NMVideoShootingSettings" positionX="-361.7806091308594" positionY="-1438.107696533203" width="218.6091613769531" height="59"/>
+        <element name="NMVideoSnippet" positionX="-379.2672729492188" positionY="-1244.794158935547" width="183.1453857421875" height="43"/>
     </elements>
 </model>

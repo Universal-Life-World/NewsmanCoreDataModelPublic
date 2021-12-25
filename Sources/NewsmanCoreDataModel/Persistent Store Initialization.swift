@@ -1,5 +1,10 @@
 import CoreData
 import Foundation
+
+#if !os(macOS)
+import UIKit
+#endif
+
 @available(macOS 10.13, *)
 
 public extension NSManagedObjectModel
@@ -28,7 +33,19 @@ public final class NMCoreDataModel
  
  public var context: NSManagedObjectContext { persistentContainer.viewContext }
  
+ private func registerDataTransformers()
+ {
+  GenericDataSecureTransformer<NSValue>.register()
+ 
+  #if !os(macOS)
+   GenericDataSecureTransformer<UIColor>.register()
+  #endif
+ 
+ }
+ 
  public lazy var persistentContainer = { () -> NSPersistentContainer in
+  
+  registerDataTransformers()
   
   let container = NSPersistentContainer(name: modelName, managedObjectModel: mom)
  
