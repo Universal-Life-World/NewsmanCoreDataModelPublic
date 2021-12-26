@@ -23,11 +23,11 @@ public class NMBaseSnippet: NSManagedObject
  
  public static let typeKey = "type"
  
- public var type: NMCoreDataModel.SnippetType
+ public var type: SnippetType
  {
   get {
    willAccessValue(forKey: NMBaseSnippet.typeKey)
-   guard let val = NMCoreDataModel.SnippetType(rawValue: primitiveType.int16Value) else {
+   guard let val = SnippetType(rawValue: primitiveType.int16Value) else {
     fatalError("invalid enum value")
    }
    didAccessValue(forKey: NMBaseSnippet.typeKey)
@@ -53,7 +53,7 @@ public class NMBaseSnippet: NSManagedObject
   primitiveDate = now
   primitiveLastAccessedTimeStamp = now
   primitiveLastModifiedTimeStamp = now
-  primitiveType = NSNumber(value: NMCoreDataModel.SnippetType(snippet: self).rawValue)
+  primitiveType = NSNumber(value: SnippetType(snippet: self).rawValue)
 
  }
  

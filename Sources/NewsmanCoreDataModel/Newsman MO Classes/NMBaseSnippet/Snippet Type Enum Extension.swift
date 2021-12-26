@@ -3,7 +3,7 @@
 
 import Foundation
 
-public extension NMCoreDataModel
+public extension NMBaseSnippet
 {
  enum SnippetType: Int16
  {
