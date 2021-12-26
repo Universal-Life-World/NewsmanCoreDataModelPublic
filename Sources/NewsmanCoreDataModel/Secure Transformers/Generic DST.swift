@@ -2,10 +2,10 @@ import Foundation
 
 public final class GenericDataSecureTransformer<T: NSSecureCoding>: NSSecureUnarchiveFromDataTransformer
 {
- public static var name: NSValueTransformerName
- {
-  NSValueTransformerName(rawValue: String(describing: T.self) + "DataSecureTransformer")
- }
+  public static var name: NSValueTransformerName
+  {
+   NSValueTransformerName(rawValue: String(describing: T.self) + "DataSecureTransformer")
+  }
  
   public static func register()
   {
