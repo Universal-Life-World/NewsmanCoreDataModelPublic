@@ -8,7 +8,6 @@
 import Foundation
 import CoreData
 
-
 @objc(NMBaseSnippet)
 public class NMBaseSnippet: NSManagedObject
 {
