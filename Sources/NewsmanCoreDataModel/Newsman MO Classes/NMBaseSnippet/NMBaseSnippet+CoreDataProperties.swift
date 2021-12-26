@@ -13,7 +13,7 @@ import CoreData
 extension NMBaseSnippet {
 
     @nonobjc public class func fetchRequest() -> NSFetchRequest<NMBaseSnippet> {
-        return NSFetchRequest<NMBaseSnippet>(entityName: "NMBaseSnippet")
+       NSFetchRequest<NMBaseSnippet>(entityName: "NMBaseSnippet")
     }
 
     @NSManaged public var about: String?
