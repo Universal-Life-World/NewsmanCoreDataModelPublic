@@ -76,6 +76,8 @@
         <attribute name="status" attributeType="String" defaultValueString="New"/>
         <attribute name="tag" attributeType="String" defaultValueString=""/>
         <attribute name="trashedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="attachedToChatItems" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMChatItem" inverseName="attachments" inverseEntity="NMChatItem"/>
+        <relationship name="connectedWithTopNews" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMTopNews" inverseName="relatedContentItems" inverseEntity="NMTopNews"/>
     </entity>
     <entity name="NMBaseSnippet" representedClassName="NMBaseSnippet" isAbstract="YES" syncable="YES">
         <attribute name="about" attributeType="String"/>
@@ -118,6 +120,62 @@
         <attribute name="status" attributeType="String" defaultValueString="New"/>
         <attribute name="trashedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="type" attributeType="Integer 16" minValueString="0" maxValueString="5" defaultValueString="0" usesScalarValueType="YES" customClassName=".SnippetType"/>
+        <relationship name="connectedWithTopNews" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMTopNews" inverseName="relatedSnippets" inverseEntity="NMTopNews"/>
+    </entity>
+    <entity name="NMBaseSubscription" representedClassName="NMBaseSubscription" isAbstract="YES" syncable="YES">
+        <attribute name="ck_metadata" optional="YES" attributeType="Binary"/>
+        <attribute name="date" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="isDeletable" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
+        <attribute name="isSelected" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="lastAccessedTimeStamp" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="lastModifiedTimeStamp" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="status" attributeType="String" defaultValueString="New"/>
+        <attribute name="tag" attributeType="String" defaultValueString=""/>
+    </entity>
+    <entity name="NMChatConnection" representedClassName="NMChatConnection" syncable="YES">
+        <attribute name="ck_metadata" optional="YES" attributeType="Binary"/>
+        <attribute name="dateEntered" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="dateExited" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="status" attributeType="String" defaultValueString="Connected"/>
+        <relationship name="party" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMChatParty" inverseName="connections" inverseEntity="NMChatParty"/>
+        <relationship name="session" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMChatSession" inverseName="connections" inverseEntity="NMChatSession"/>
+    </entity>
+    <entity name="NMChatItem" representedClassName="NMChatItem" syncable="YES">
+        <attribute name="ck_metadata" optional="YES" attributeType="Binary"/>
+        <attribute name="date" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="isDragAnimating" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="isHiddenToOthers" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="isSelected" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="message" optional="YES" attributeType="String"/>
+        <attribute name="postedTimeStamp" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="status" attributeType="String" defaultValueString="New"/>
+        <attribute name="trashedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <relationship name="attachments" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMBaseContent" inverseName="attachedToChatItems" inverseEntity="NMBaseContent"/>
+        <relationship name="chatSession" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMChatSession" inverseName="items" inverseEntity="NMChatSession"/>
+        <relationship name="postedBy" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMChatParty" inverseName="postedItems" inverseEntity="NMChatParty"/>
+    </entity>
+    <entity name="NMChatParty" representedClassName="NMChatParty" syncable="YES">
+        <attribute name="ck_metadata" optional="YES" attributeType="Binary"/>
+        <attribute name="date" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="newsmanID" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="status" attributeType="String" defaultValueString="Active"/>
+        <relationship name="chatsOwned" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMChatSession" inverseName="owner" inverseEntity="NMChatSession"/>
+        <relationship name="connections" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMChatConnection" inverseName="party" inverseEntity="NMChatConnection"/>
+        <relationship name="postedItems" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMChatItem" inverseName="postedBy" inverseEntity="NMChatItem"/>
+    </entity>
+    <entity name="NMChatSession" representedClassName="NMChatSession" syncable="YES">
+        <attribute name="ck_metadata" optional="YES" attributeType="Binary"/>
+        <attribute name="date" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="status" attributeType="String" defaultValueString="New"/>
+        <relationship name="connections" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMChatConnection" inverseName="session" inverseEntity="NMChatConnection"/>
+        <relationship name="items" toMany="YES" minCount="1" deletionRule="Cascade" destinationEntity="NMChatItem" inverseName="chatSession" inverseEntity="NMChatItem"/>
+        <relationship name="owner" maxCount="1" deletionRule="Nullify" destinationEntity="NMChatParty" inverseName="chatsOwned" inverseEntity="NMChatParty"/>
+        <relationship name="task" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMTask" inverseName="chatSession" inverseEntity="NMTask"/>
     </entity>
     <entity name="NMContentCreationBaseSettings" representedClassName="NMContentCreationBaseSettings" isAbstract="YES" syncable="YES">
         <attribute name="about" attributeType="String" defaultValueString=""/>
@@ -128,6 +186,24 @@
         <attribute name="isActive" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
         <attribute name="nameTag" attributeType="String" defaultValueString="Snippet Content Creation Settings"/>
         <attribute name="type" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+    </entity>
+    <entity name="NMLocationsSubscription" representedClassName="NMLocationsSubscription" parentEntity="NMBaseSubscription" syncable="YES">
+        <attribute name="searchRule" attributeType="String" defaultValueString="OR"/>
+        <relationship name="searchedZones" toMany="YES" deletionRule="Cascade" destinationEntity="NMLocationSubscriptionZone" inverseName="subscription" inverseEntity="NMLocationSubscriptionZone"/>
+    </entity>
+    <entity name="NMLocationSubscriptionZone" representedClassName="NMLocationSubscriptionZone" syncable="YES">
+        <attribute name="ck_metadata" optional="YES" attributeType="Binary"/>
+        <attribute name="date" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="isActive" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
+        <attribute name="isDeletable" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
+        <attribute name="isExcluded" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="isHiddenOnMap" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
+        <attribute name="latitude" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="longitude" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="tag" attributeType="String" defaultValueString=""/>
+        <attribute name="zoneRadius" attributeType="Double" minValueString="1" maxValueString="1000" defaultValueString="10" usesScalarValueType="YES"/>
+        <relationship name="subscription" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMLocationsSubscription" inverseName="searchedZones" inverseEntity="NMLocationsSubscription"/>
     </entity>
     <entity name="NMMixedFolder" representedClassName="NMMixedFolder" parentEntity="NMBaseContent" syncable="YES">
         <relationship name="appliedAudioRecordingSettings" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMAudioRecordingSettings" inverseName="appliedToMixedFolders" inverseEntity="NMAudioRecordingSettings"/>
@@ -174,6 +250,7 @@
         <relationship name="videoFolders" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="NMVideoFolder" inverseName="mixedSnippet" inverseEntity="NMVideoFolder"/>
         <relationship name="videos" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="NMVideo" inverseName="mixedSnippet" inverseEntity="NMVideo"/>
     </entity>
+    <entity name="NMNewNewsmanSubscription" representedClassName="NMNewNewsmanSubscription" parentEntity="NMBaseSubscription" syncable="YES"/>
     <entity name="NMPhoto" representedClassName="NMPhoto" parentEntity="NMBaseContent" syncable="YES">
         <attribute name="defaultPictureQualityType" attributeType="String" defaultValueString="DPI"/>
         <attribute name="showsCaptureQuality" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
@@ -273,6 +350,7 @@
         <attribute name="status" attributeType="String" defaultValueString="New"/>
         <attribute name="trashedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <relationship name="audios" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMAudio" inverseName="reports" inverseEntity="NMAudio"/>
+        <relationship name="connectedWithTopNews" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMTopNews" inverseName="relatedReports" inverseEntity="NMTopNews"/>
         <relationship name="copies" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMReport" inverseName="original" inverseEntity="NMReport"/>
         <relationship name="original" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMReport" inverseName="copies" inverseEntity="NMReport"/>
         <relationship name="photos" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMPhoto" inverseName="reports" inverseEntity="NMPhoto"/>
@@ -282,22 +360,22 @@
     </entity>
     <entity name="NMTask" representedClassName="NMTask" syncable="YES">
         <attribute name="about" attributeType="String" defaultValueString=""/>
-        <attribute name="accepted" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="acceptedBy" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
-        <attribute name="assigned" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="acceptedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="assignedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="assignedTo" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
-        <attribute name="cancelled" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="cancelledBy" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="cancelledTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="ck_metadata" optional="YES" attributeType="Binary"/>
-        <attribute name="closed" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="closedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="dateSearchFormatIndex" optional="YES" attributeType="String"/>
-        <attribute name="declined" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="declinedBy" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
-        <attribute name="finished" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="declinedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="finishedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="hiddenSectionsBitset" attributeType="Integer 16" minValueString="0" maxValueString="255" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
-        <attribute name="initiated" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="initiatedBy" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="initiatedTimeStamp" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="isCancelable" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <attribute name="isDeletable" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <attribute name="isDraggable" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
@@ -308,11 +386,11 @@
         <attribute name="isShowingTaskDetailedCell" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <attribute name="isSuspendable" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
         <attribute name="isTrashable" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
-        <attribute name="lastAccessed" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="lastAccessedBy" attributeType="UUID" usesScalarValueType="NO"/>
-        <attribute name="lastModified" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="lastAccessedTimeStamp" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="lastModifiedBy" attributeType="UUID" usesScalarValueType="NO"/>
-        <attribute name="lastSuspended" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="lastModifiedTimeStamp" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="lastSuspendedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="lastSuspenedBy" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="latitude" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="location" optional="YES" attributeType="String"/>
@@ -325,6 +403,7 @@
         <attribute name="status" attributeType="String" defaultValueString="Initiated"/>
         <attribute name="trashedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <relationship name="audioBlock" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="NMTaskAudioBlock" inverseName="task" inverseEntity="NMTaskAudioBlock"/>
+        <relationship name="chatSession" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMChatSession" inverseName="task" inverseEntity="NMChatSession"/>
         <relationship name="photoBlock" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="NMTaskPhotoBlock" inverseName="task" inverseEntity="NMTaskPhotoBlock"/>
         <relationship name="reportBlock" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="NMTaskReportBlock" inverseName="task" inverseEntity="NMTaskReportBlock"/>
         <relationship name="textBlock" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="NMTaskTextBlock" inverseName="task" inverseEntity="NMTaskTextBlock"/>
@@ -337,12 +416,13 @@
     <entity name="NMTaskBaseBlock" representedClassName="NMTaskBaseBlock" isAbstract="YES" syncable="YES">
         <attribute name="ck_metadata" optional="YES" attributeType="Binary"/>
         <attribute name="deadline" attributeType="Date" usesScalarValueType="NO"/>
-        <attribute name="finished" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="finishedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="id" attributeType="UUID" usesScalarValueType="NO"/>
-        <attribute name="newWorkItemAdded" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
-        <attribute name="started" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="lastUpdatedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="startedTimeStamp" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="status" attributeType="String" defaultValueString="New"/>
         <attribute name="target" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="targetUnit" attributeType="String" defaultValueString="Items"/>
     </entity>
     <entity name="NMTaskPhotoBlock" representedClassName="NMTaskPhotoBlock" parentEntity="NMTaskBaseBlock" syncable="YES">
         <relationship name="photos" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMPhoto" inverseName="taskPhotoBlocks" inverseEntity="NMPhoto"/>
@@ -361,6 +441,8 @@
         <relationship name="videos" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMVideo" inverseName="taskVideoBlocks" inverseEntity="NMVideo"/>
     </entity>
     <entity name="NMText" representedClassName="NMText" parentEntity="NMBaseContent" syncable="YES">
+        <attribute name="defaultPreviewMode" attributeType="String" defaultValueString="Shows Rendered Text Preview"/>
+        <attribute name="showsSymbolsCount" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
         <relationship name="appliedTextEditingSettings" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMTextEditingSettings" inverseName="appliedToTexts" inverseEntity="NMTextEditingSettings"/>
         <relationship name="copies" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMText" inverseName="original" inverseEntity="NMText"/>
         <relationship name="mixedFolder" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMMixedFolder" inverseName="folderedTexts" inverseEntity="NMMixedFolder"/>
@@ -371,6 +453,7 @@
         <relationship name="textFolder" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMTextFolder" inverseName="folderedTexts" inverseEntity="NMTextFolder"/>
         <relationship name="textSnippet" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMTextSnippet" inverseName="texts" inverseEntity="NMTextSnippet"/>
     </entity>
+    <entity name="NMTextContentsSubscription" representedClassName="NMTextContentsSubscription" parentEntity="NMBaseSubscription" syncable="YES"/>
     <entity name="NMTextEditingSettings" representedClassName="NMTextEditingSettings" parentEntity="NMContentCreationBaseSettings" syncable="YES">
         <relationship name="appliedToMixedFolders" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMMixedFolder" inverseName="appliedTextEditingSettings" inverseEntity="NMMixedFolder"/>
         <relationship name="appliedToMixedSnippets" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMMixedSnippet" inverseName="appliedTextEditingSettings" inverseEntity="NMMixedSnippet"/>
@@ -379,6 +462,7 @@
         <relationship name="appliedToTextSnippets" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMTextSnippet" inverseName="appliedTextEditingSettings" inverseEntity="NMTextSnippet"/>
     </entity>
     <entity name="NMTextFolder" representedClassName="NMTextFolder" parentEntity="NMBaseContent" syncable="YES">
+        <attribute name="defaultContentPreviewMode" attributeType="String" defaultValueString="Shows Rendered Text Previews Collection View"/>
         <relationship name="appliedTextEditingSettings" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMTextEditingSettings" inverseName="appliedToTextFolders" inverseEntity="NMTextEditingSettings"/>
         <relationship name="copies" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMTextFolder" inverseName="original" inverseEntity="NMTextFolder"/>
         <relationship name="folderedTexts" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="NMText" inverseName="textFolder" inverseEntity="NMText"/>
@@ -387,16 +471,38 @@
         <relationship name="textSnippet" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMTextSnippet" inverseName="textFolders" inverseEntity="NMTextSnippet"/>
     </entity>
     <entity name="NMTextSnippet" representedClassName="NMTextSnippet" parentEntity="NMBaseSnippet" syncable="YES">
-        <attribute name="textElementsPreviewMode" attributeType="String" defaultValueString="Shows Text Preview"/>
+        <attribute name="textElementsPreviewMode" attributeType="String" defaultValueString="Shows Rendered Text Preview"/>
         <attribute name="textElementsShowingSymbolsCount" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
-        <attribute name="textFoldersPreviewMode" attributeType="String" defaultValueString="Shows Rendered Pictures Collection View"/>
+        <attribute name="textFoldersPreviewMode" attributeType="String" defaultValueString="Shows Rendered Text Previews Collection View"/>
         <relationship name="appliedTextEditingSettings" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMTextEditingSettings" inverseName="appliedToTextSnippets" inverseEntity="NMTextEditingSettings"/>
         <relationship name="copies" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMTextSnippet" inverseName="original" inverseEntity="NMTextSnippet"/>
         <relationship name="original" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMTextSnippet" inverseName="copies" inverseEntity="NMTextSnippet"/>
         <relationship name="textFolders" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="NMTextFolder" inverseName="textSnippet" inverseEntity="NMTextFolder"/>
         <relationship name="texts" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="NMText" inverseName="textSnippet" inverseEntity="NMText"/>
     </entity>
+    <entity name="NMTopNews" representedClassName="NMTopNews" syncable="YES">
+        <attribute name="about" attributeType="String" minValueString="10" maxValueString="1000" defaultValueString=""/>
+        <attribute name="category" attributeType="String" defaultValueString="Miscellaneous"/>
+        <attribute name="ck_metadata" optional="YES" attributeType="Binary"/>
+        <attribute name="date" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="hiddenSectionsBitset" attributeType="Integer 16" minValueString="0" maxValueString="255" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="moderatedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="priority" attributeType="String" defaultValueString="Normal"/>
+        <attribute name="publishedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="sectionAlphaIndex" optional="YES" attributeType="String"/>
+        <attribute name="sectionDateIndex" optional="YES" attributeType="String"/>
+        <attribute name="sectionPriorityIndex" optional="YES" attributeType="String"/>
+        <attribute name="status" attributeType="String" defaultValueString="New"/>
+        <relationship name="relatedContentItems" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMBaseContent" inverseName="connectedWithTopNews" inverseEntity="NMBaseContent"/>
+        <relationship name="relatedReports" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMReport" inverseName="connectedWithTopNews" inverseEntity="NMReport"/>
+        <relationship name="relatedSnippets" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMBaseSnippet" inverseName="connectedWithTopNews" inverseEntity="NMBaseSnippet"/>
+    </entity>
+    <entity name="NMTopNewsSubscription" representedClassName="NMTopNewsSubscription" parentEntity="NMBaseSubscription" syncable="YES"/>
     <entity name="NMVideo" representedClassName="NMVideo" parentEntity="NMBaseContent" syncable="YES">
+        <attribute name="defaultPreviewMode" attributeType="String" defaultValueString="Shows First Frame Preview"/>
+        <attribute name="showsDuration" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
+        <attribute name="showsPlayProgress" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <relationship name="appliedVideoShootingSettings" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMVideoShootingSettings" inverseName="appliedToVideos" inverseEntity="NMVideoShootingSettings"/>
         <relationship name="copies" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMVideo" inverseName="original" inverseEntity="NMVideo"/>
         <relationship name="mixedFolder" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMMixedFolder" inverseName="folderedVideos" inverseEntity="NMMixedFolder"/>
@@ -408,6 +514,7 @@
         <relationship name="videoSnippet" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMVideoSnippet" inverseName="videos" inverseEntity="NMVideoSnippet"/>
     </entity>
     <entity name="NMVideoFolder" representedClassName="NMVideoFolder" parentEntity="NMBaseContent" syncable="YES">
+        <attribute name="defaultContentPreviewMode" attributeType="String" defaultValueString="Shows Frames Previews Collection View"/>
         <relationship name="appliedVideoShootingSettings" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMVideoShootingSettings" inverseName="appliedToVideoFolders" inverseEntity="NMVideoShootingSettings"/>
         <relationship name="copies" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMVideoFolder" inverseName="original" inverseEntity="NMVideoFolder"/>
         <relationship name="folderedVideos" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="NMVideo" inverseName="videoFolder" inverseEntity="NMVideo"/>
@@ -435,35 +542,46 @@
     </entity>
     <fetchRequest name="Snippets" entity="NMBaseSnippet" predicateString="type == $p1"/>
     <elements>
-        <element name="NMAudio" positionX="-638.7453002929688" positionY="-858.0313415527339" width="187.5604858398438" height="178"/>
-        <element name="NMAudioFolder" positionX="-645.2408447265625" positionY="-1077.876068115235" width="197.779541015625" height="148"/>
-        <element name="NMAudioRecordingSettings" positionX="-631.1714477539062" positionY="-1443.368179321289" width="196.63330078125" height="118"/>
-        <element name="NMAudioSnippet" positionX="-635.3717956542969" positionY="-1267.853256225586" width="192.1865539550781" height="118"/>
-        <element name="NMBaseContent" positionX="-427.9371948242188" positionY="-513.0848083496094" width="255.1314086914062" height="43"/>
-        <element name="NMBaseSnippet" positionX="-500.8120727539061" positionY="-1662.391983032226" width="263.5743408203125" height="43"/>
-        <element name="NMContentCreationBaseSettings" positionX="-248.0025939941406" positionY="-1586.824295043945" width="223.6532287597656" height="43"/>
-        <element name="NMMixedFolder" positionX="-923.3355407714844" positionY="-592.5759124755859" width="187.4817199707031" height="208"/>
-        <element name="NMMixedSnippet" positionX="-934.6517944335938" positionY="-1776.847656249999" width="195.0870056152344" height="268"/>
-        <element name="NMPhoto" positionX="-884.8006286621094" positionY="-851.4084167480476" width="188.9867248535156" height="178"/>
-        <element name="NMPhotoCaptureSettings" positionX="-872.6841735839844" positionY="-1431.154434204102" width="192.5828247070312" height="118"/>
-        <element name="NMPhotoFolder" positionX="-864.1698913574219" positionY="-1079.804031372071" width="177.3418884277344" height="148"/>
-        <element name="NMPhotoSnippet" positionX="-875.6471862792969" positionY="-1268.099731445312" width="193.8644409179688" height="118"/>
-        <element name="NMReport" positionX="19.21124267578125" positionY="-476.4033050537109" width="202.2115478515625" height="148"/>
-        <element name="NMText" positionX="-109.1329956054688" positionY="-858.1355590820308" width="194.526123046875" height="178"/>
-        <element name="NMTextEditingSettings" positionX="-136.4014587402343" positionY="-1434.230422973633" width="187.0080871582031" height="118"/>
-        <element name="NMTextFolder" positionX="-119.0036010742188" positionY="-1082.744155883789" width="205.04296875" height="133"/>
-        <element name="NMTextSnippet" positionX="-148.23828125" positionY="-1287.489730834961" width="203.1217041015625" height="118"/>
-        <element name="NMVideo" positionX="-376.2135009765626" positionY="-864.7194976806643" width="199.2545166015626" height="178"/>
-        <element name="NMVideoFolder" positionX="-378.5722045898438" positionY="-1081.709915161132" width="191.7428588867188" height="133"/>
-        <element name="NMVideoShootingSettings" positionX="-383.6828918457031" positionY="-1449.427169799805" width="190.2856750488281" height="118"/>
-        <element name="NMVideoSnippet" positionX="-367.9606933593751" positionY="-1279.577606201171" width="183.1453857421875" height="118"/>
-        <element name="NMRegistrationProfile" positionX="-615.7690734863281" positionY="-1781.941192626953" width="247.4621887207031" height="43"/>
-        <element name="NMTask" positionX="-475.6204833984375" positionY="-141.9658203125" width="207.40966796875" height="118"/>
-        <element name="NMTaskBaseBlock" positionX="-923.2194519042969" positionY="-129.3323059082031" width="238.9553833007812" height="43"/>
-        <element name="NMTaskTextBlock" positionX="-209.899658203125" positionY="-333.2746887207031" width="198.9989013671875" height="73"/>
-        <element name="NMTaskPhotoBlock" positionX="-925.5653686523438" positionY="-325.6021728515625" width="189.0575256347656" height="73"/>
-        <element name="NMTaskVideoBlock" positionX="-442.9078369140625" positionY="-332.4941711425781" width="186.3729248046875" height="73"/>
-        <element name="NMTaskAudioBlock" positionX="-689.0305786132812" positionY="-326.327392578125" width="181.7394409179688" height="73"/>
-        <element name="NMTaskReportBlock" positionX="-50.06781005859375" positionY="-147.3877868652344" width="176.4466552734375" height="73"/>
+        <element name="NMAudio" positionX="-556.4251098632812" positionY="-800.9061431884761" width="250.7084350585938" height="178"/>
+        <element name="NMAudioFolder" positionX="-576.6148376464844" positionY="-1017.373901367188" width="215.8580627441406" height="133"/>
+        <element name="NMAudioRecordingSettings" positionX="-591.3693237304688" positionY="-1464.666427612305" width="219.0896606445312" height="118"/>
+        <element name="NMAudioSnippet" positionX="-586.5419616699219" positionY="-1268.374374389648" width="236.5485534667969" height="118"/>
+        <element name="NMBaseContent" positionX="-527.7874755859375" positionY="-465.2922973632812" width="255.1314086914062" height="73"/>
+        <element name="NMBaseSnippet" positionX="-666.4413452148436" positionY="-1832.620956420898" width="263.5743408203125" height="58"/>
+        <element name="NMBaseSubscription" positionX="-497.7769165039062" positionY="-2322.612213134766" width="128" height="43"/>
+        <element name="NMChatConnection" positionX="-224.061767578125" positionY="126.8331604003906" width="150.4974365234375" height="73"/>
+        <element name="NMChatItem" positionX="-155.0120239257813" positionY="0.749755859375" width="162.0484619140625" height="88"/>
+        <element name="NMChatParty" positionX="135.291748046875" positionY="171.3669128417968" width="173.9825439453125" height="88"/>
+        <element name="NMChatSession" positionX="-569.4259033203125" positionY="112.0073852539062" width="194.2072143554688" height="163"/>
+        <element name="NMContentCreationBaseSettings" positionX="-386.0680236816406" positionY="-1723.189300537108" width="234.3523864746094" height="43"/>
+        <element name="NMLocationsSubscription" positionX="-843.261474609375" positionY="-2335.571640014648" width="179.538818359375" height="73"/>
+        <element name="NMMixedFolder" positionX="-1128.835479736328" positionY="-536.9500579833984" width="187.4817199707031" height="208"/>
+        <element name="NMMixedSnippet" positionX="-1207.182373046875" positionY="-1747.665939331054" width="213.0404052734375" height="268"/>
+        <element name="NMNewNewsmanSubscription" positionX="-271.0963134765625" positionY="-2135.680450439453" width="128" height="43"/>
+        <element name="NMPhoto" positionX="-860.9178161621094" positionY="-788.3724060058601" width="210.9070434570312" height="178"/>
+        <element name="NMPhotoCaptureSettings" positionX="-865.7067565917969" positionY="-1455.417343139649" width="201.84130859375" height="118"/>
+        <element name="NMPhotoFolder" positionX="-850.6060791015625" positionY="-1040.455001831056" width="177.3418884277344" height="133"/>
+        <element name="NMPhotoSnippet" positionX="-871.6634521484375" positionY="-1282.023315429687" width="207.4128723144531" height="118"/>
+        <element name="NMRegistrationProfile" positionX="-1191.498565673828" positionY="-1841.861389160156" width="247.4621887207031" height="43"/>
+        <element name="NMReport" positionX="183.7926635742187" positionY="-423.0314788818359" width="202.2115478515625" height="163"/>
+        <element name="NMTask" positionX="-535.370849609375" positionY="-125.5008239746094" width="207.40966796875" height="133"/>
+        <element name="NMTaskAudioBlock" positionX="-626.6357116699219" positionY="-291.0811157226563" width="181.7394409179688" height="73"/>
+        <element name="NMTaskBaseBlock" positionX="-934.8211975097656" positionY="-129.63232421875" width="238.9553833007812" height="43"/>
+        <element name="NMTaskPhotoBlock" positionX="-906.5873718261719" positionY="-280.9092559814453" width="189.0575256347656" height="73"/>
+        <element name="NMTaskReportBlock" positionX="-116.5494995117188" positionY="-141.6056518554687" width="205.8396606445312" height="73"/>
+        <element name="NMTaskTextBlock" positionX="-138.9127197265626" positionY="-297.0279693603516" width="198.9989013671875" height="73"/>
+        <element name="NMTaskVideoBlock" positionX="-378.4102172851562" positionY="-297.544189453125" width="186.3729248046875" height="73"/>
+        <element name="NMText" positionX="107.8339843749999" positionY="-782.8888244628902" width="255.8032836914063" height="178"/>
+        <element name="NMTextContentsSubscription" positionX="-764.6551513671875" positionY="-2120.934066772461" width="128" height="29"/>
+        <element name="NMTextEditingSettings" positionX="23.12002563476571" positionY="-1465.924758911133" width="220.7112731933593" height="118"/>
+        <element name="NMTextFolder" positionX="40.03143310546869" positionY="-1050.609024047852" width="242.2084350585938" height="133"/>
+        <element name="NMTextSnippet" positionX="11.133544921875" positionY="-1264.09684753418" width="277.9913330078125" height="118"/>
+        <element name="NMTopNews" positionX="-81.14706420898438" positionY="-1841.20295715332" width="189.9754333496094" height="88"/>
+        <element name="NMTopNewsSubscription" positionX="-525.0121765136719" positionY="-2119.90950012207" width="128" height="29"/>
+        <element name="NMVideo" positionX="-224.1710815429689" positionY="-791.5618743896487" width="260.4630737304689" height="178"/>
+        <element name="NMVideoFolder" positionX="-308.3632812500001" positionY="-1063.217971801757" width="241.0836791992188" height="133"/>
+        <element name="NMVideoShootingSettings" positionX="-287.1761779785156" positionY="-1460.309555053711" width="218.3645324707031" height="118"/>
+        <element name="NMVideoSnippet" positionX="-292.0889892578127" positionY="-1247.11148071289" width="233.0311279296876" height="118"/>
+        <element name="NMLocationSubscriptionZone" positionX="-1122.599182128906" positionY="-2320.565185546875" width="180.4647827148438" height="58"/>
     </elements>
 </model>
