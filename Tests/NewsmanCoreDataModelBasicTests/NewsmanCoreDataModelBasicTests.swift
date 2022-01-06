@@ -1,6 +1,8 @@
 import XCTest
 import NewsmanCoreDataModel
+import CoreData
 
+@available(iOS 13.0.0, *)
 final class NMCoreDataModelBasicTests: XCTestCase
 {
  
@@ -82,6 +84,7 @@ final class NMCoreDataModelBasicTests: XCTestCase
   XCTAssertEqual(count, 0)
  }
  
+ @available(iOS 15.0, *)
  @available(macOS 12.0.0, *)
  func test_that_when_loaded_with_named_MOM_PS_contains_saved_objects() async throws
  {
@@ -110,6 +113,7 @@ final class NMCoreDataModelBasicTests: XCTestCase
   XCTAssertEqual(count, modelObjects.count)
  }
  
+ @available(iOS 15.0, *)
  @available(macOS 12.0.0, *)
  func test_object_saved_and_fetched_MO_has_the_same_identity() async throws
  {
@@ -131,6 +135,7 @@ final class NMCoreDataModelBasicTests: XCTestCase
 
  }
  
+ @available(iOS 15.0, *)
  @available(macOS 12.0.0, *)
  func test_primitive_properties_does_not_send_KVO_nonifications() async  throws
  {
@@ -157,7 +162,7 @@ final class NMCoreDataModelBasicTests: XCTestCase
   ex4.isInverted = true
  
   // mutate async its primitive properties...
-  Task.detached {
+ Task.detached {
    await withTaskGroup(of: Void.self, returning: Void.self)
    { group in
      group.addTask {
@@ -181,6 +186,17 @@ final class NMCoreDataModelBasicTests: XCTestCase
       base.setPrimitiveValue(5, forKey: NMBaseSnippet.typeKey)
      }
     }
+    
+    // MARK: Assert additionally that its properties have been properly mutated in this task group.
+    await group.waitForAll() //wait all tasks in group to complete mutating async MO properties!!!
+
+    await MOC.perform {
+     XCTAssertEqual(base.nameTag, "Test")
+     XCTAssertEqual(base.about,   "About")
+     XCTAssertEqual(base.status,  "New")
+     XCTAssertEqual(base.type,    .mixed)
+    }
+    
    }
   
   }
@@ -191,14 +207,15 @@ final class NMCoreDataModelBasicTests: XCTestCase
   // MARK: ASSERT: There are no KVO notifications!
   XCTAssertEqual(result, .completed)
  
-  // MARK: its properties have been properly mutated!
-  XCTAssertEqual(base.nameTag, "Test")
-  XCTAssertEqual(base.about,   "About")
-  XCTAssertEqual(base.status,  "New")
-  XCTAssertEqual(base.type,    .mixed)
+  
+//  XCTAssertEqual(base.nameTag, "Test")
+//  XCTAssertEqual(base.about,   "About")
+//  XCTAssertEqual(base.status,  "New")
+//  XCTAssertEqual(base.type,    .mixed)
  }
  
  
+ @available(iOS 15.0, *)
  @available(macOS 12.0.0, *)
  func test_primitive_properties_does_not_send_Context_Did_Change_notifications() async throws
  {
@@ -232,7 +249,7 @@ final class NMCoreDataModelBasicTests: XCTestCase
       }
      }
      group.addTask {
-      await MOC.perform{
+      await MOC.perform {
        base.setPrimitiveValue("New", forKey: #keyPath(NMBaseSnippet.status))
       }
      }
@@ -242,6 +259,17 @@ final class NMCoreDataModelBasicTests: XCTestCase
        base.setPrimitiveValue(5, forKey: NMBaseSnippet.typeKey)
       }
      }
+    
+   //MARK: ASSERT! its properties have been mutated properly!
+    await group.waitForAll()
+
+    await MOC.perform {
+     XCTAssertEqual(base.nameTag, "Test")
+     XCTAssertEqual(base.about,   "About")
+     XCTAssertEqual(base.status,  "New")
+     XCTAssertEqual(base.type,    .mixed)
+    }
+    
    }
   
   }
@@ -252,11 +280,13 @@ final class NMCoreDataModelBasicTests: XCTestCase
   //MARK: ASSERT! There are no NSManagedObjectContextObjectsDidChange notifications!
   XCTAssertNotEqual(result, .completed)
  
-  //MARK: ASSERT! its properties have been mutated properly!
-  XCTAssertEqual(base.nameTag, "Test")
-  XCTAssertEqual(base.about,   "About")
-  XCTAssertEqual(base.status,  "New")
-  XCTAssertEqual(base.type,    .mixed)
+  
+ 
+//  await handle.value
+//  XCTAssertEqual(base.nameTag, "Test")
+//  XCTAssertEqual(base.about,   "About")
+//  XCTAssertEqual(base.status,  "New")
+//  XCTAssertEqual(base.type,    .mixed)
  }
  
 }

@@ -1,5 +1,6 @@
 import Foundation
 
+@available(iOS 12.0, *)
 public final class GenericDataSecureTransformer<T: NSSecureCoding>: NSSecureUnarchiveFromDataTransformer
 {
   public static var name: NSValueTransformerName

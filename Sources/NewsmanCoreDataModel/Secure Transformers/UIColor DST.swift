@@ -1,6 +1,7 @@
 #if !os(macOS)
 import UIKit
 
+@available(iOS 12.0, *)
 public final class UIColorDataSecureTransformer: NSSecureUnarchiveFromDataTransformer
 {
   

@@ -5,7 +5,6 @@ import Foundation
 import UIKit
 #endif
 
-@available(macOS 10.13, *)
 
 public extension NSManagedObjectModel
 {
@@ -33,13 +32,22 @@ public final class NMCoreDataModel
  
  public var context: NSManagedObjectContext { persistentContainer.viewContext }
  
+
  private func registerDataTransformers()
  {
-  GenericDataSecureTransformer<NSValue>.register()
+  if #available(iOS 12.0, *) {
+   GenericDataSecureTransformer<NSValue>.register()
+  } else {
+   // Fallback on earlier versions
+  }
  
+ if #available(iOS 12.0, *) {
   #if !os(macOS)
-   GenericDataSecureTransformer<UIColor>.register()
+    GenericDataSecureTransformer<UIColor>.register()
   #endif
+ } else {
+   // Fallback on earlier versions
+ }
  
  }
  

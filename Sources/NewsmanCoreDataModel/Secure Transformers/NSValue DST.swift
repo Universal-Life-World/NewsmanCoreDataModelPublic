@@ -1,6 +1,7 @@
 
 import Foundation
 
+@available(iOS 12.0, *)
 public final class NSValueDataSecureTransformer: NSSecureUnarchiveFromDataTransformer
 {
   
