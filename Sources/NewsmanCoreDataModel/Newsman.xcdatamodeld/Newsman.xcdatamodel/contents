@@ -65,9 +65,9 @@
         <attribute name="lastAccessedTimeStamp" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="lastModifiedTimeStamp" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="lastRatedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
-        <attribute name="latitude" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="latitude" optional="YES" attributeType="Double" usesScalarValueType="YES"/>
         <attribute name="location" optional="YES" attributeType="String"/>
-        <attribute name="longitude" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="longitude" optional="YES" attributeType="Double" usesScalarValueType="YES"/>
         <attribute name="positions" optional="YES" attributeType="Transformable" valueTransformerName="NSSecureUnarchiveFromDataTransformer" customClassName=".NSMutableDictionary"/>
         <attribute name="priority" attributeType="String" defaultValueString="Normal"/>
         <attribute name="publishedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
@@ -642,7 +642,7 @@
         <element name="NMAudioFolder" positionX="-575.1803283691406" positionY="-1029.482208251954" width="215.8580627441406" height="133"/>
         <element name="NMAudioRecordingSettings" positionX="-584.3857421875" positionY="-1453.415542602539" width="219.0896606445312" height="118"/>
         <element name="NMAudioSnippet" positionX="-567.8550109863281" positionY="-1251.026901245116" width="236.5485534667969" height="118"/>
-        <element name="NMBaseContent" positionX="-602.8646240234375" positionY="-423.2487640380859" width="274.3505249023438" height="73"/>
+        <element name="NMBaseContent" positionX="-602.8646240234375" positionY="-423.2487640380859" width="274.3505249023438" height="584"/>
         <element name="NMBaseSnippet" positionX="-811.0332641601562" positionY="-1852.591018676758" width="263.5743408203125" height="58"/>
         <element name="NMBaseSubscription" positionX="-881.7544250488281" positionY="-2628.178497314453" width="170.4893493652344" height="223"/>
         <element name="NMChatConnection" positionX="-222.8324584960938" positionY="127.8166198730468" width="150.4974365234375" height="73"/>
@@ -661,10 +661,11 @@
         <element name="NMPhotoSnippet" positionX="-870.2593994140625" positionY="-1250.49755859375" width="207.4128723144531" height="118"/>
         <element name="NMRegistrationProfile" positionX="-1186.953063964844" positionY="-1859.799163818359" width="247.4621887207031" height="43"/>
         <element name="NMReport" positionX="217.8536071777343" positionY="-426.6179199218749" width="202.2115478515625" height="118"/>
-        <element name="NMReportContainerTemplate" positionX="937.0405883789062" positionY="58.8140869140625" width="215.837158203125" height="58"/>
         <element name="NMReportAudioContainer" positionX="1136.037689208985" positionY="-280.6063385009766" width="197.5940246582029" height="73"/>
-        <element name="NMReportElementsBaseContainer" positionX="939.1889038085938" positionY="-163.6422119140625" width="212.112060546875" height="58"/>
         <element name="NMReportContainerBorderPattern" positionX="1271.90234375" positionY="-94.36219787597656" width="226.8939208984375" height="58"/>
+        <element name="NMReportContainerTemplate" positionX="937.0405883789062" positionY="58.8140869140625" width="215.837158203125" height="58"/>
+        <element name="NMReportElementsBaseContainer" positionX="939.1889038085938" positionY="-163.6422119140625" width="212.112060546875" height="58"/>
+        <element name="NMReportElementsContainer" positionX="487.9214477539062" positionY="-217.2297515869141" width="195.8743896484375" height="163"/>
         <element name="NMReportPhotoContainer" positionX="948.4546508789062" positionY="-475.4047698974612" width="195.5548706054688" height="73"/>
         <element name="NMReportTextContainer" positionX="787.4430541992188" positionY="-323.4440460205078" width="197.7973022460938" height="73"/>
         <element name="NMReportVideoContainer" positionX="569.1055908203127" positionY="73.24620056152344" width="204.5545654296873" height="73"/>
@@ -686,6 +687,5 @@
         <element name="NMVideoFolder" positionX="-276.9050292968751" positionY="-1023.006179809569" width="241.0836791992188" height="133"/>
         <element name="NMVideoShootingSettings" positionX="-284.7378234863281" positionY="-1441.01025390625" width="244.3286437988281" height="118"/>
         <element name="NMVideoSnippet" positionX="-236.6810302734377" positionY="-1258.324264526367" width="233.0311279296876" height="118"/>
-        <element name="NMReportElementsContainer" positionX="487.9214477539062" positionY="-217.2297515869141" width="195.8743896484375" height="163"/>
     </elements>
 </model>

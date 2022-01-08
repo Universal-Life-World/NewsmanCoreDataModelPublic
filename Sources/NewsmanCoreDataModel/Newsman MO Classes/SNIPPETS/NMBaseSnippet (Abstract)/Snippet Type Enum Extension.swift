@@ -9,11 +9,11 @@ public extension NMBaseSnippet
   {
    switch snippet
    {
-//    case is NMPhotoSnippet: self = .photo
-//    case is NMAudioSnippet: self = .audio
-//    case is NMVideoSnippet: self = .video
-//    case is NMTextSnippet:  self = .text
-//    case is NMMixedSnippet: self = .mixed
+    case is NMPhotoSnippet: self = .photo
+    case is NMAudioSnippet: self = .audio
+    case is NMVideoSnippet: self = .video
+    case is NMTextSnippet:  self = .text
+    case is NMMixedSnippet: self = .mixed
     default: self = .base
    }
   }

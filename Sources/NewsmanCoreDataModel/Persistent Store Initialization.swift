@@ -13,6 +13,10 @@ public extension NSManagedObjectModel
 
 public final class NMCoreDataModel
 {
+ 
+ private static var moms: [String: NSManagedObjectModel] = [:]
+ 
+ 
  public enum StoreType
  {
   case inMemorySQLight  // init SQLite store with "/dev/null" in memory for Unit Testing.
@@ -23,11 +27,13 @@ public final class NMCoreDataModel
  public let modelName: String
  public let storeType: StoreType
  
- public final var mom: NSManagedObjectModel
+ public var mom: NSManagedObjectModel
  {
+  if let existingMOM = Self.moms[modelName] { return existingMOM  }
   guard let momURL = Bundle.module.url(forResource: modelName, withExtension: "momd") else { return .empty }
-  guard let mom = NSManagedObjectModel(contentsOf: momURL) else { return .empty }
-  return mom
+  guard let newMOM = NSManagedObjectModel(contentsOf: momURL) else { return .empty }
+  Self.moms[modelName] = newMOM
+  return newMOM
  }
  
  public var context: NSManagedObjectContext { persistentContainer.viewContext }

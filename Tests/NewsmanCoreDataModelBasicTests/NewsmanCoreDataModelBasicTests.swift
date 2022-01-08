@@ -249,7 +249,7 @@ final class NMCoreDataModelBasicTests: XCTestCase
       }
      }
      group.addTask {
-      await MOC.perform {
+      await MOC.perform{
        base.setPrimitiveValue("New", forKey: #keyPath(NMBaseSnippet.status))
       }
      }

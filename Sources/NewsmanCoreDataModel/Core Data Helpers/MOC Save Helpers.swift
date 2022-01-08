@@ -16,7 +16,13 @@ public extension NSManagedObjectContext
  final func saveIfNeeded() throws // save all main queue context changes as needed.
  {
   guard hasChanges else { return } // if it really needs saving proceed...
-  try save()
+ 
+  do { try save() }
+  catch
+  {
+   rollback()
+   throw error
+  }
  }
  
  
@@ -59,6 +65,7 @@ public extension NSManagedObjectContext
  {
   persist(block).eraseToAnyPublisher()
  }
+ 
  
  final func persist<T>( _ block: @escaping () throws -> T) -> Single<T>
  {

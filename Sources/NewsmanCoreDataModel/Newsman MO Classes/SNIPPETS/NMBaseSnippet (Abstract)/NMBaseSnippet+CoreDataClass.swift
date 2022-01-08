@@ -53,8 +53,12 @@ public class NMBaseSnippet: NSManagedObject
   primitiveLastAccessedTimeStamp = now
   primitiveLastModifiedTimeStamp = now
   primitiveType = NSNumber(value: SnippetType(snippet: self).rawValue)
+ 
+  initFileStorage()
 
  }
+ 
+ private func initFileStorage(){}
  
  public override func willSave()
  {
