@@ -2,14 +2,10 @@
 import Foundation
 import CoreData
 
-public protocol NMFileStorageManageable where Self: NMBaseSnippet
+public protocol NMFileStorageManageable where Self: NSManagedObject
 {
  var id: UUID? { get set }
- var type: Self.SnippetType { get set }
- 
 }
-
-extension NMBaseSnippet: NMFileStorageManageable {}
 
 public extension NMFileStorageManageable
 {
@@ -19,7 +15,7 @@ public extension NMFileStorageManageable
  var url: URL?
  {
   get {
-   guard let snippetID = self.id?.uuidString, type != .base else { return nil }
+   guard let snippetID = self.id?.uuidString else { return nil }
    
    return docFolder.appendingPathComponent(snippetID)
   }

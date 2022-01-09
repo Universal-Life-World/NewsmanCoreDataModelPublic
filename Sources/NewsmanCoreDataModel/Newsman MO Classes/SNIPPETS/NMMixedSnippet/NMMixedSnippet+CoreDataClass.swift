@@ -10,6 +10,7 @@ import Foundation
 import CoreData
 
 @objc(NMMixedSnippet)
-public class NMMixedSnippet: NMBaseSnippet {
+public class NMMixedSnippet: NMBaseSnippet, NMFileStorageManageable
+{
 
 }

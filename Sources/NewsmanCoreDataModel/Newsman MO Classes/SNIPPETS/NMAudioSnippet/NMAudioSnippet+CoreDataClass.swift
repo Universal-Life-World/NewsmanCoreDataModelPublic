@@ -10,7 +10,7 @@ import Foundation
 import CoreData
 
 @objc(NMAudioSnippet)
-public class NMAudioSnippet: NMBaseSnippet
+public class NMAudioSnippet: NMBaseSnippet, NMFileStorageManageable
 {
 
 }

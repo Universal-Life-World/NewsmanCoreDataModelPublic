@@ -10,7 +10,7 @@ import Foundation
 import CoreData
 
 @objc(NMPhotoSnippet)
-public class NMPhotoSnippet: NMBaseSnippet
+public class NMPhotoSnippet: NMBaseSnippet, NMFileStorageManageable
 {
 
 }

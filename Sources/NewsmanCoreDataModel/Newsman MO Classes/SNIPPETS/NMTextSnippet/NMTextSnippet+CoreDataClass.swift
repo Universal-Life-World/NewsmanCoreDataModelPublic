@@ -10,7 +10,7 @@ import Foundation
 import CoreData
 
 @objc(NMTextSnippet)
-public class NMTextSnippet: NMBaseSnippet
+public class NMTextSnippet: NMBaseSnippet, NMFileStorageManageable
 {
 
 }

@@ -10,6 +10,7 @@ import Foundation
 import CoreData
 
 @objc(NMVideoSnippet)
-public class NMVideoSnippet: NMBaseSnippet {
+public class NMVideoSnippet: NMBaseSnippet, NMFileStorageManageable
+{
 
 }
