@@ -16,6 +16,19 @@ public final class NMCoreDataModel
  
  private static var moms: [String: NSManagedObjectModel] = [:]
  
+ private static let isq = DispatchQueue(label: "MOM isolation queue")
+ 
+ static private subscript(named modelName: String) -> NSManagedObjectModel
+ {
+  isq.sync {
+   if let existingMOM = Self.moms[modelName] { return existingMOM  }
+   guard let momURL = Bundle.module.url(forResource: modelName, withExtension: "momd") else { return .empty }
+   guard let newMOM = NSManagedObjectModel(contentsOf: momURL) else { return .empty }
+   Self.moms[modelName] = newMOM
+   return newMOM
+  }
+ }
+ 
  
  public enum StoreType
  {
@@ -27,18 +40,11 @@ public final class NMCoreDataModel
  public let modelName: String
  public let storeType: StoreType
  
- public var mom: NSManagedObjectModel
- {
-  if let existingMOM = Self.moms[modelName] { return existingMOM  }
-  guard let momURL = Bundle.module.url(forResource: modelName, withExtension: "momd") else { return .empty }
-  guard let newMOM = NSManagedObjectModel(contentsOf: momURL) else { return .empty }
-  Self.moms[modelName] = newMOM
-  return newMOM
- }
+
+ public var mom: NSManagedObjectModel { Self[named: modelName] }
  
  public var context: NSManagedObjectContext { persistentContainer.viewContext }
  
-
  private func registerDataTransformers()
  {
   if #available(iOS 12.0, *) {

@@ -2,45 +2,55 @@
 import XCTest
 import NewsmanCoreDataModel
 
+enum SnippetTestError<T>: Error{
+ case failed(snippet: T)
+}
+
 extension NMBaseSnippetsTests
 {
- final func snippet_creation_helper<T: NMBaseSnippet>(objectType: T.Type,
+ final func snippet_creation_helper<T: NMBaseSnippet>(objectType:T.Type,
                                                       snippetType: NMBaseSnippet.SnippetType,
                                                       handler: @escaping (T) -> () )
  {
-  NMBaseSnippetsTests.model.create(objectType: T.self) { [unowned self] result in
+  Self.model.create(objectType: T.self) { [unowned self] result in
    switch result {
     case let .success(snippet):
      do {
-      self.sut = snippet
-      try self.snippet_base_cheking_helper(snippet, snippetType)
+      try snippet_base_cheking_helper(snippet, snippetType)
       handler(snippet)
      }
      catch {
       XCTFail(error.localizedDescription)
      }
    
-    case let .failure(error):  XCTFail(error.localizedDescription)
+    case let .failure(error):
+     XCTFail(error.localizedDescription)
    }
    
   }
   
  }
  
- @available(iOS 15.0, *)
- @available(macOS 12.0.0, *)
+ 
+ //MARK: Async variant of test helper.
+ 
+ @available(iOS 15.0, *) @available(macOS 12.0.0, *)
  final func snippet_creation_helper<T: NMBaseSnippet>(objectType: T.Type,
+                                                      persist: Bool = false,
                                                       snippetType: NMBaseSnippet.SnippetType) async throws -> T
  {
-  let snippet = try await NMBaseSnippetsTests.model.create(objectType: T.self)
+  let snippet = try await Self.model.create(persist: persist, objectType: T.self)
   
-  sut = snippet
-  try snippet_base_cheking_helper(snippet, snippetType)
+  //sut = snippet
+  try await NMBaseSnippetsTests.model.context.perform {
+   try self.snippet_base_cheking_helper(snippet, snippetType)
+  }
+  
   return snippet
  }
  
  final func snippet_base_cheking_helper(_ snippet: NMBaseSnippet,
-                                                _ snippetType: NMBaseSnippet.SnippetType) throws
+                                        _ snippetType: NMBaseSnippet.SnippetType) throws
  {
   XCTAssertNotNil(snippet.id)
   let now = Date().timeIntervalSinceReferenceDate
@@ -60,8 +70,7 @@ extension NMBaseSnippetsTests
   
   if snippetType == .base {
    XCTAssertNil((snippet as? NMFileStorageManageable)?.url)
-  }
-  else {
+  } else {
    let storageURL = try XCTUnwrap((snippet as? NMFileStorageManageable)?.url)
    XCTAssertTrue(FileManager.default.fileExists(atPath: storageURL.path))
    XCTAssertEqual(snippetID, storageURL.lastPathComponent)

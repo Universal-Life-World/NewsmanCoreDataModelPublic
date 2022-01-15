@@ -24,10 +24,10 @@ extension NMBaseSnippet
   @NSManaged public var contentElementsInRow: Int16
   @NSManaged public var contentElementsSortingType: String?
   @NSManaged public var contentElementsSortOrder: String?
-  @NSManaged public var date: Date?
+  @NSManaged public private (set) var date: Date?
   @NSManaged public var dateSearchFormatIndex: String?
   @NSManaged public var hiddenSectionsBitset: Int16
-  @NSManaged public var id: UUID?
+  @NSManaged public private (set) var id: UUID?
   @NSManaged public var isContentCopyable: Bool
   @NSManaged public var isContentEditable: Bool
   @NSManaged public var isContentPublishable: Bool

@@ -2,6 +2,9 @@ import Foundation
 
 public enum ContextOperationTypes: String
 {
+ case updateObject = "UPDATING MANAGED OBJECT"
+ case persistObject = "PERSISTING MANAGED OBJECT"
+ 
  case storageCreate = "CREATING STORAGE"
  case storageDelete = "DELETING STORAGE"
  
@@ -36,6 +39,7 @@ public enum ContextOperationTypes: String
 public enum ContextEntityTypes: String
 {
  case snippet = "SNIPPET"
+ case object = "MANAGED OBJECT"
  
  case photo = "PHOTO"
  case destPhoto = "DESTINATION PHOTO"

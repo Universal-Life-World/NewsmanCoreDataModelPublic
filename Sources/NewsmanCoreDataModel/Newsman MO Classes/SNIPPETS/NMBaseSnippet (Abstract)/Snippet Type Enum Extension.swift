@@ -3,7 +3,7 @@ import Foundation
 
 public extension NMBaseSnippet
 {
- enum SnippetType: Int16
+ enum SnippetType: Int16, CaseIterable
  {
   init(snippet: NMBaseSnippet)
   {
