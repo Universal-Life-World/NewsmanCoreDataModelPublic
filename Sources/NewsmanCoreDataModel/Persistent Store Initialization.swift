@@ -16,11 +16,11 @@ public final class NMCoreDataModel
  
  private static var moms: [String: NSManagedObjectModel] = [:]
  
- private static let isq = DispatchQueue(label: "MOM isolation queue")
+ private static let momIsq = DispatchQueue(label: "MOM isolation queue")
  
  static private subscript(named modelName: String) -> NSManagedObjectModel
  {
-  isq.sync {
+  momIsq.sync {
    if let existingMOM = Self.moms[modelName] { return existingMOM  }
    guard let momURL = Bundle.module.url(forResource: modelName, withExtension: "momd") else { return .empty }
    guard let newMOM = NSManagedObjectModel(contentsOf: momURL) else { return .empty }
@@ -39,11 +39,14 @@ public final class NMCoreDataModel
  
  public let modelName: String
  public let storeType: StoreType
+ public let locationsProvider: NMGeoLocationsProvider
  
 
  public var mom: NSManagedObjectModel { Self[named: modelName] }
  
- public var context: NSManagedObjectContext { persistentContainer.viewContext }
+ private let mocIsq = DispatchQueue(label: "MOC access isolation queue")
+ 
+ public var context: NSManagedObjectContext { mocIsq.sync{ persistentContainer.viewContext } }
  
  private func registerDataTransformers()
  {
@@ -82,9 +85,12 @@ public final class NMCoreDataModel
   return container
  }()
  
- public init(name: String = "Model", for storeType: StoreType = .persistedSQLight)
+ public init(name: String = "Model",
+             for storeType: StoreType = .persistedSQLight,
+             locationsProvider: NMGeoLocationsProvider = NMGeoLocationsProvider())
  {
   self.modelName = name
   self.storeType = storeType
+  self.locationsProvider = locationsProvider
  }
 }

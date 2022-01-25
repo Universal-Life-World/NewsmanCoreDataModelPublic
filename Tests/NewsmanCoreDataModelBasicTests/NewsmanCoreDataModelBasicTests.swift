@@ -153,7 +153,7 @@ final class NMCoreDataModelBasicTests: XCTestCase
   
   let ex1 = XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.nameTag), object: base)
   let ex2 = XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.about), object: base)
-  let ex3 = XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.status), object: base)
+  let ex3 = XCTKVOExpectation(keyPath: NMBaseSnippet.statusKey, object: base)
   let ex4 = XCTKVOExpectation(keyPath: NMBaseSnippet.typeKey, object: base)
  
   ex1.isInverted = true
@@ -177,7 +177,7 @@ final class NMCoreDataModelBasicTests: XCTestCase
      }
      group.addTask {
       await MOC.perform{
-       base.setPrimitiveValue("New", forKey: #keyPath(NMBaseSnippet.status))
+       base.setPrimitiveValue("New", forKey: NMBaseSnippet.statusKey)
       }
      }
     
@@ -193,7 +193,7 @@ final class NMCoreDataModelBasicTests: XCTestCase
     await MOC.perform {
      XCTAssertEqual(base.nameTag, "Test")
      XCTAssertEqual(base.about,   "About")
-     XCTAssertEqual(base.status,  "New")
+     XCTAssertEqual(base.status,  .new)
      XCTAssertEqual(base.type,    .mixed)
     }
     
@@ -250,7 +250,7 @@ final class NMCoreDataModelBasicTests: XCTestCase
      }
      group.addTask {
       await MOC.perform{
-       base.setPrimitiveValue("New", forKey: #keyPath(NMBaseSnippet.status))
+       base.setPrimitiveValue("New", forKey:NMBaseSnippet.statusKey)
       }
      }
     
@@ -266,7 +266,7 @@ final class NMCoreDataModelBasicTests: XCTestCase
     await MOC.perform {
      XCTAssertEqual(base.nameTag, "Test")
      XCTAssertEqual(base.about,   "About")
-     XCTAssertEqual(base.status,  "New")
+     XCTAssertEqual(base.status,  .new)
      XCTAssertEqual(base.type,    .mixed)
     }
     

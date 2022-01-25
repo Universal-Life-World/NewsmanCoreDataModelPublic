@@ -75,10 +75,14 @@ public extension NMCoreDataModel
                                  objectType: T.Type,
                                  with updates: ((T) throws -> ())? = nil) async throws -> T
  {
-  try await context.perform { [unowned self] in T(context: self.context) }
-                   .updated(updates)
-                   .persisted(persist)
-                   .withFileStorage()
+  try await context.perform { [unowned self] () -> T in
+   let newObject = T(context: self.context)
+   (newObject as? NMGeoLocationProvidable)?.locationsProvider = locationsProvider
+   return newObject
+  }
+  .updated(updates)
+  .persisted(persist)
+  .withFileStorage()
  }
   
  

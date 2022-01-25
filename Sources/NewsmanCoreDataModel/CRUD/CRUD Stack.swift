@@ -16,6 +16,7 @@ public extension NMCoreDataModel
  {
   context.perform { [unowned self] in
    let newObject = T(context: self.context)
+   (newObject as? NMGeoLocationProvidable)?.locationsProvider = locationsProvider
    
    switch Result(catching: { try updateBlock?(newObject) }) {
     case .success(_ ): break

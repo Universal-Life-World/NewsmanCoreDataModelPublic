@@ -41,20 +41,22 @@ extension NMBaseSnippet
   @NSManaged public var isSelected: Bool
   @NSManaged public var isShowingSnippetDetailedCell: Bool
   @NSManaged public var isTrashable: Bool
-  @NSManaged public var lastAccessedTimeStamp: Date?
-  @NSManaged public var lastModifiedTimeStamp: Date?
-  @NSManaged public var latitude: Double
-  @NSManaged public var location: String?
-  @NSManaged public var longitude: Double
+  @NSManaged public internal (set) var lastAccessedTimeStamp: Date?
+  @NSManaged public internal (set) var lastModifiedTimeStamp: Date?
+  
+  @NSManaged public  var location: String?
+  @NSManaged public  var longitude: NSNumber?
+  @NSManaged public  var latitude: NSNumber?
+ 
   @NSManaged public var nameTag: String?
-  @NSManaged public var priority: String?
+  //@NSManaged public var priority: String?
   @NSManaged public var publishedTimeStamp: Date?
   @NSManaged public var sectionAlphaIndex: String?
   @NSManaged public var sectionDateIndex: String?
   @NSManaged public var sectionPriorityIndex: String?
   @NSManaged public var showsContentElementsPositions: Bool
   @NSManaged public var showsHiddenContentElements: Bool
-  @NSManaged public var status: String?
+  //@NSManaged public var status: String?
   @NSManaged public var trashedTimeStamp: Date?
   //@NSManaged public var type: Int16
   @NSManaged public var connectedWithTopNews: NSSet?

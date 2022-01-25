@@ -3,9 +3,11 @@
 import XCTest
 import NewsmanCoreDataModel
 
-class NMBaseSnippetsTests: XCTestCase
+
+final class NMBaseSnippetsTests: XCTestCase
 {
  static var model: NMCoreDataModel!
+ static weak var locationManagerMock: NMLocationManagerMock!
  
  func fileStorageCleanup(for sut: NMBaseSnippet) {
   guard let storageProvider = sut as? NMFileStorageManageable else { return }
@@ -36,8 +38,12 @@ class NMBaseSnippetsTests: XCTestCase
  
  override class func setUp()
  {
-  model = NMCoreDataModel(name: "Newsman", for: .inMemorySQLight)
-  print (model.context)
+  let locationManager = NMLocationManagerMock()
+  locationManagerMock = locationManager
+  
+  let locationsProvider = NMGeoLocationsProvider(provider: locationManager)
+  model = NMCoreDataModel(name: "Newsman", for: .inMemorySQLight, locationsProvider: locationsProvider)
+
  }
  
  
@@ -49,9 +55,7 @@ class NMBaseSnippetsTests: XCTestCase
 
  override func tearDownWithError() throws { }
  
- override class func tearDown() {
-  print (model.context)
-  model = nil }
+ override class func tearDown() { model = nil }
  
  
 }
