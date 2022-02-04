@@ -4,7 +4,7 @@ import CoreData
 import CoreLocation
 import Combine
 
-protocol NMGeoLocationProvidable where Self: NSManagedObject
+public protocol NMGeoLocationProvidable where Self: NSManagedObject
 {
  
  var locationsProvider: NMGeoLocationsProvider?           { get set }
@@ -13,10 +13,12 @@ protocol NMGeoLocationProvidable where Self: NSManagedObject
  var location: String?                                    { get set }
  
  var geoLocationSubscription: AnyCancellable?             { get set }
- var locationAddressSubscription: AnyCancellable?         { get set }
  
- func updateGeoLocations<G, N> (with geocoderType: G.Type, using networkWaiterType: N.Type)
-  where G:NMGeocoderProtocol, N: NMNetworkMonitorProtocol
+ func updateGeoLocations<G, N> (with geocoderType: G.Type,
+                                using networkWaiterType: N.Type)
+                                where G: NMGeocoderProtocol,
+                                      N: NMNetworkMonitorProtocol
+ 
  
 }
 
@@ -38,6 +40,29 @@ extension NMGeoLocationProvidable
    
   }
  }
+ 
+ @available(iOS 15.0, *) @available(macOS 12.0.0, *)
+ public var geoLocationAsync: NMLocation?
+ {
+  get async throws {
+   guard let context = managedObjectContext else {
+    throw ContextError.noContext(object: self, entity: .object, operation: .updateObject)
+   }
+   return await context.persist{ [unowned self] in geoLocation }
+  }
+ }
+ 
+ @available(iOS 15.0, *) @available(macOS 12.0.0, *)
+ public var addressAsync: String?
+ {
+  get async throws {
+   guard let context = managedObjectContext else {
+    throw ContextError.noContext(object: self, entity: .object, operation: .updateObject)
+   }
+   return await context.persist{ [unowned self] in location }
+  }
+ }
+ 
  
 }
 
@@ -64,15 +89,19 @@ extension NMBaseSnippet: NMGeoLocationProvidable
  
  public func updateGeoLocations<G, N> (with geocoderType: G.Type = CLGeocoder.self as! G.Type,
                                        using networkWaiterType: N.Type = NMNetworkWaiter.self as! N.Type)
-  where G: NMGeocoderProtocol, N: NMNetworkMonitorProtocol
- {
+                                       where G: NMGeocoderProtocol,
+                                             N: NMNetworkMonitorProtocol
+                                      {
+  
   managedObjectContext?.perform { [ unowned self ] in
    if geoLocation != nil { return }
    
    geoLocationSubscription = locationsProvider?
     .locationFixPublisher
     .handleEvents(receiveOutput: { [ unowned self ] location in
-      managedObjectContext?.perform { geoLocation = location }
+      managedObjectContext?.perform { geoLocation = location
+       print ("UPDATE LOCATION FOR \(className)")
+      }
     })
     .flatMap{ $0.getPlacemarkPublisher(geocoderType.self, networkWaiterType.self) }
     .replaceError(with: nil)

@@ -22,11 +22,10 @@ public class NMBaseSnippet : NSManagedObject
  @NSManaged fileprivate var primitiveLastModifiedTimeStamp: Date?
  @NSManaged fileprivate var primitiveLastAccessedTimeStamp: Date?
  
- var geoLocationSubscription: AnyCancellable?
- var locationAddressSubscription: AnyCancellable?
+ public var geoLocationSubscription: AnyCancellable?
  
  
- weak var locationsProvider: NMGeoLocationsProvider?
+ public weak var locationsProvider: NMGeoLocationsProvider?
  
  //MARK: Accessors for Snippet Status
  @NSManaged fileprivate var primitiveStatus: String

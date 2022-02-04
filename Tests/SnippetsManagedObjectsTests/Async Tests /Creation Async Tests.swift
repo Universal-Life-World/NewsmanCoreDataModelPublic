@@ -3,7 +3,8 @@ import NewsmanCoreDataModel
 
 //MARK: ALL SNIPPETS CREATION UNIT TESTS EXTENSION.
 
-@available(iOS 15.0, *) @available(macOS 12.0.0, *)
+@available(iOS 15.0, *)
+@available(macOS 12.0.0, *)
 extension NMBaseSnippetsAsyncTests
 {
  //MARK: Test that when all snippets are created without persistance they have not NILID field!

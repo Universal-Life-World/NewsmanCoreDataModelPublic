@@ -33,7 +33,7 @@ extension NMBaseSnippetsAsyncTests
  {
   let SUTS = try await createAllSnippets(persisted: true)
   
-  Self.locationManagerMock.disableLocationServices() // DISABLE GEO LOC SERVICE...
+  locationManagerMock.disableLocationServices() // DISABLE GEO LOC SERVICE...
   
   let locExp = SUTS.map{ (SUT: NMBaseSnippet) -> [ XCTKVOExpectation ] in
    
@@ -64,7 +64,7 @@ extension NMBaseSnippetsAsyncTests
   
   let SUTS = try await createAllSnippets(persisted: true)
   
-  Self.locationManagerMock.disableLocationServices()
+  locationManagerMock.disableLocationServices()
   
   let locExpDisabled = SUTS.map{ (sut: NMBaseSnippet) -> [ XCTKVOExpectation]  in
    
@@ -93,9 +93,9 @@ extension NMBaseSnippetsAsyncTests
    
    return [ latExp, lonExp , locExp ] }.flatMap{$0}
   
-  Self.locationManagerMock.enableLocationServicesWhenInUse()
+  locationManagerMock.enableLocationServicesWhenInUse()
   
-  let resultWhenEnabled = XCTWaiter.wait(for: locExpWhenEnabled, timeout: 0.1)
+  let resultWhenEnabled = XCTWaiter.wait(for: locExpWhenEnabled, timeout: 1)
   XCTAssertEqual(resultWhenEnabled, .completed)
   
   try await storageRemoveHelperAsync(for: SUTS)
@@ -106,9 +106,9 @@ extension NMBaseSnippetsAsyncTests
  func test_All_Snippets_creation_with_GEO_locations_Available_AND_NO_Internet() async throws
  {
  
-  let SUTS = try await createAllSnippets(persisted: true)
-  
   NMLocationsGeocoderMock.disableNetwork()
+  
+  let SUTS = try await createAllSnippets(persisted: true)
   
   let locExpDisabled = SUTS.map{ (sut: NMBaseSnippet) -> [ XCTKVOExpectation ]  in
    
@@ -125,7 +125,7 @@ extension NMBaseSnippetsAsyncTests
    
    return [ latExp, lonExp , locExp ] }.flatMap{$0}
   
-  let resultDisabled = XCTWaiter.wait(for: locExpDisabled, timeout: 0.1)
+  let resultDisabled = XCTWaiter.wait(for: locExpDisabled, timeout: 1)
   XCTAssertEqual(resultDisabled, .completed)
   
   
@@ -149,4 +149,86 @@ extension NMBaseSnippetsAsyncTests
   try await storageRemoveHelperAsync(for: SUTS)
  }// func test_All_Snippets_creation_with_GEO_locations_Available_AND_NO_Internet...
  
+ 
+ //MARK: Test that when all snippets are created when location services initially available & internet is available but location unknown error occurs.
+ 
+ func test_All_Snippets_creation_with_GEO_locations_Available_AND_Location_Unknown() async throws
+ {
+  locationManagerMock.isLocationUnknown = true
+  
+  let SUTS = try await createAllSnippets(persisted: true)
+  
+  let locExp = SUTS.map{ (SUT: NMBaseSnippet) -> [ XCTKVOExpectation ] in
+   
+   let latExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.latitude),  object: SUT)
+   latExp.isInverted = true
+   
+   let lonExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.longitude), object: SUT)
+   lonExp.isInverted = true
+   
+   let locExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.location),  object: SUT)
+   locExp.isInverted = true
+   
+   SUT.updateGeoLocations(with: NMLocationsGeocoderMock.self, using: NMNetworkWaiterMock.self)
+   
+   return [ latExp, lonExp , locExp ] }.flatMap{ $0 }
+  
+  let result = XCTWaiter.wait(for: locExp, timeout: 1)
+  XCTAssertEqual(result, .completed)
+  
+  try await storageRemoveHelperAsync(for: SUTS)
+ }// func test_All_Snippets_creation_with_GEO_locations_Available_AND_Location_Unknown()
+ 
+ //MARK: Test that when all snippets are created when location services initially available & internet is available but location unknown error occurs.
+ func test_All_Snippets_creation_with_GEO_locations_Available_AND_Location_Unknown_AND_then_Detected() async throws
+ {
+  
+  locationManagerMock.isLocationUnknown = true
+  
+  let SUTS = try await createAllSnippets(persisted: true)
+ 
+  let locExp = SUTS.map{ (SUT: NMBaseSnippet) -> [ XCTKVOExpectation ] in
+   
+   let latExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.latitude),  object: SUT)
+   //latExp.isInverted = true
+   
+   let lonExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.longitude), object: SUT)
+   //lonExp.isInverted = true
+   
+   let locExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.location),  object: SUT)
+   // locExp.isInverted = true
+   
+   SUT.updateGeoLocations(with: NMLocationsGeocoderMock.self, using: NMNetworkWaiterMock.self)
+   
+   return [ latExp, lonExp , locExp ] }.flatMap{ $0 }
+  
+  Task.detached(priority: TaskPriority.high){ [ self ] in
+   //try await Task.sleep(timeInterval: .milliseconds(.random(in: 10...500)))
+   
+   try await Task.sleep(timeInterval: .random(in: .nanoseconds(50)..<(.milliseconds(100))))
+   
+   locationManagerMock.isLocationUnknown = false
+  }
+  
+  let waiter = XCTWaiter()
+  waiter.wait(for: locExp, timeout: 1)
+
+  XCTAssertFalse(waiter.fulfilledExpectations.isEmpty)
+  
+  try await storageRemoveHelperAsync(for: SUTS)
+ }// func test_All_Snippets_creation_with_GEO_locations_Available_AND_Location_Unknown()
+ 
+ 
+ 
+ //MARK: Test that when all snippets are created their fields updated if services geo location availbale.
+ final func test_All_Snippets_Creation_And_Persistance_With_GEO_Locations_Available() async throws
+ {
+  let SUTS = try await createAllSnippetsWithGeoLocations()
+  XCTAssertEqual(SUTS.compactMap{ $0.latitude  }.count, SUTS.count)
+  XCTAssertEqual(SUTS.compactMap{ $0.longitude }.count, SUTS.count)
+  XCTAssertEqual(SUTS.compactMap{ $0.location  }.count, SUTS.count)
+  try await storageRemoveHelperAsync(for: SUTS)
+ }
+ 
 }//extension NMBaseSnippetsAsyncTests...
+

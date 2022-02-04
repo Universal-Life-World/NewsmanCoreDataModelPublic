@@ -47,9 +47,9 @@ extension NMBaseSnippetsAsyncTests
                                                       persist: Bool = false,
                                                       snippetType: NMBaseSnippet.SnippetType) async throws -> T
  {
-  let snippet = try await Self.model.create(persist: persist, objectType: T.self)
+  let snippet = try await model.create(persist: persist, objectType: T.self)
   
-  try await Self.model.context.perform {
+  try await model.context.perform {
    try self.snippet_base_cheking_helper(snippet, snippetType)
   }
   
@@ -60,16 +60,59 @@ extension NMBaseSnippetsAsyncTests
  final func createAllSnippets(persisted: Bool = true,
                               block: ((NMBaseSnippet) throws -> ())? = nil) async throws -> [NMBaseSnippet]
  {
-  async let s1 = Self.model.create(persist: persisted, objectType: NMBaseSnippet.self,  with: block)
-  async let s2 = Self.model.create(persist: persisted, objectType: NMPhotoSnippet.self, with: block)
-  async let s3 = Self.model.create(persist: persisted, objectType: NMAudioSnippet.self, with: block)
-  async let s4 = Self.model.create(persist: persisted, objectType: NMTextSnippet.self,  with: block)
-  async let s5 = Self.model.create(persist: persisted, objectType: NMVideoSnippet.self, with: block)
-  async let s6 = Self.model.create(persist: persisted, objectType: NMMixedSnippet.self, with: block)
+  async let s1 = model.create(persist: persisted, objectType: NMBaseSnippet.self,  with: block)
+  async let s2 = model.create(persist: persisted, objectType: NMPhotoSnippet.self, with: block)
+  async let s3 = model.create(persist: persisted, objectType: NMAudioSnippet.self, with: block)
+  async let s4 = model.create(persist: persisted, objectType: NMTextSnippet.self,  with: block)
+  async let s5 = model.create(persist: persisted, objectType: NMVideoSnippet.self, with: block)
+  async let s6 = model.create(persist: persisted, objectType: NMMixedSnippet.self, with: block)
   
   return try await [s1,s2,s3,s4,s5,s6]
   
  }// final func createAllSnippets(persisted: Bool = true)...
+ 
+ final func createAllSnippetsWithGeoLocations(persisted: Bool = true,
+                            block: ((NMBaseSnippet) throws -> ())? = nil) async throws -> [NMBaseSnippet]
+ {
+   async let s1 = model.create(persisted: persisted,
+                               of: NMBaseSnippet.self,
+                               with: NMLocationsGeocoderMock.self,
+                               using: NMNetworkWaiterMock.self,
+                               updated: block)
+  
+   async let s2 = model.create(persisted: persisted,
+                               of: NMPhotoSnippet.self,
+                               with: NMLocationsGeocoderMock.self,
+                               using: NMNetworkWaiterMock.self,
+                               updated: block)
+
+   async let s3 = model.create(persisted: persisted,
+                               of: NMAudioSnippet.self,
+                               with: NMLocationsGeocoderMock.self,
+                               using: NMNetworkWaiterMock.self,
+                               updated: block)
+
+   async let s4 = model.create(persisted: persisted,
+                               of: NMTextSnippet.self,
+                               with: NMLocationsGeocoderMock.self,
+                               using: NMNetworkWaiterMock.self,
+                               updated: block)
+
+   async let s5 = model.create(persisted: persisted,
+                               of: NMVideoSnippet.self,
+                               with: NMLocationsGeocoderMock.self,
+                               using: NMNetworkWaiterMock.self,
+                               updated: block)
+
+   async let s6 = model.create(persisted: persisted,
+                               of: NMMixedSnippet.self,
+                               with: NMLocationsGeocoderMock.self,
+                               using: NMNetworkWaiterMock.self,
+                               updated: block)
+  
+  return  try await [ s1,s2,s3,s4,s5,s6 ]
+  
+ }// final func createAllSnippetsWithGeoLocations(...)
  
  
  final func storageRemoveHelperAsync(for snippets: [NMBaseSnippet]) async throws
@@ -97,7 +140,7 @@ extension NMBaseSnippetsAsyncTests
  
  final func snippetsPersistanceCheckHelperAsync(for snippets: [NMBaseSnippet]) async throws
  {
-  let modelContext = Self.model.context
+  let modelContext = model.context
   
   try await modelContext.perform {
    for snippet in snippets

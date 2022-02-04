@@ -38,8 +38,10 @@ public protocol NMGeocoderProtocol
  init()
  func reverseGeocodeLocation(_ location: CLLocation,
                                completionHandler: @escaping NMGeocodeCompletionHandler)
-                     
  
+ func reverseGeocodeLocation(_ location: CLLocation) async throws -> [NMPlacemark]
+                     
+ @available(iOS 15.0, *) @available(macOS 12.0.0, *)
  func placemarkPublisher(for location: CLLocation) -> AnyPublisher<NMPlacemark?, Error>
 }
 
@@ -63,6 +65,8 @@ extension NMGeocoderProtocol
    }
   }.eraseToAnyPublisher()
  }
+ 
+ 
 }
 
 extension CLGeocoder: NMGeocoderProtocol
@@ -72,10 +76,18 @@ extension CLGeocoder: NMGeocoderProtocol
 }
 
 
- public final class NMLocation: NSObject
+public final class NMLocation: NSObject
 {
  //public static var geocoderType: Geocoder.Type = CLGeocoder.self
 // public static var networkMonitorType: NMNetworkMonitorProtocol.Type = NMNetworkWaiter.self
+ 
+ public static let invalid = NMLocation(location: CLLocation(coordinate: kCLLocationCoordinate2DInvalid,
+                                                             altitude: 0,
+                                                             horizontalAccuracy: 0,
+                                                             verticalAccuracy: 0,
+                                                             timestamp: Date()))
+ 
+ public var isValid: Bool { CLLocationCoordinate2DIsValid(location.coordinate) }
  
  public init (location: CLLocation)
  {
@@ -88,12 +100,16 @@ extension CLGeocoder: NMGeocoderProtocol
  //private var detectedPlacemark: CLPlacemark?
  
  private var retryCount = 2
+ public static var maxRetries = 5
  
 // private var geocoder: Any?
 // private var networkWaiter: Any?
  
  
- func getPlacemarkPublisher<G, N>( _ geocoderType: G.Type, _ networkWaiterType: N.Type) -> AnyPublisher<G.NMPlacemark?, Error> where G:NMGeocoderProtocol, N: NMNetworkMonitorProtocol
+ func getPlacemarkPublisher<G, N>( _ geocoderType: G.Type,
+                                   _ networkWaiterType: N.Type) -> AnyPublisher<G.NMPlacemark?, Error>
+  where G:NMGeocoderProtocol,
+        N: NMNetworkMonitorProtocol
  {
 //  let geocoder = geocoderType.init()
   let networkWaiter = networkWaiterType.init()
@@ -111,7 +127,7 @@ extension CLGeocoder: NMGeocoderProtocol
        case .geocodeFoundPartialResult: fallthrough
        case .geocodeFoundNoResult:
         return geocoderType.init().placemarkPublisher(for: location)
-         .retry(retryCount)
+         .retry(Self.maxRetries)
          .eraseToAnyPublisher()
         
        default: throw error
@@ -123,20 +139,39 @@ extension CLGeocoder: NMGeocoderProtocol
   .eraseToAnyPublisher()
  }
  
-// @available(iOS 15.0, *) @available(macOS 12.0.0, *)
-// var placemark: CLPlacemark? {
-//  get async throws {
-//   try await placemarkPublisher.values.compactMap{$0}.first(where: {_ in true})
-//    //   if let placemark = detectedPlacemark { return placemark }
-////   detectedPlacemark = try await CLGeocoder().reverseGeocodeLocation(location).first
-////   return detectedPlacemark
-//  }
-// }
-//
-// @available(iOS 15.0, *) @available(macOS 12.0.0, *)
-// var addressString: String? {
-//  get async throws { try await placemark?.addressString }
-// }
+ @available(iOS 15.0, *) @available(macOS 12.0.0, *)
+ public func getPlacemark<G, N> (with GC: G.Type = CLGeocoder.self as! G.Type,
+                                 using NW: N.Type = NMNetworkWaiter.self as! N.Type) async throws -> G.NMPlacemark
+ where G: NMGeocoderProtocol,
+       N: NMNetworkMonitorProtocol
+ {
+  guard retryCount < Self.maxRetries else { throw NMGeoLocationsProvider.Failures.maxRetryCountExceeded }
+  
+  retryCount += 1
+  
+  let geocoder = GC.init()
+  
+  do {
+   guard let placemark = try await geocoder.reverseGeocodeLocation(location).first else {
+    return try await getPlacemark(with: GC.self, using: NW.self)
+   }
+   return placemark
+  }
+  catch CLError.geocodeFoundPartialResult, CLError.geocodeFoundNoResult {
+   return try await getPlacemark(with: GC.self, using: NW.self)
+  }
+  catch CLError.network {
+   let networkWaiter = NW.init()
+   await networkWaiter.waitForNetwork()
+   return try await getPlacemark(with: GC.self, using: NW.self)
+  }
+  catch {
+   throw NMGeoLocationsProvider.Failures.unknownFailure(with: error)
+  }
+ 
+ }
+
+
  
  
 }

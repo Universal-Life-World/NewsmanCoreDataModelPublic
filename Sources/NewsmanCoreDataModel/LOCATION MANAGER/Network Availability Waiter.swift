@@ -9,29 +9,48 @@ public protocol NMNetworkMonitorProtocol
 {
  init()
  var monitorPublisher: AnyPublisher<Void, Never> { get }
+ func waitForNetwork() async
 }
 
 public final class NMNetworkWaiter: NSObject, NMNetworkMonitorProtocol
 {
+ public func waitForNetwork() async   {
+  await withCheckedContinuation{ (c: CheckedContinuation<Void, Never>) -> () in
+   if pathMonitor.currentPath.status == .satisfied {
+    c.resume()
+    return
+   }
+   
+   pathMonitor.pathUpdateHandler = { [ unowned self ] path in
+    if path.status == .satisfied {
+     c.resume()
+     pathMonitor.cancel()
+    }
+   }
+   
+   pathMonitor.start(queue: monitorQueue)
+  }
+ }
+ 
  private let pathMonitor = NWPathMonitor()
  private let monitorQueue = DispatchQueue(label: "NMNetworkMonitor.local.queue")
  
  public var monitorPublisher: AnyPublisher<Void, Never>
  {
   Future {[ unowned self ] promise in
-   if self.pathMonitor.currentPath.status == .satisfied {
+   if pathMonitor.currentPath.status == .satisfied {
     promise(.success(()))
     return
    }
    
-   self.pathMonitor.pathUpdateHandler = { path in
+   pathMonitor.pathUpdateHandler = { path in
     if path.status == .satisfied {
      promise(.success(()))
-     self.pathMonitor.cancel()
+     pathMonitor.cancel()
     }
    }
    
-   self.pathMonitor.start(queue: self.monitorQueue)
+   pathMonitor.start(queue: monitorQueue)
    
   }.eraseToAnyPublisher()
  }

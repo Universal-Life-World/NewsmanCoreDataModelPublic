@@ -7,46 +7,42 @@ extension NMBaseSnippetsTests {
  
  func test_Snippets_CREATED_correctly_without_persistance()
  {
+  
+  var SUTS = [NMBaseSnippet]()
+  
   let expectations = NMBaseSnippet.SnippetType.allCases.map{ snippetType -> XCTestExpectation in
    
    let expectation = XCTestExpectation(description: "All Snippets Types Creation")
    
-   switch snippetType
-   {
+   switch snippetType {
     case .base:
-     snippet_creation_helper(objectType: NMBaseSnippet.self, snippetType: snippetType)
-     { [ unowned self ] in
-      suts.append($0)
+     snippet_creation_with_checkup_helper(objectType: NMBaseSnippet.self, snippetType: snippetType){
+      SUTS.append($0)
       expectation.fulfill()
      }
     case .photo:
-     snippet_creation_helper(objectType: NMPhotoSnippet.self, snippetType: snippetType)
-     { [ unowned self ] in
-      suts.append($0)
+     snippet_creation_with_checkup_helper(objectType: NMPhotoSnippet.self, snippetType: snippetType) {
+      SUTS.append($0)
       expectation.fulfill()
      }
     case .audio:
-     snippet_creation_helper(objectType: NMAudioSnippet.self, snippetType: snippetType)
-     { [ unowned self ] in
-      suts.append($0)
+     snippet_creation_with_checkup_helper(objectType: NMAudioSnippet.self, snippetType: snippetType) {
+      SUTS.append($0)
       expectation.fulfill()
      }
     case .video:
-     snippet_creation_helper(objectType: NMVideoSnippet.self, snippetType: snippetType)
-     { [ unowned self ] in
-      suts.append($0)
+     snippet_creation_with_checkup_helper(objectType: NMVideoSnippet.self, snippetType: snippetType) {
+      SUTS.append($0)
       expectation.fulfill()
      }
     case .text:
-     snippet_creation_helper(objectType: NMTextSnippet.self, snippetType: snippetType)
-     { [ unowned self ] in
-      suts.append($0)
+     snippet_creation_with_checkup_helper(objectType: NMTextSnippet.self, snippetType: snippetType) {
+      SUTS.append($0)
       expectation.fulfill()
      }
     case .mixed:
-     snippet_creation_helper(objectType: NMMixedSnippet.self, snippetType: snippetType)
-     { [ unowned self ] in
-      suts.append($0)
+     snippet_creation_with_checkup_helper(objectType: NMMixedSnippet.self, snippetType: snippetType) {
+      SUTS.append($0)
       expectation.fulfill()
      }
     }
@@ -54,8 +50,11 @@ extension NMBaseSnippetsTests {
    return expectation
   }
  
-  let result = XCTWaiter.wait(for: expectations, timeout: 0.01)
+  let result = XCTWaiter.wait(for: expectations, timeout: 0.1)
   XCTAssertEqual(result, .completed)
+  
+  storageRemoveHelperSync(for: SUTS)
+  
  }
  
  
@@ -63,7 +62,7 @@ extension NMBaseSnippetsTests {
                                                                    snippetType: NMBaseSnippet.SnippetType,
                                                                    handler: @escaping () -> () )
  {
-  Self.model.create(persist: true, objectType: T.self) {
+  model.create(persist: true, objectType: T.self) {
     throw SnippetTestError.failed(snippet: $0)
    } handler: { result in
      switch result {
@@ -119,7 +118,7 @@ extension NMBaseSnippetsTests {
    return expectation
   }
  
-  let result = XCTWaiter.wait(for: expectations, timeout: 0.01)
+  let result = XCTWaiter.wait(for: expectations, timeout: 0.1)
   XCTAssertEqual(result, .completed)
  }
  

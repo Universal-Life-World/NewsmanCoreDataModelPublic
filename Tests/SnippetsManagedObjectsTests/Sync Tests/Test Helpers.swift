@@ -8,27 +8,28 @@ enum SnippetTestError<T>: Error{
 
 extension NMBaseSnippetsTests
 {
- final func snippet_creation_helper<T: NMBaseSnippet>(objectType:T.Type,
-                                                      snippetType: NMBaseSnippet.SnippetType,
-                                                      handler: @escaping (T) -> () )
+ final func snippet_creation_with_checkup_helper<T: NMBaseSnippet>(objectType:T.Type,
+                                                                   snippetType: NMBaseSnippet.SnippetType,
+                                                                    handler: @escaping (T) -> () )
  {
-  Self.model.create(objectType: T.self) { [unowned self] result in
-   switch result {
-    case let .success(snippet):
-     do {
-      try snippet_base_cheking_helper(snippet, snippetType)
-      handler(snippet)
-     }
-     catch {
+  model.create(objectType: T.self) { [unowned self] result in
+   DispatchQueue.main.async{
+    switch result {
+     case let .success(snippet):
+      do {
+       try snippet_base_cheking_helper(snippet, snippetType)
+       handler(snippet)
+      }
+      catch {
+       XCTFail(error.localizedDescription)
+      }
+    
+     case let .failure(error):
       XCTFail(error.localizedDescription)
-     }
-   
-    case let .failure(error):
-     XCTFail(error.localizedDescription)
+    }
+    
    }
-   
   }
-  
  }
  
  final func snippet_base_cheking_helper(_ snippet: NMBaseSnippet,
@@ -66,41 +67,59 @@ extension NMBaseSnippetsTests
    pathAttach.lifetime = .keepAlways
    self.add(pathAttach)
   }
+  
  }
+  
+ final func storageRemoveHelperSync(for snippets: [NMBaseSnippet])
+ {
+  let context = model.context
+  
+  let docsFolder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
  
+  let removeExpectations = snippets.compactMap { snippet -> XCTestExpectation? in
  
-// private func snippetDefaultPropertiesInitialSetupCheckup(for sut: NMBaseSnippet) throws
-// {
-//  let moc = try XCTUnwrap(sut.managedObjectContext)
-//  let psc = try XCTUnwrap(moc.persistentStoreCoordinator)
-//  let mom = psc.managedObjectModel
-//  let sutEntityName = String(describing: type(of: sut))
-//  let sut_entity = try XCTUnwrap(mom.entities.first{$0.name == sutEntityName})
-//
-//  sut_entity.attributesByName.filter{!$0.value.isOptional}.forEach
-//  {
-//
-//   let attrDefaultValue = $0.value.defaultValue
-//
-//   let sutValue = sut.value(forKey: $0.key)
-//
-//   switch (attrDefaultValue, sutValue)
-//   {
-//    case (let modValue as Bool,    let sutValue as Bool):    XCTAssertEqual(modValue, sutValue)
-//    case (let modValue as Int16,   let sutValue as Int16):   XCTAssertEqual(modValue, sutValue)
-//    case (let modValue as UUID,    let sutValue as UUID):    XCTAssertEqual(modValue, sutValue)
-//    case (let modValue as NSValue, let sutValue as NSValue): XCTAssertEqual(modValue, sutValue)
-//    case (let modValue as Double,  let sutValue as Double):  XCTAssertEqual(modValue, sutValue)
-//    case (let modValue as String,  let sutValue as String):  XCTAssertEqual(modValue, sutValue)
-//    case (let modValue as Date,    let sutValue as Date):    XCTAssertEqual(modValue, sutValue)
-//    case ( nil , nil ) : break
-//    default:
-//     XCTFail("UNKNOWN MODEL ATTRIBUTE TYPE!")
-//
-//   }
-//
-//  }
-// }
-//
- 
+   let removeExpectation = XCTestExpectation(description: "Remove Snippet Storage Expectation")
+   
+   guard let fileStorageProvider = snippet as? NMFileStorageManageable else { return nil }
+   
+   fileStorageProvider.removeFileStorage{ result in
+    context.perform {
+     switch result {
+      case .success():
+       guard let snippet_id = snippet.id else {
+        XCTFail("Snippet Must Have ID after file storage removal")
+        break
+       }
+       
+       let path = docsFolder.appendingPathComponent(snippet_id.uuidString).path
+       XCTAssertFalse(FileManager.default.fileExists(atPath: path))
+       removeExpectation.fulfill()
+       
+      case .failure(let error):  XCTFail(error.localizedDescription)
+     }
+    }
+   }
+   return removeExpectation
+  }
+  
+  XCTAssertEqual(snippets.count - 1,  removeExpectations.count)
+   // Minus 1 as the NMBaseSnippet has no file storage per se!
+
+  let result = XCTWaiter.wait(for: removeExpectations, timeout: 0.1)
+  XCTAssertEqual(result, .completed)
+  
+ }//final func storageRemoveHelper with callback...
+  
 }
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 

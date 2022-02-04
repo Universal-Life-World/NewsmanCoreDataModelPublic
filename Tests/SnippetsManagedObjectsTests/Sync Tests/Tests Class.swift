@@ -2,42 +2,18 @@
 
 import XCTest
 import NewsmanCoreDataModel
-
+import Foundation
 
 final class NMBaseSnippetsTests: XCTestCase
 {
- static var model: NMCoreDataModel!
- static weak var locationManagerMock: NMLocationManagerMock!
+ var model: NMCoreDataModel!
  
- func fileStorageCleanup(for sut: NMBaseSnippet) {
-  guard let storageProvider = sut as? NMFileStorageManageable else { return }
+ weak var locationManagerMock: NMLocationManagerMock!
  
-  let className = String(describing: type(of: sut))
-  storageProvider.removeFileStorage{ [ id = storageProvider.id ] result in
-   switch result {
-    case .success():
-     print ("\(className) [\(id!)] FILE STORAGE IS DELETED SUCCESSFULLY AFTER TEST!")
-    case .failure(let error):
-     print (error.localizedDescription)
-   
-   }
-  }
- }
+ override class func setUp() { }
  
- var suts: [NMBaseSnippet]! {
-  willSet {
-   if newValue == nil && suts != nil { suts.forEach { fileStorageCleanup(for: $0)} }
-  }
- }
- 
- var sut: NMBaseSnippet! {
-  willSet  {
-   if newValue == nil && sut != nil  { fileStorageCleanup(for: sut) }
-  }
- }
- 
- override class func setUp()
- {
+ override func setUp() {
+  
   let locationManager = NMLocationManagerMock()
   locationManagerMock = locationManager
   
@@ -46,16 +22,13 @@ final class NMBaseSnippetsTests: XCTestCase
 
  }
  
- 
- override func setUp() { suts = [] }
- 
- override func tearDown() { sut = nil; suts = nil }
+ override func tearDown() { model = nil }
  
  override func setUpWithError() throws {}
 
  override func tearDownWithError() throws { }
  
- override class func tearDown() { model = nil }
+ override class func tearDown() { }
  
  
 }

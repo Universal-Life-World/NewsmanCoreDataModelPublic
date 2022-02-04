@@ -20,6 +20,20 @@ extension Notification.Name
 
 public final class NMLocationsGeocoderMock: NMGeocoderProtocol
 {
+ 
+ public func reverseGeocodeLocation(_ location: CLLocation) async throws -> [NMPlacemarkDummy] {
+  try await withCheckedThrowingContinuation { cont in
+   reverseGeocodeLocation(location) { placemarks, error in
+    switch (placemarks, error) {
+     case (nil, let error?): cont.resume(throwing: error)
+     case (let placemarks?, nil): cont.resume(returning: placemarks)
+     default: fatalError()
+      
+    }
+   }
+  }
+ }
+ 
  public typealias NMPlacemark = NMPlacemarkDummy
  
  private static let isolationQueue = DispatchQueue(label: "NMLocationsGeocoderMock.isolation",
@@ -62,6 +76,11 @@ public final class NMLocationsGeocoderMock: NMGeocoderProtocol
 @available(iOS 15.0, *) @available(macOS 12.0.0, *)
 public actor NMLocationsGeocoderMockActor: NMGeocoderProtocol
 {
+ public func reverseGeocodeLocation(_ location: CLLocation) async throws -> [NMPlacemarkDummy] {
+  if isNetworkAvailable { return [ NMPlacemarkDummy()] } else { throw CLError(.network) }
+  
+ }
+ 
  public typealias NMPlacemark = NMPlacemarkDummy
  
  public init() {}
