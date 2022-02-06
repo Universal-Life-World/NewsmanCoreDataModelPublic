@@ -10,6 +10,7 @@ import Foundation
 import CoreData
 
 
+@available(iOS 13.0, *)
 extension NMVideo {
 
     @nonobjc public class func fetchRequest() -> NSFetchRequest<NMVideo> {

@@ -10,6 +10,7 @@ import Foundation
 import CoreData
 
 
+@available(iOS 13.0, *)
 extension NMPhotoSnippet
 {
  @nonobjc public class func fetchRequest() -> NSFetchRequest<NMPhotoSnippet>
@@ -30,6 +31,7 @@ extension NMPhotoSnippet
 }
 
 // MARK: Generated accessors for copies
+@available(iOS 13.0, *)
 extension NMPhotoSnippet {
 
     @objc(addCopiesObject:)
@@ -47,6 +49,7 @@ extension NMPhotoSnippet {
 }
 
 // MARK: Generated accessors for photoFolders
+@available(iOS 13.0, *)
 extension NMPhotoSnippet {
 
     @objc(addPhotoFoldersObject:)
@@ -64,6 +67,7 @@ extension NMPhotoSnippet {
 }
 
 // MARK: Generated accessors for photos
+@available(iOS 13.0, *)
 extension NMPhotoSnippet {
 
     @objc(addPhotosObject:)

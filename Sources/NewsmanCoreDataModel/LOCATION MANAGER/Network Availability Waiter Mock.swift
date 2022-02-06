@@ -2,10 +2,11 @@
 import Foundation
 import Combine
 
+@available(iOS 13.0, *)
 public final class NMNetworkWaiterMock: NSObject, NMNetworkMonitorProtocol
 {
  private var networkSubscription: AnyCancellable?
- 
+
  public func waitForNetwork() async {
   await withCheckedContinuation{ (c: CheckedContinuation<Void, Never>) -> () in
    networkSubscription = monitorPublisher.sink { [ unowned self ] in

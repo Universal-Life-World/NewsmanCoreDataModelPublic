@@ -5,6 +5,7 @@ import RxSwift
 import Network
 
 
+@available(iOS 13.0.0, *)
 public protocol NMNetworkMonitorProtocol
 {
  init()
@@ -12,6 +13,7 @@ public protocol NMNetworkMonitorProtocol
  func waitForNetwork() async
 }
 
+@available(iOS 13.0, *)
 public final class NMNetworkWaiter: NSObject, NMNetworkMonitorProtocol
 {
  public func waitForNetwork() async   {

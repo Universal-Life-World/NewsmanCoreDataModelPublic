@@ -2,6 +2,7 @@
 import XCTest
 import NewsmanCoreDataModel
 
+@available(iOS 14.0, *)
 final class NMBaseSnippetsAsyncTests: XCTestCase
 {
  var model: NMCoreDataModel!
@@ -17,15 +18,13 @@ final class NMBaseSnippetsAsyncTests: XCTestCase
   model = NMCoreDataModel(name: "Newsman",for: .inMemorySQLight, locationsProvider: locationsProvider)
  }
  
- override func tearDown() {
-  model = nil
- }
+ override func tearDown() { model = nil }
  
  override func setUpWithError() throws {}
  
  override func tearDownWithError() throws { }
  
- override class func tearDown() {  }
+ override class func tearDown() { }
  
  
 

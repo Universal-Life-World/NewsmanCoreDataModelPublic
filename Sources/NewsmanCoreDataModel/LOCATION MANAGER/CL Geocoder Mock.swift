@@ -18,9 +18,10 @@ extension Notification.Name
 }
 
 
+
+@available(iOS 13.0, *)
 public final class NMLocationsGeocoderMock: NMGeocoderProtocol
 {
- 
  public func reverseGeocodeLocation(_ location: CLLocation) async throws -> [NMPlacemarkDummy] {
   try await withCheckedThrowingContinuation { cont in
    reverseGeocodeLocation(location) { placemarks, error in

@@ -3,6 +3,7 @@ import XCTest
 import NewsmanCoreDataModel
 import CoreLocation
 
+@available(iOS 14.0, *)
 extension NMBaseSnippetsTests {
  
  func test_Snippets_CREATED_correctly_without_persistance()
@@ -53,11 +54,15 @@ extension NMBaseSnippetsTests {
   let result = XCTWaiter.wait(for: expectations, timeout: 0.1)
   XCTAssertEqual(result, .completed)
   
-  storageRemoveHelperSync(for: SUTS)
+  
+  self.storageRemoveHelperSync(for: SUTS)
+ 
+  
   
  }
  
  
+ @available(iOS 14.0, *)
  final func snippet_throwing_modification_helper<T: NMBaseSnippet>(objectType:T.Type,
                                                                    snippetType: NMBaseSnippet.SnippetType,
                                                                    handler: @escaping () -> () )

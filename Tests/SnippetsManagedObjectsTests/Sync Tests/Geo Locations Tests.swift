@@ -2,6 +2,7 @@
 import XCTest
 import NewsmanCoreDataModel
 
+@available(iOS 14.0, *)
 extension NMBaseSnippetsTests
 {
  
@@ -28,6 +29,7 @@ extension NMBaseSnippetsTests
    }
   }
  }
+ 
  
  final func test_snippet_creation_with_geo_locations_services_available()
  {

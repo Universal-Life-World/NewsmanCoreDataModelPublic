@@ -9,11 +9,11 @@
 import Foundation
 import CoreData
 
+@available(iOS 13.0, *)
 extension NMBaseSnippet
 {
 
-  @nonobjc public class func fetchRequest() -> NSFetchRequest<NMBaseSnippet>
-  {
+  @nonobjc public class func fetchRequest() -> NSFetchRequest<NMBaseSnippet> {
     NSFetchRequest<NMBaseSnippet>(entityName: "NMBaseSnippet")
   }
 
@@ -63,7 +63,10 @@ extension NMBaseSnippet
 
 }
 
-// MARK: Generated accessors for connectedWithTopNews
+
+ // MARK: Generated accessors for connectedWithTopNews
+
+@available(iOS 13.0, *)
 extension NMBaseSnippet {
 
     @objc(addConnectedWithTopNewsObject:)

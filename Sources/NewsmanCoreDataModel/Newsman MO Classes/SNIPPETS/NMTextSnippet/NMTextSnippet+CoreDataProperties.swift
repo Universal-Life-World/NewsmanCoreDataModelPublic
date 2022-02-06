@@ -9,6 +9,7 @@
 import Foundation
 import CoreData
 
+@available(iOS 13.0, *)
 extension NMTextSnippet
 {
  @nonobjc public class func fetchRequest() -> NSFetchRequest<NMTextSnippet>
@@ -27,7 +28,8 @@ extension NMTextSnippet
 
 }
 
-// MARK: Generated accessors for copies
+
+@available(iOS 13.0, *)
 extension NMTextSnippet {
 
     @objc(addCopiesObject:)
@@ -45,6 +47,8 @@ extension NMTextSnippet {
 }
 
 // MARK: Generated accessors for textFolders
+
+@available(iOS 13.0, *)
 extension NMTextSnippet {
 
     @objc(addTextFoldersObject:)
@@ -59,9 +63,11 @@ extension NMTextSnippet {
     @objc(removeTextFolders:)
     @NSManaged public func removeFromTextFolders(_ values: NSSet)
 
+ 
 }
 
 // MARK: Generated accessors for texts
+@available(iOS 13.0, *)
 extension NMTextSnippet {
 
     @objc(addTextsObject:)

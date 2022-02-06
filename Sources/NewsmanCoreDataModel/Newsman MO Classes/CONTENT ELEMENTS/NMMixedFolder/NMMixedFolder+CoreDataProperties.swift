@@ -10,6 +10,7 @@ import Foundation
 import CoreData
 
 
+@available(iOS 13.0, *)
 extension NMMixedFolder {
 
     @nonobjc public class func fetchRequest() -> NSFetchRequest<NMMixedFolder> {

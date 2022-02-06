@@ -2,6 +2,7 @@
 import CoreLocation
 import Foundation
 
+@available(iOS 14.0, *)
 public class NMLocationManagerMock: CLLocationManager
 {
  
@@ -200,11 +201,13 @@ public class NMLocationManagerMock: CLLocationManager
     case .authorizedWhenInUse: fallthrough
     case .authorized:
      isUpdatingLocation = true
-     print("WAITING ... for detecting Geo Location {\(#function)} in Thread [\(Thread.current)]")
+     print("WAITING while detecting Geo Location {\(#function)} in Thread [\(Thread.current)]")
      
-     delegateQueue.asyncAfter(deadline: .now() + .nanoseconds(.random(in: 1...1000))) {[self] in
+     let timeElapsed = DispatchTimeInterval.nanoseconds(.random(in: 100...1000))
      
-      print("READY! Geo Location Detected!")
+     delegateQueue.asyncAfter(deadline: .now() + timeElapsed) { [ unowned self ] in
+     
+      print("READY! Geo Location Detected in \(timeElapsed) NS!")
       delegate?.locationManager?(self, didUpdateLocations: detectedLocations)
        
      }

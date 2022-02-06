@@ -9,6 +9,7 @@
 import Foundation
 import CoreData
 
+@available(iOS 13.0, *)
 extension NMVideoSnippet
 {
  @nonobjc public class func fetchRequest() -> NSFetchRequest<NMVideoSnippet>
@@ -40,6 +41,8 @@ extension NMVideoSnippet
 //***************************************************************************
 // MARK: Generated accessors for copies
 //***************************************************************************
+
+@available(iOS 13.0, *)
 extension NMVideoSnippet {
 
     @objc(addCopiesObject:)
@@ -57,6 +60,8 @@ extension NMVideoSnippet {
 }
 
 // MARK: Generated accessors for videoFolders
+
+@available(iOS 13.0, *)
 extension NMVideoSnippet {
 
     @objc(addVideoFoldersObject:)
@@ -73,7 +78,10 @@ extension NMVideoSnippet {
 
 }
 
+
 // MARK: Generated accessors for videos
+
+@available(iOS 13.0, *)
 extension NMVideoSnippet {
 
     @objc(addVideosObject:)

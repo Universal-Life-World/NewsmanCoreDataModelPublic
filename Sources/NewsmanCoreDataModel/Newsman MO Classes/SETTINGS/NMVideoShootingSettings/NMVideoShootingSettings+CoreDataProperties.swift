@@ -42,6 +42,7 @@ extension NMVideoShootingSettings {
 }
 
 // MARK: Generated accessors for appliedToMixedSnippets
+@available(iOS 13.0, *)
 extension NMVideoShootingSettings {
 
     @objc(addAppliedToMixedSnippetsObject:)
@@ -93,6 +94,7 @@ extension NMVideoShootingSettings {
 }
 
 // MARK: Generated accessors for appliedToVideoSnippets
+@available(iOS 13.0, *)
 extension NMVideoShootingSettings {
 
     @objc(addAppliedToVideoSnippetsObject:)

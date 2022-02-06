@@ -20,12 +20,69 @@ extension NMBaseSnippetsAsyncTests
    
    return [ latExp, lonExp , locExp ] }.flatMap{$0}
   
-  let result = XCTWaiter.wait(for: locExp, timeout: 0.1)
+  let result = XCTWaiter.wait(for: locExp, timeout: 1)
   XCTAssertEqual(result, .completed)
   
   try await storageRemoveHelperAsync(for: SUTS)
   
  }//final func test_All_Snippets_Creation_And_Persistance_With_GEO_Locations_Updates_Available...
+ 
+ 
+ //MARK: Test that when all snippets are created they are correctly subscribed to the location fields updates and get the same cached location within the Location Manager Staleness Interval.
+ final func test_All_Snippets_Creation_And_Persistance_With_CACHED_GEO_Locations_Available() async throws
+ {
+ 
+  let SUTS = try await createAllSnippets(persisted: true)
+  
+  let locExp = SUTS.map{ (SUT: NMBaseSnippet) -> [ XCTKVOExpectation ] in
+   
+   let latExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.latitude),  object: SUT)
+   let lonExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.longitude), object: SUT)
+   let locExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.location),  object: SUT)
+   
+   SUT.updateGeoLocations(with: NMLocationsGeocoderMock.self, using: NMNetworkWaiterMock.self)
+   
+   return [ latExp, lonExp , locExp ] }.flatMap{ $0 }
+  
+  let result = XCTWaiter.wait(for: locExp, timeout: 1)
+  XCTAssertEqual(result, .completed)
+  let uniqueLocations = Set(SUTS.compactMap{$0.geoLocation})
+  XCTAssertTrue(uniqueLocations.count == 1) // ALL THE SAME CACHED ONES!
+  
+  try await storageRemoveHelperAsync(for: SUTS)
+  
+ }//final func test_All_Snippets_Creation_And_Persistance_With_GEO_Locations_Updates_Available...
+ 
+ 
+//MARK: Test that when all snippets are created they are correctly subscribed to the location fields updates and get the different values. Location Manager Staleness Interval == 0!
+ final func test_All_Snippets_Creation_And_Persistance_With_GEO_Locations_STALENESS_and_caching() async throws
+ {
+  
+  NMGeoLocationsProvider.locationStalenessInterval = 0
+  
+  let SUTS = try await createAllSnippets(persisted: true)
+  
+  
+  let locExp = SUTS.map{ (SUT: NMBaseSnippet) -> [ XCTKVOExpectation ] in
+   
+   let latExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.latitude),  object: SUT)
+   let lonExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.longitude), object: SUT)
+   let locExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.location),  object: SUT)
+   
+   SUT.updateGeoLocations(with: NMLocationsGeocoderMock.self, using: NMNetworkWaiterMock.self)
+   
+   return [ latExp, lonExp , locExp ] }.flatMap{ $0 }
+  
+  let result = XCTWaiter.wait(for: locExp, timeout: 1)
+  XCTAssertEqual(result, .completed)
+  let uniqueLocations = Set(SUTS.compactMap{$0.geoLocation})
+  XCTAssertTrue(uniqueLocations.count == SUTS.count) // ALL UNIQUE AS THE STALENESS == 0!
+  
+  
+  try await storageRemoveHelperAsync(for: SUTS)
+  
+ }//final func test_All_Snippets_Creation_And_Persistance_With_GEO_Locations_Updates_Available...
+ 
  
  //MARK: Test that when all snippets are created when location services unavailable the location fields are not mutated in MO.
  
@@ -50,7 +107,7 @@ extension NMBaseSnippetsAsyncTests
    
    return [ latExp, lonExp , locExp ] }.flatMap{$0}
   
-  let result = XCTWaiter.wait(for: locExp, timeout: 0.1)
+  let result = XCTWaiter.wait(for: locExp, timeout: 1)
   XCTAssertEqual(result, .completed)
   
   try await storageRemoveHelperAsync(for: SUTS)
@@ -81,7 +138,7 @@ extension NMBaseSnippetsAsyncTests
    
    return [ latExp, lonExp , locExp ] }.flatMap{$0}
   
-  let resultDisabled = XCTWaiter.wait(for: locExpDisabled, timeout: 0.1)
+  let resultDisabled = XCTWaiter.wait(for: locExpDisabled, timeout: 1)
   XCTAssertEqual(resultDisabled, .completed)
   
   
@@ -143,7 +200,7 @@ extension NMBaseSnippetsAsyncTests
   
   NMLocationsGeocoderMock.enableNetwork()
   
-  let resultWhenEnabled = XCTWaiter.wait(for: locExpWhenEnabled, timeout: 0.1)
+  let resultWhenEnabled = XCTWaiter.wait(for: locExpWhenEnabled, timeout: 1)
   XCTAssertEqual(resultWhenEnabled, .completed)
   
   try await storageRemoveHelperAsync(for: SUTS)
@@ -203,7 +260,6 @@ extension NMBaseSnippetsAsyncTests
    return [ latExp, lonExp , locExp ] }.flatMap{ $0 }
   
   Task.detached(priority: TaskPriority.high){ [ self ] in
-   //try await Task.sleep(timeInterval: .milliseconds(.random(in: 10...500)))
    
    try await Task.sleep(timeInterval: .random(in: .nanoseconds(50)..<(.milliseconds(100))))
    
@@ -223,12 +279,17 @@ extension NMBaseSnippetsAsyncTests
  //MARK: Test that when all snippets are created their fields updated if services geo location availbale.
  final func test_All_Snippets_Creation_And_Persistance_With_GEO_Locations_Available() async throws
  {
+  
   let SUTS = try await createAllSnippetsWithGeoLocations()
   XCTAssertEqual(SUTS.compactMap{ $0.latitude  }.count, SUTS.count)
   XCTAssertEqual(SUTS.compactMap{ $0.longitude }.count, SUTS.count)
   XCTAssertEqual(SUTS.compactMap{ $0.location  }.count, SUTS.count)
   try await storageRemoveHelperAsync(for: SUTS)
+  
+
  }
+ 
+ 
  
 }//extension NMBaseSnippetsAsyncTests...
 

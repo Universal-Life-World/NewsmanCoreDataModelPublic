@@ -29,6 +29,7 @@ extension CLPlacemark: NMPlacemarkAddressRepresentable
  }
 }
 
+@available(iOS 13.0.0, *)
 public protocol NMGeocoderProtocol
 {
  associatedtype NMPlacemark: NMPlacemarkAddressRepresentable
@@ -41,12 +42,13 @@ public protocol NMGeocoderProtocol
  
  func reverseGeocodeLocation(_ location: CLLocation) async throws -> [NMPlacemark]
                      
- @available(iOS 15.0, *) @available(macOS 12.0.0, *)
  func placemarkPublisher(for location: CLLocation) -> AnyPublisher<NMPlacemark?, Error>
 }
 
+@available(iOS 13.0, *)
 extension NMGeocoderProtocol
 {
+ 
  public func placemarkPublisher(for location: CLLocation) -> AnyPublisher<NMPlacemark?, Error>
  {
   Deferred {
@@ -72,12 +74,17 @@ extension NMGeocoderProtocol
 extension CLGeocoder: NMGeocoderProtocol
 {
  public typealias NMPlacemark = CLPlacemark
- 
+
 }
 
-
-public final class NMLocation: NSObject
+@available(iOS 13.0, *)
+public final class NMLocation: Hashable
 {
+ public static func == (lhs: NMLocation, rhs: NMLocation) -> Bool {
+  lhs.location.coordinate.latitude == rhs.location.coordinate.latitude &&
+  lhs.location.coordinate.longitude == rhs.location.coordinate.longitude
+ }
+ 
  //public static var geocoderType: Geocoder.Type = CLGeocoder.self
 // public static var networkMonitorType: NMNetworkMonitorProtocol.Type = NMNetworkWaiter.self
  
@@ -89,10 +96,15 @@ public final class NMLocation: NSObject
  
  public var isValid: Bool { CLLocationCoordinate2DIsValid(location.coordinate) }
  
+ 
+ public func hash(into hasher: inout Hasher) {
+  hasher.combine(location.coordinate.latitude)
+  hasher.combine(location.coordinate.longitude)
+ }
+ 
  public init (location: CLLocation)
  {
   self.location = location
-  super.init()
  }
  
  let location: CLLocation
@@ -106,6 +118,7 @@ public final class NMLocation: NSObject
 // private var networkWaiter: Any?
  
  
+ @available(iOS 14.0, *)
  func getPlacemarkPublisher<G, N>( _ geocoderType: G.Type,
                                    _ networkWaiterType: N.Type) -> AnyPublisher<G.NMPlacemark?, Error>
   where G:NMGeocoderProtocol,
@@ -139,7 +152,9 @@ public final class NMLocation: NSObject
   .eraseToAnyPublisher()
  }
  
- @available(iOS 15.0, *) @available(macOS 12.0.0, *)
+ 
+ @available(iOS 15.0, *)
+ @available(macOS 12.0.0, *)
  public func getPlacemark<G, N> (with GC: G.Type = CLGeocoder.self as! G.Type,
                                  using NW: N.Type = NMNetworkWaiter.self as! N.Type) async throws -> G.NMPlacemark
  where G: NMGeocoderProtocol,

@@ -73,6 +73,7 @@ extension NMTopNews {
 }
 
 // MARK: Generated accessors for relatedSnippets
+@available(iOS 13.0, *)
 extension NMTopNews {
 
     @objc(addRelatedSnippetsObject:)

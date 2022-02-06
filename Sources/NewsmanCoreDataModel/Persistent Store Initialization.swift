@@ -11,6 +11,7 @@ public extension NSManagedObjectModel
  static var empty: Self { .init() }
 }
 
+@available(iOS 14.0, *)
 public final class NMCoreDataModel
 {
  
@@ -50,19 +51,19 @@ public final class NMCoreDataModel
  
  private func registerDataTransformers()
  {
-  if #available(iOS 12.0, *) {
+  //if #available(iOS 12.0, *) {
    GenericDataSecureTransformer<NSValue>.register()
-  } else {
-   // Fallback on earlier versions
-  }
+//  } else {
+//   // Fallback on earlier versions
+//  }
  
- if #available(iOS 12.0, *) {
+// if #available(iOS 12.0, *) {
   #if !os(macOS)
     GenericDataSecureTransformer<UIColor>.register()
   #endif
- } else {
+ //} else {
    // Fallback on earlier versions
- }
+ //}
  
  }
  

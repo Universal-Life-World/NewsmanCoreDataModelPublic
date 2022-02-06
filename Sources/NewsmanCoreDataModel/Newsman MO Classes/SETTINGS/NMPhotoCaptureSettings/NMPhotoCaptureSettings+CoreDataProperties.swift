@@ -42,6 +42,7 @@ extension NMPhotoCaptureSettings {
 }
 
 // MARK: Generated accessors for appliedToMixedSnippets
+@available(iOS 13.0, *)
 extension NMPhotoCaptureSettings {
 
     @objc(addAppliedToMixedSnippetsObject:)
@@ -92,7 +93,8 @@ extension NMPhotoCaptureSettings {
 
 }
 
-// MARK: Generated accessors for appliedToPhotoSnippets
+ // MARK: Generated accessors for appliedToPhotoSnippets
+@available(iOS 13.0, *)
 extension NMPhotoCaptureSettings {
 
     @objc(addAppliedToPhotoSnippetsObject:)

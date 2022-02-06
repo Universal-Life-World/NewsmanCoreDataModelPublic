@@ -42,11 +42,12 @@ extension NMTextEditingSettings {
 }
 
 // MARK: Generated accessors for appliedToMixedSnippets
+@available(iOS 13.0, *)
 extension NMTextEditingSettings {
 
     @objc(addAppliedToMixedSnippetsObject:)
     @NSManaged public func addToAppliedToMixedSnippets(_ value: NMMixedSnippet)
-
+ 
     @objc(removeAppliedToMixedSnippetsObject:)
     @NSManaged public func removeFromAppliedToMixedSnippets(_ value: NMMixedSnippet)
 
@@ -92,7 +93,9 @@ extension NMTextEditingSettings {
 
 }
 
-// MARK: Generated accessors for appliedToTextSnippets
+
+ // MARK: Generated accessors for appliedToTextSnippets
+@available(iOS 13.0, *)
 extension NMTextEditingSettings {
 
     @objc(addAppliedToTextSnippetsObject:)

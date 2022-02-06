@@ -10,6 +10,8 @@ import CoreData
 import Combine
 import CoreLocation
 
+
+@available(iOS 13.0, *)
 @objc(NMBaseSnippet)
 public class NMBaseSnippet : NSManagedObject
 {
@@ -22,8 +24,8 @@ public class NMBaseSnippet : NSManagedObject
  @NSManaged fileprivate var primitiveLastModifiedTimeStamp: Date?
  @NSManaged fileprivate var primitiveLastAccessedTimeStamp: Date?
  
+
  public var geoLocationSubscription: AnyCancellable?
- 
  
  public weak var locationsProvider: NMGeoLocationsProvider?
  

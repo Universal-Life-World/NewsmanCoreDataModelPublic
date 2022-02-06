@@ -4,6 +4,8 @@ import CoreData
 import CoreLocation
 import Combine
 
+
+@available(iOS 14.0, *)
 public protocol NMGeoLocationProvidable where Self: NSManagedObject
 {
  
@@ -22,11 +24,14 @@ public protocol NMGeoLocationProvidable where Self: NSManagedObject
  
 }
 
+
+@available(iOS 14.0, *)
 extension NMGeoLocationProvidable
 {
 // public typealias Geocoder = NMGeocoderProtocol
 // public typealias NetworkMonitor = NMNetworkMonitorProtocol
 //
+
  public var geoLocation: NMLocation?
  {
   get {
@@ -64,8 +69,10 @@ extension NMGeoLocationProvidable
  }
  
  
+
 }
 
+@available(iOS 14.0, *)
 extension NMBaseSnippet: NMGeoLocationProvidable
 {
 
@@ -87,6 +94,7 @@ extension NMBaseSnippet: NMGeoLocationProvidable
  }
  
  
+ @available(iOS 14.0, *)
  public func updateGeoLocations<G, N> (with geocoderType: G.Type = CLGeocoder.self as! G.Type,
                                        using networkWaiterType: N.Type = NMNetworkWaiter.self as! N.Type)
                                        where G: NMGeocoderProtocol,
@@ -100,7 +108,7 @@ extension NMBaseSnippet: NMGeoLocationProvidable
     .locationFixPublisher
     .handleEvents(receiveOutput: { [ unowned self ] location in
       managedObjectContext?.perform { geoLocation = location
-       print ("UPDATE LOCATION FOR \(className)")
+       print ("UPDATE LOCATION FOR \(String(describing: Swift.type(of: self)))")
       }
     })
     .flatMap{ $0.getPlacemarkPublisher(geocoderType.self, networkWaiterType.self) }

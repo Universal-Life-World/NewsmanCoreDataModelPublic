@@ -2,7 +2,7 @@ import XCTest
 import NewsmanCoreDataModel
 import CoreData
 
-@available(iOS 13.0.0, *)
+@available(iOS 14.0, *)
 final class NMCoreDataModelBasicTests: XCTestCase
 {
  
@@ -18,6 +18,7 @@ final class NMCoreDataModelBasicTests: XCTestCase
  {
   //print(#function)
  }
+ 
  
  override func setUp()
  {

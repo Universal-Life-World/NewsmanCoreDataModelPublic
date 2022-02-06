@@ -5,6 +5,7 @@ import RxSwift
 
 
 
+@available(iOS 14.0, *)
 public extension NMCoreDataModel
 {
  // MARK: CREATE MO operations with model context

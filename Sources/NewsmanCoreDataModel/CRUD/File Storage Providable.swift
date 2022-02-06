@@ -10,6 +10,7 @@ public protocol NMFileStorageManageable where Self: NSManagedObject
 
 
 //MARK: Extesion URL getter for Snippets classes.
+@available(iOS 13.0, *)
 public extension NMFileStorageManageable where Self: NMBaseSnippet
 {
  var url: URL? {

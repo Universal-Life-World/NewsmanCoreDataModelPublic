@@ -4,6 +4,7 @@ import XCTest
 import NewsmanCoreDataModel
 import Foundation
 
+@available(iOS 14.0, *)
 final class NMBaseSnippetsTests: XCTestCase
 {
  var model: NMCoreDataModel!

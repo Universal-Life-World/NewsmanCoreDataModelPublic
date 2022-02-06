@@ -1,6 +1,7 @@
 
 import XCTest
 import NewsmanCoreDataModel
+import CoreData
 
 @available(iOS 15.0, *) @available(macOS 12.0.0, *)
 extension NMBaseSnippetsAsyncTests

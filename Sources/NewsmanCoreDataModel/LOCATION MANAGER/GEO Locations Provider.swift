@@ -30,17 +30,19 @@ public protocol NMLocationProvider
 
 extension CLLocationManager: NMLocationProvider {}
 
-
+@available(iOS 13.0, *)
 public final class NMGeoLocationsProvider: NSObject, CLLocationManagerDelegate
 {
  
  public var locationProvider: NMLocationProvider
  public static var maxRetries = 5
+ public static var locationStalenessInterval:  TimeInterval = 1.0
  
  fileprivate typealias NMLocationFixHandler = (Result<CLLocation?, Error>) -> ()
  fileprivate var handler: NMLocationFixHandler?
  
  fileprivate typealias FixContinuation = CheckedContinuation<CLLocation?, Error>
+ 
  fileprivate var locationFixContinuation: FixContinuation?
  
  fileprivate let delegateResultMutex = DispatchSemaphore(value: 1)
@@ -54,6 +56,7 @@ public final class NMGeoLocationsProvider: NSObject, CLLocationManagerDelegate
  }
  
  
+ 
  public init(provider: NMLocationProvider = CLLocationManager())
  {
   self.locationProvider = provider
@@ -63,22 +66,36 @@ public final class NMGeoLocationsProvider: NSObject, CLLocationManagerDelegate
  
  @Published fileprivate var status: CLAuthorizationStatus?
  
+ private var cachedLocation: CLLocation?
+ 
+ private var isCachedLocationStale: Bool {
+  guard let location = cachedLocation else { return true }
+  return abs(location.timestamp.timeIntervalSinceNow) > Self.locationStalenessInterval
+ }
+ 
  var locationFixFuture: Future <CLLocation?, Error> {
   Future<CLLocation?, Error>{ [ unowned self ] promise in
    
-   print("WAITING FOR CLD MUTEX... in Future{\(#function)} in Thread [\(Thread.current)]")
+   print("WAITING FOR CLD MUTEX... in {\(#function)} Thread [\(Thread.current)]")
    
    delegateResultMutex.wait()
- 
-   print("UPDATE Future Handler OR Continuation {\(#function)} in Thread [\(Thread.current)]")
+   guard isCachedLocationStale else {
+    promise(.success(cachedLocation))
+    delegateResultMutex.signal()
+    return
+   }
+   print("UPDATE FUTURE HANDLER TO FETCH LOCATION {\(#function)} Thread [\(Thread.current)]")
    
    handler = promise
    locationProvider.requestLocation()
   }
  }
  
+
+ 
  public typealias TimeOut = DispatchQueue.SchedulerTimeType.Stride
  
+ @available(iOS 14.0, *)
  private func locationUnknownPublisher(_ timeOut: TimeOut,
                                        _ incTimeOut: TimeOut,
                                        _ maxTimeOut: TimeOut) -> AnyPublisher<CLLocation?, Error>
@@ -101,28 +118,35 @@ public final class NMGeoLocationsProvider: NSObject, CLLocationManagerDelegate
        }
       default: throw Failures.unknownFailure(with: error)
        
-   }
-  }.eraseToAnyPublisher()
+    }
+   
+   }.eraseToAnyPublisher()
  }
- 
- public var locationFixPublisher: AnyPublisher<NMLocation, Error> {
-  $status
-  .print()
-  .compactMap{ $0 }
-  .handleEvents(receiveOutput: { [ unowned self ] status in
+
+ private var authorizationStatusPublisher: AnyPublisher<CLAuthorizationStatus, Never> {
+  $status.print()
+   .compactMap{ $0 }
+   .handleEvents(receiveOutput: { [ unowned self ] status in
     switch status {
      case .notDetermined: locationProvider.requestWhenInUseAuthorization()
      case .restricted: fallthrough
      case .denied: break
      default: break
     }
-  })
- #if !os(macOS)
-  .filter{ $0 == .authorizedAlways || $0 == .authorizedWhenInUse}
- #else
-  .filter{ $0 == .authorized }
- #endif
-  .flatMap {[ unowned self ] _ in locationFixFuture }
+   })
+  #if !os(macOS)
+   .filter{ $0 == .authorizedAlways || $0 == .authorizedWhenInUse}
+  #else
+   .filter{ $0 == .authorized }
+  #endif
+   .eraseToAnyPublisher()
+ }
+ 
+ 
+ @available(iOS 14.0, *)
+ public var locationFixPublisher: AnyPublisher<NMLocation, Error> {
+  authorizationStatusPublisher
+  .flatMap { [ unowned self ] _ in locationFixFuture }
   .tryCatch{ [ unowned self ] (error: Error) -> AnyPublisher<CLLocation?, Error> in
    switch error {
     case let error as CLError:
@@ -156,6 +180,7 @@ public final class NMGeoLocationsProvider: NSObject, CLLocationManagerDelegate
   .eraseToAnyPublisher()
  }
  
+ @available(iOS 14.0, *)
  public func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
 
   let status = manager.authorizationStatus
@@ -166,10 +191,15 @@ public final class NMGeoLocationsProvider: NSObject, CLLocationManagerDelegate
  
  private func callHandlerWithMutex(_ result: Result<CLLocation?, Error>)
  {
-  defer {  delegateResultMutex.signal() }
+  defer {
+   delegateResultMutex.signal()
+   print("UNBLOCK RESULT MUTEX WITH \(result) IN {\(#function)} IN Thread [\(Thread.current)]")
+  }
+  
   switch (handler, locationFixContinuation){
    case let (h?, nil):
     h(result)
+    cachedLocation = try? result.get()
     handler = nil
    
    case let (nil, c?):
@@ -178,10 +208,6 @@ public final class NMGeoLocationsProvider: NSObject, CLLocationManagerDelegate
  
    default: break
   }
-  
-  
- 
-  print("UNBLOCK RESULT MUTEX WITH \(result) IN {\(#function)} IN Thread [\(Thread.current)]")
  }
 
  public func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
@@ -196,7 +222,8 @@ public final class NMGeoLocationsProvider: NSObject, CLLocationManagerDelegate
  
 }
 
-@available(iOS 15.0, *) @available(macOS 12.0.0, *)
+@available(iOS 15.0, *)
+@available(macOS 12.0.0, *)
 public extension NMGeoLocationsProvider
 {
  private func getLocationFix(retryCount: Int, maxRetries: Int) async throws -> NMLocation
@@ -216,6 +243,7 @@ public extension NMGeoLocationsProvider
     
     delegateResultMutex.wait()
     locationFixContinuation = c
+    print ("NEW CONTINUATION IS SET [\(c)]!")
     locationProvider.requestLocation()
     
    }

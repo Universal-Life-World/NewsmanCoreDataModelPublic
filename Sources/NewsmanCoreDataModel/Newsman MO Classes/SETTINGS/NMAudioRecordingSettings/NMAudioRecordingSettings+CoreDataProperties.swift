@@ -59,6 +59,7 @@ extension NMAudioRecordingSettings {
 }
 
 // MARK: Generated accessors for appliedToAudioSnippets
+@available(iOS 13.0, *)
 extension NMAudioRecordingSettings {
 
     @objc(addAppliedToAudioSnippetsObject:)
@@ -93,6 +94,7 @@ extension NMAudioRecordingSettings {
 }
 
 // MARK: Generated accessors for appliedToMixedSnippets
+@available(iOS 13.0, *)
 extension NMAudioRecordingSettings {
 
     @objc(addAppliedToMixedSnippetsObject:)

@@ -10,6 +10,7 @@ import Foundation
 import CoreData
 
 
+@available(iOS 13.0, *)
 extension NMAudioSnippet
 {
   @nonobjc public class func fetchRequest() -> NSFetchRequest<NMAudioSnippet>
@@ -30,6 +31,7 @@ extension NMAudioSnippet
 }
 
 // MARK: Generated accessors for audioFolders
+@available(iOS 13.0, *)
 extension NMAudioSnippet {
 
     @objc(addAudioFoldersObject:)
@@ -47,6 +49,7 @@ extension NMAudioSnippet {
 }
 
 // MARK: Generated accessors for audios
+@available(iOS 13.0, *)
 extension NMAudioSnippet {
 
     @objc(addAudiosObject:)
@@ -63,7 +66,10 @@ extension NMAudioSnippet {
 
 }
 
-// MARK: Generated accessors for copies
+
+
+ // MARK: Generated accessors for copies
+@available(iOS 13.0, *)
 extension NMAudioSnippet {
 
     @objc(addCopiesObject:)

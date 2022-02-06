@@ -6,6 +6,7 @@ enum SnippetTestError<T>: Error{
  case failed(snippet: T)
 }
 
+@available(iOS 14.0, *)
 extension NMBaseSnippetsTests
 {
  final func snippet_creation_with_checkup_helper<T: NMBaseSnippet>(objectType:T.Type,

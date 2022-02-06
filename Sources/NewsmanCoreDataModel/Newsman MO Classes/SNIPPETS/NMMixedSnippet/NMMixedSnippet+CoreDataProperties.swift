@@ -10,6 +10,7 @@ import Foundation
 import CoreData
 
 
+@available(iOS 13.0, *)
 extension NMMixedSnippet {
 
     @nonobjc public class func fetchRequest() -> NSFetchRequest<NMMixedSnippet> {
@@ -49,7 +50,8 @@ extension NMMixedSnippet {
 
 }
 
-// MARK: Generated accessors for audioFolders
+ // MARK: Generated accessors for audioFolders
+@available(iOS 13.0, *)
 extension NMMixedSnippet {
 
     @objc(addAudioFoldersObject:)
@@ -66,7 +68,8 @@ extension NMMixedSnippet {
 
 }
 
-// MARK: Generated accessors for audios
+ // MARK: Generated accessors for audios
+@available(iOS 13.0, *)
 extension NMMixedSnippet {
 
     @objc(addAudiosObject:)
@@ -81,9 +84,11 @@ extension NMMixedSnippet {
     @objc(removeAudios:)
     @NSManaged public func removeFromAudios(_ values: NSSet)
 
+ 
 }
 
 // MARK: Generated accessors for copies
+@available(iOS 13.0, *)
 extension NMMixedSnippet {
 
     @objc(addCopiesObject:)
@@ -101,6 +106,7 @@ extension NMMixedSnippet {
 }
 
 // MARK: Generated accessors for mixedFolders
+@available(iOS 13.0, *)
 extension NMMixedSnippet {
 
     @objc(addMixedFoldersObject:)
@@ -118,6 +124,7 @@ extension NMMixedSnippet {
 }
 
 // MARK: Generated accessors for photoFolders
+@available(iOS 13.0, *)
 extension NMMixedSnippet {
 
     @objc(addPhotoFoldersObject:)
@@ -135,6 +142,7 @@ extension NMMixedSnippet {
 }
 
 // MARK: Generated accessors for photos
+@available(iOS 13.0, *)
 extension NMMixedSnippet {
 
     @objc(addPhotosObject:)
@@ -152,6 +160,7 @@ extension NMMixedSnippet {
 }
 
 // MARK: Generated accessors for textFolders
+@available(iOS 13.0, *)
 extension NMMixedSnippet {
 
     @objc(addTextFoldersObject:)
@@ -169,6 +178,7 @@ extension NMMixedSnippet {
 }
 
 // MARK: Generated accessors for texts
+@available(iOS 13.0, *)
 extension NMMixedSnippet {
 
     @objc(addTextsObject:)
@@ -186,6 +196,7 @@ extension NMMixedSnippet {
 }
 
 // MARK: Generated accessors for videoFolders
+@available(iOS 13.0, *)
 extension NMMixedSnippet {
 
     @objc(addVideoFoldersObject:)
@@ -203,6 +214,7 @@ extension NMMixedSnippet {
 }
 
 // MARK: Generated accessors for videos
+@available(iOS 13.0, *)
 extension NMMixedSnippet {
 
     @objc(addVideosObject:)

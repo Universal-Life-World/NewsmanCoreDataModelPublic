@@ -9,6 +9,7 @@
 import Foundation
 import CoreData
 
+@available(iOS 13.0, *)
 @objc(NMMixedSnippet)
 public class NMMixedSnippet: NMBaseSnippet, NMFileStorageManageable
 {
