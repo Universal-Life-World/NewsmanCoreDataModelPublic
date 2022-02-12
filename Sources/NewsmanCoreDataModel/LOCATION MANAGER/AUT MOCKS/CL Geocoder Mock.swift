@@ -5,10 +5,10 @@ import Foundation
 import Combine
 import RxSwift
 
-public final class NMPlacemarkDummy: NMPlacemarkAddressRepresentable
-{
+public final class NMPlacemarkDummy: NMPlacemarkAddressRepresentable {
  public init(){}
- public var addressString: String { "Test Address" }
+ let ID = UUID()
+ public var addressString: String { "Test Address with ID <\(ID.uuidString)>" }
 }
 
 extension Notification.Name
@@ -22,8 +22,11 @@ extension Notification.Name
 @available(iOS 13.0, *)
 public final class NMLocationsGeocoderMock: NMGeocoderProtocol
 {
+ private static var useCount = 0
+ 
  public func reverseGeocodeLocation(_ location: CLLocation) async throws -> [NMPlacemarkDummy] {
-  try await withCheckedThrowingContinuation { cont in
+  print("START GEOCODING IN \(#function)")
+  return try await withCheckedThrowingContinuation { cont in
    reverseGeocodeLocation(location) { placemarks, error in
     switch (placemarks, error) {
      case (nil, let error?): cont.resume(throwing: error)
@@ -39,8 +42,15 @@ public final class NMLocationsGeocoderMock: NMGeocoderProtocol
  
  private static let isolationQueue = DispatchQueue(label: "NMLocationsGeocoderMock.isolation",
                                             attributes: [.concurrent])
+ 
+ private static let useQueue = DispatchQueue(label: "NMLocationsGeocoderMock.isolation.useCount",
+                                                   attributes: [.concurrent])
 
- public init() {}
+ public init() {
+  Self.useQueue.async(flags: [.barrier]) { Self.useCount += 1 }
+ }
+ 
+ public static var isUsedOnce: Bool{ useQueue.sync{ useCount == 1 } }
  
  private static var isNetworkAvailable = true
  
@@ -55,7 +65,7 @@ public final class NMLocationsGeocoderMock: NMGeocoderProtocol
  
  public static func disableNetwork()
  {
-  isolationQueue.sync {
+  isolationQueue.sync{
    guard isNetworkAvailable else { return }
    isNetworkAvailable = false
    NotificationCenter.default.post(name: .networkDidBecomeUnavailableMock, object: nil, userInfo: nil)

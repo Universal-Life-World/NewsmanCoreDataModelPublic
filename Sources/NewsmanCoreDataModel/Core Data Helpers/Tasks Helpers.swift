@@ -1,7 +1,19 @@
 import Foundation
 
-extension DispatchTimeInterval: Comparable
+extension DispatchTimeInterval: Comparable, AdditiveArithmetic
 {
+ public static func - (lhs: DispatchTimeInterval, rhs: DispatchTimeInterval) -> DispatchTimeInterval {
+  Self.nanoseconds(lhs.nanoseconds - rhs.nanoseconds)
+ }
+ 
+ public static func + (lhs: DispatchTimeInterval, rhs: DispatchTimeInterval) -> DispatchTimeInterval {
+  Self.nanoseconds(lhs.nanoseconds + rhs.nanoseconds)
+  
+  
+ }
+ 
+ public static var zero: DispatchTimeInterval { .never }
+ 
  public var nanoseconds: Int
  {
   switch self {

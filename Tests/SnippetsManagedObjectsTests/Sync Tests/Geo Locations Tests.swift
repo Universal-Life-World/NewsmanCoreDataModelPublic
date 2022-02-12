@@ -31,7 +31,7 @@ extension NMBaseSnippetsTests
  }
  
  
- final func test_snippet_creation_with_geo_locations_services_available()
+ final func test_snippet_creation_with_geo_locations_services_available() async
  {
   let persisted = true
   let queue = DispatchQueue(label: "test_snippet_creation_with_geo_locations")
@@ -76,7 +76,7 @@ extension NMBaseSnippetsTests
    return expectation
   }
   
-  let resultWhenCreated = XCTWaiter.wait(for: creationGroup, timeout: 1)
+  let resultWhenCreated = XCTWaiter.wait(for: creationGroup, timeout: 0.1)
   
   XCTAssertEqual(resultWhenCreated, .completed)
   
@@ -88,9 +88,9 @@ extension NMBaseSnippetsTests
    
    sut.updateGeoLocations(with: NMLocationsGeocoderMock.self, using: NMNetworkWaiterMock.self)
    
-   return [latExp, lonExp , locExp ] }.flatMap{$0}
+   return [latExp, lonExp , locExp ] }.flatMap{ $0 }
   
-  let resultWithLocationsUpdates = XCTWaiter.wait(for: locExpGroup, timeout: 3)
+  let resultWithLocationsUpdates = XCTWaiter.wait(for: locExpGroup, timeout: 0.1)
   XCTAssertEqual(resultWithLocationsUpdates, .completed)
   
   storageRemoveHelperSync(for: SUTS)

@@ -126,7 +126,7 @@ public class NMLocationManagerMock: CLLocationManager
  {
   get { delegate_IQ.sync { _delegate } }
   set {
-   delegate_IQ.async(flags: [.barrier]) {[ self ] in
+   delegate_IQ.sync {
     _delegate = newValue
     delegateQueue.async {
      newValue?.locationManagerDidChangeAuthorization?(self)
@@ -179,7 +179,7 @@ public class NMLocationManagerMock: CLLocationManager
  
  public override func startUpdatingLocation() {
   
-  print("START! Detecting Geo Location {\(#function)} in Thread [\(Thread.current)]")
+//  print("START! Detecting Geo Location {\(#function)} in Thread [\(Thread.current)]")
   
    if isUpdatingLocation { return }
    
@@ -201,13 +201,13 @@ public class NMLocationManagerMock: CLLocationManager
     case .authorizedWhenInUse: fallthrough
     case .authorized:
      isUpdatingLocation = true
-     print("WAITING while detecting Geo Location {\(#function)} in Thread [\(Thread.current)]")
+//     print("WAITING while detecting Geo Location {\(#function)} in Thread [\(Thread.current)]")
      
      let timeElapsed = DispatchTimeInterval.nanoseconds(.random(in: 100...1000))
      
      delegateQueue.asyncAfter(deadline: .now() + timeElapsed) { [ unowned self ] in
      
-      print("READY! Geo Location Detected in \(timeElapsed) NS!")
+//      print("READY! Geo Location Detected in \(timeElapsed) NS!")
       delegate?.locationManager?(self, didUpdateLocations: detectedLocations)
        
      }
@@ -219,7 +219,7 @@ public class NMLocationManagerMock: CLLocationManager
  
  public override func stopUpdatingLocation() {
   
-  print("STOP! Detecting Geo Location {\(#function)} in Thread [\(Thread.current)]")
+//  print("STOP! Detecting Geo Location {\(#function)} in Thread [\(Thread.current)]")
   
   
    guard isUpdatingLocation else { return }

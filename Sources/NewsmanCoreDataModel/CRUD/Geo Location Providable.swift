@@ -28,9 +28,6 @@ public protocol NMGeoLocationProvidable where Self: NSManagedObject
 @available(iOS 14.0, *)
 extension NMGeoLocationProvidable
 {
-// public typealias Geocoder = NMGeocoderProtocol
-// public typealias NetworkMonitor = NMNetworkMonitorProtocol
-//
 
  public var geoLocation: NMLocation?
  {
@@ -46,9 +43,9 @@ extension NMGeoLocationProvidable
   }
  }
  
- @available(iOS 15.0, *) @available(macOS 12.0.0, *)
- public var geoLocationAsync: NMLocation?
- {
+ @available(iOS 15.0, *)
+ @available(macOS 12.0.0, *)
+ public var geoLocationAsync: NMLocation? {
   get async throws {
    guard let context = managedObjectContext else {
     throw ContextError.noContext(object: self, entity: .object, operation: .updateObject)
@@ -57,7 +54,8 @@ extension NMGeoLocationProvidable
   }
  }
  
- @available(iOS 15.0, *) @available(macOS 12.0.0, *)
+ @available(iOS 15.0, *)
+ @available(macOS 12.0.0, *)
  public var addressAsync: String?
  {
   get async throws {
@@ -76,7 +74,6 @@ extension NMGeoLocationProvidable
 extension NMBaseSnippet: NMGeoLocationProvidable
 {
 
- 
  public var dergreesLatitude: CLLocationDegrees? {
   get { latitude?.doubleValue }
   set {
@@ -108,7 +105,7 @@ extension NMBaseSnippet: NMGeoLocationProvidable
     .locationFixPublisher
     .handleEvents(receiveOutput: { [ unowned self ] location in
       managedObjectContext?.perform { geoLocation = location
-       print ("UPDATE LOCATION FOR \(String(describing: Swift.type(of: self)))")
+//       print ("UPDATE LOCATION FOR \(String(describing: Swift.type(of: self)))")
       }
     })
     .flatMap{ $0.getPlacemarkPublisher(geocoderType.self, networkWaiterType.self) }

@@ -66,6 +66,7 @@ public extension NSManagedObject
                              where G: NMGeocoderProtocol,
                                    N: NMNetworkMonitorProtocol
  {
+//  print (#function, "START...")
   guard let context = managedObjectContext else {
    throw ContextError.noContext(object: self, entity: .object, operation: .updateObject)
   }
@@ -85,10 +86,13 @@ public extension NSManagedObject
      withLocations.location = location
     }
     
-   case (nil , nil ):
+   case ( nil , nil ):
+//    print ("AWAIT FOR LOCATION FIX...")
     let location = try await locationsProvider.locationFix
+//    print ("LOCATION FIX IS READY \(location.location)")
+//    print ("AWAIT FOR PLACEMARK...")
     let address = try await location.getPlacemark(with: G.self, using: N.self).addressString
-    
+//    print ("PLACEMARK IS READY \(address)")
     await context.perform {
      withLocations.geoLocation = location
      withLocations.location = address
@@ -98,7 +102,7 @@ public extension NSManagedObject
    default: break
     
   }
- 
+//  print (#function, "IS DONE!")
   return self
  
  }//func withGeoLocations<G, N>(with geocoderType: G.Type,...
@@ -135,8 +139,9 @@ public extension NMCoreDataModel
                             G: NMGeocoderProtocol,
                             N: NMNetworkMonitorProtocol
  {
-  try await create(persist: persisted, objectType: T.self, with: byBlock)
-   .withGeoLocations(with: G.self, using: N.self) as! T
+   try await create(persist: persisted,
+                    objectType: T.self,
+                    with: byBlock).withGeoLocations(with: G.self, using: N.self) as! T
  }
  
  
