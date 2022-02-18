@@ -40,12 +40,25 @@ public actor NMPlacemarksCacheActor{
  
  private var tasksMap = [NMLocation: Task<NMPlacemarkAddressRepresentable, Error>]()
 
- public func placemark(for location: NMLocation) async throws -> NMPlacemarkAddressRepresentable? {
-  try await tasksMap[location]?.value
+ public func placemark(for location: NMLocation) async -> NMPlacemarkAddressRepresentable? {
+  guard let cachedTask = tasksMap[location] else { return nil }
+  do {
+   return try await cachedTask.value
+  } catch {
+    tasksMap[location] = nil
+    return nil
+  }
+ }
+ 
+ public func removePlacemarkTask(for location: NMLocation) {
+  tasksMap[location] = nil
  }
  
  public func setPlacemarkTask(for location: NMLocation, task: Task<NMPlacemarkAddressRepresentable, Error>){
-  tasksMap.updateValue(task, forKey: location)?.cancel()
+  if tasksMap[location] == nil {
+   tasksMap[location] = task
+  }
+  //tasksMap.updateValue(task, forKey: location)?.cancel()
  }
 }
 
@@ -86,8 +99,12 @@ public final class NMLocation: Hashable {
  
  let location: CLLocation
  
- var retryCount = 2
+ var retryCount = 0
  public static var maxRetries = 5
+ 
+// deinit {
+//  print ("NM LOCATION FOR [\(location)] DEALLOCATED!")
+// }
  
 }
 

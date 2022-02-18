@@ -1,12 +1,11 @@
 
 import CoreData
 
-@available(iOS 15.0, *) @available(macOS 12.0.0, *)
-public extension NSManagedObject
-{
+@available(iOS 15.0, *)
+@available(macOS 12.0.0, *)
+public extension NSManagedObject {
  
- func updated<T: NSManagedObject>(_ block: ( (T) throws -> () )? ) async throws -> T
- {
+ func updated<T: NSManagedObject>(_ block: ( (T) throws -> () )? ) async throws -> T {
   guard let self  = self as? T else {
    fatalError("Wrong object type!!! <T> must be NSManagedObject!")
   }
@@ -34,9 +33,8 @@ public extension NSManagedObject
  }
  
  
- func persisted<T: NSManagedObject>(_ persist: Bool = true ) async throws -> T
- {
-  guard let self  = self as? T else {
+ func persisted<T: NSManagedObject>(_ persist: Bool = true ) async throws -> T {
+  guard let self = self as? T else {
    fatalError("Wrong object type!!! <T> must be NSManagedObject!")
   }
   guard persist else { return self }
@@ -52,8 +50,7 @@ public extension NSManagedObject
   }
  }
  
- func withFileStorage<T: NSManagedObject>() async throws -> T
- {
+ func withFileStorage<T: NSManagedObject>() async throws -> T {
   guard let self  = self as? T else {
    fatalError("Wrong object type!!! <T> must be NSManagedObject!")
   }
@@ -61,11 +58,12 @@ public extension NSManagedObject
   return try await manageStorage.withFileStorage() as! T
  }
  
+ 
+ //MARK: ASYNC METHOD TO UPDATE GPS COORDINATES OF CONFORMED OBJECT AND THEN GEOCODE THEM INTO STRING ADDRESS.
  func withGeoLocations<G, N>(with geocoderType: G.Type,
                              using networkMonitorType: N.Type) async throws -> NSManagedObject
                              where G: NMGeocoderProtocol,
-                                   N: NMNetworkMonitorProtocol
- {
+                                   N: NMNetworkMonitorProtocol {
 //  print (#function, "START...")
   guard let context = managedObjectContext else {
    throw ContextError.noContext(object: self, entity: .object, operation: .updateObject)
@@ -80,23 +78,24 @@ public extension NSManagedObject
   
   switch (await context.perform { (withLocations.geoLocation, withLocations.location) }) {
    case (let location?, nil ):
-    let location = try await location.getPlacemark(with: G.self, using: N.self).addressString
+    let locationStr = try await location.getPlacemark(with: G.self, using: N.self).addressString
     
     await context.perform {
-     withLocations.location = location
+     withLocations.location = locationStr
     }
     
    case ( nil , nil ):
-//    print ("AWAIT FOR LOCATION FIX...")
+    //print ("AWAIT FOR LOCATION FIX...")
     let location = try await locationsProvider.locationFix
-//    print ("LOCATION FIX IS READY \(location.location)")
-//    print ("AWAIT FOR PLACEMARK...")
+    //print ("LOCATION FIX IS READY \(location.location)")
+    // print ("AWAIT FOR PLACEMARK...")
+    await context.perform { withLocations.geoLocation = location }
+    
     let address = try await location.getPlacemark(with: G.self, using: N.self).addressString
-//    print ("PLACEMARK IS READY \(address)")
-    await context.perform {
-     withLocations.geoLocation = location
-     withLocations.location = address
-    }
+    await context.perform { withLocations.location = address }
+    
+   
+    // print ("PLACEMARK IS READY \(address)")
     
    
    default: break
@@ -111,22 +110,19 @@ public extension NSManagedObject
 
 
 
-@available(iOS 15.0, *) @available(macOS 12.0.0, *)
-public extension NMCoreDataModel
-{
+@available(iOS 15.0, *)
+@available(macOS 12.0.0, *)
+public extension NMCoreDataModel {
  // MARK: CREATE MO operations with model context with async API
  func create<T: NSManagedObject>(persist: Bool = false,
                                  objectType: T.Type,
-                                 with updates: ((T) throws -> ())? = nil) async throws -> T
- {
+                                 with updates: ((T) throws -> ())? = nil) async throws -> T {
+  
   try await context.perform { [unowned self] () -> T in
    let newObject = T(context: self.context)
    (newObject as? NMGeoLocationProvidable)?.locationsProvider = locationsProvider
    return newObject
-  }
-  .updated(updates)
-  .persisted(persist)
-  .withFileStorage()
+  }.updated(updates).persisted(persist).withFileStorage()
  }
   
  
@@ -137,8 +133,8 @@ public extension NMCoreDataModel
                       updated byBlock: ((T) throws -> ())? = nil) async throws -> T
                       where T: NSManagedObject,
                             G: NMGeocoderProtocol,
-                            N: NMNetworkMonitorProtocol
- {
+                            N: NMNetworkMonitorProtocol {
+                             
    try await create(persist: persisted,
                     objectType: T.self,
                     with: byBlock).withGeoLocations(with: G.self, using: N.self) as! T

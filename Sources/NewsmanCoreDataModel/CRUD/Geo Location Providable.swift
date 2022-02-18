@@ -8,7 +8,6 @@ import Combine
 @available(iOS 14.0, *)
 public protocol NMGeoLocationProvidable where Self: NSManagedObject
 {
- 
  var locationsProvider: NMGeoLocationsProvider?           { get set }
  var dergreesLatitude: CLLocationDegrees?                 { get set }
  var dergreesLongitude: CLLocationDegrees?                { get set }
@@ -20,17 +19,13 @@ public protocol NMGeoLocationProvidable where Self: NSManagedObject
                                 using networkWaiterType: N.Type)
                                 where G: NMGeocoderProtocol,
                                       N: NMNetworkMonitorProtocol
- 
- 
-}
+ }
 
 
 @available(iOS 14.0, *)
 extension NMGeoLocationProvidable
 {
-
- public var geoLocation: NMLocation?
- {
+ public var geoLocation: NMLocation?{
   get {
    guard let longitude = dergreesLongitude, let latitude = dergreesLatitude else { return nil }
    let location2D = CLLocation(latitude: latitude, longitude: longitude)
@@ -56,8 +51,7 @@ extension NMGeoLocationProvidable
  
  @available(iOS 15.0, *)
  @available(macOS 12.0.0, *)
- public var addressAsync: String?
- {
+ public var addressAsync: String? {
   get async throws {
    guard let context = managedObjectContext else {
     throw ContextError.noContext(object: self, entity: .object, operation: .updateObject)
@@ -65,14 +59,10 @@ extension NMGeoLocationProvidable
    return await context.persist{ [unowned self] in location }
   }
  }
- 
- 
-
 }
 
 @available(iOS 14.0, *)
-extension NMBaseSnippet: NMGeoLocationProvidable
-{
+extension NMBaseSnippet: NMGeoLocationProvidable {
 
  public var dergreesLatitude: CLLocationDegrees? {
   get { latitude?.doubleValue }
@@ -91,24 +81,30 @@ extension NMBaseSnippet: NMGeoLocationProvidable
  }
  
  
+ //MARK: COMBINE BASED METHOD TO UPDATE GPS COORDINATES OF CONFORMED OBJECT AND THEN GEOCODE THEM INTO STRING ADDRESS.
+ 
  @available(iOS 14.0, *)
  public func updateGeoLocations<G, N> (with geocoderType: G.Type = CLGeocoder.self as! G.Type,
                                        using networkWaiterType: N.Type = NMNetworkWaiter.self as! N.Type)
                                        where G: NMGeocoderProtocol,
-                                             N: NMNetworkMonitorProtocol
-                                      {
+                                             N: NMNetworkMonitorProtocol  {
   
   managedObjectContext?.perform { [ unowned self ] in
    if geoLocation != nil { return }
    
    geoLocationSubscription = locationsProvider?
     .locationFixPublisher
+    .receive(on: DispatchQueue.global(qos: .utility))
     .handleEvents(receiveOutput: { [ unowned self ] location in
       managedObjectContext?.perform { geoLocation = location
-//       print ("UPDATE LOCATION FOR \(String(describing: Swift.type(of: self)))")
+       //print ("UPDATE LOCATION FOR \(String(describing: Swift.type(of: self)))")
       }
     })
-    .flatMap{ $0.getPlacemarkPublisher(geocoderType.self, networkWaiterType.self) }
+    .flatMap{
+     
+     $0.getPlacemarkPublisher(geocoderType.self, networkWaiterType.self)
+     
+    }
     .replaceError(with: nil)
     .compactMap{ $0?.addressString }
     .sink { [ unowned self ] address in

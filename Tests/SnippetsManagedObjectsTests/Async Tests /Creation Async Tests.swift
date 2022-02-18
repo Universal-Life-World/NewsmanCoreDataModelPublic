@@ -5,7 +5,7 @@ import NewsmanCoreDataModel
 
 @available(iOS 15.0, *)
 @available(macOS 12.0.0, *)
-extension NMBaseSnippetsAsyncTests
+final class NMBaseSnippetsCreationAsyncTests: NMBaseSnippetsAsyncTests
 {
  //MARK: Test that when all snippets are created without persistance they have not NILID field!
  

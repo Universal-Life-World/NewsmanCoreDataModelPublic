@@ -2,14 +2,10 @@
 import Foundation
 
 @available(iOS 13.0, *)
-public extension NMBaseSnippet
-{
- enum SnippetType: Int16, CaseIterable
- {
-  init(snippet: NMBaseSnippet)
-  {
-   switch snippet
-   {
+public extension NMBaseSnippet {
+ enum SnippetType: Int16, CaseIterable, Hashable {
+  init(snippet: NMBaseSnippet) {
+   switch snippet {
     case is NMPhotoSnippet: self = .photo
     case is NMAudioSnippet: self = .audio
     case is NMVideoSnippet: self = .video

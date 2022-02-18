@@ -2,9 +2,6 @@
 import class Foundation.NSValue
 import CoreLocation
 
-
-
-
 @available(iOS 15.0, *)
 @available(macOS 12.0.0, *)
 public extension NMLocation {
@@ -14,41 +11,33 @@ public extension NMLocation {
                       N: NMNetworkMonitorProtocol
  {
   
-//  defer { Self.locationCacheMutex.signal() }
-//  Self.locationCacheMutex.wait()
-  
-  if let cachedPlacemark = try await Self.locationsCacheActor.placemark(for: self) as? G.NMPlacemark {
-//   print ("USING CACHED PLACEMARK \(cachedPlacemark.addressString)")
-   return cachedPlacemark
+  if retryCount == 0 {
+   let cachedPlacemark = await Self.locationsCacheActor.placemark(for: self)
+                       
+   if let cachedPlacemark = cachedPlacemark as? G.NMPlacemark {
+    print ("USING CACHED PLACEMARK \(cachedPlacemark.addressString)")
+    return cachedPlacemark
+   }
   }
   
-  let geocodingTask = Task.detached(priority: .medium) { [self] () -> NMPlacemarkAddressRepresentable in
-//   print ("GEOCODER TASK START...")
+  let geocodingTask = Task.detached(priority: .medium) { [ self ] () -> NMPlacemarkAddressRepresentable in
+   print ("GEOCODER TASK START...")
    guard retryCount <= Self.maxRetries else {
     throw NMGeoLocationsProvider.Failures.maxRetryCountExceeded(count: retryCount)
  
    }
    
    retryCount += 1
+   print ("GEOCODER TASK RETRY (\(retryCount))")
    
    let geocoder = GC.init()
    
    do {
-    try Task.checkCancellation()
     guard let placemark = try await geocoder.reverseGeocodeLocation(location).first else {
      return try await getPlacemark(with: GC.self, using: NW.self)
     }
     
-    //Self.locationsCache[self] = placemark
-    
     return placemark
-   }
-   catch is CancellationError {
-//    print ("GEOCODING TASK IS CANCELLED!")
-    guard let cachedPlacemark = try await Self.locationsCacheActor.placemark(for: self) as? G.NMPlacemark else {
-     return try await getPlacemark(with: GC.self, using: NW.self)
-    }
-    return cachedPlacemark
    }
    catch CLError.geocodeFoundPartialResult, CLError.geocodeFoundNoResult {
     return try await getPlacemark(with: GC.self, using: NW.self)

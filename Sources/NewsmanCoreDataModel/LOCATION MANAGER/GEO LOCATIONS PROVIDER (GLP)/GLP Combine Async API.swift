@@ -12,7 +12,7 @@ public extension NMGeoLocationsProvider {
   Future<CLLocation?, Error>{ [ unowned self ] promise in
    
    dispatchPrecondition(condition: .onQueue(fixPublisherQueue))
-    //   print("WAITING FOR CLD MUTEX... in {\(#function)} Thread [\(Thread.current)]")
+    //print("WAITING FOR CLD MUTEX... in {\(#function)} Thread [\(Thread.current)]")
    
    delegateResultMutex.wait()
    guard isCachedLocationStale else {
@@ -20,7 +20,7 @@ public extension NMGeoLocationsProvider {
     delegateResultMutex.signal()
     return
    }
-    //   print("UPDATE FUTURE HANDLER TO FETCH LOCATION {\(#function)} Thread [\(Thread.current)]")
+    //print("UPDATE FUTURE HANDLER TO FETCH LOCATION {\(#function)} Thread [\(Thread.current)]")
    
    handler = promise
    locationProvider.requestLocation()
@@ -57,9 +57,12 @@ public extension NMGeoLocationsProvider {
  }
  
  var authorizationStatusPublisher: AnyPublisher<CLAuthorizationStatus, Never> {
-  statusSubject //.print()
-   .compactMap{ $0 }
+  statusSubject
    .handleEvents(receiveOutput: { [ unowned self ] status in
+    guard let status = status else {
+     locationProvider.requestWhenInUseAuthorization()
+     return 
+    }
     switch status {
      case .notDetermined: locationProvider.requestWhenInUseAuthorization()
      case .restricted: fallthrough
@@ -67,6 +70,7 @@ public extension NMGeoLocationsProvider {
      default: break
     }
    })
+   .compactMap{ $0 }
    #if !os(macOS)
    .filter{ $0 == .authorizedAlways || $0 == .authorizedWhenInUse}
    #else
@@ -109,7 +113,7 @@ public extension NMGeoLocationsProvider {
       
     }
    }
-   .first{ $0.isValid }
+   //.first{ $0.isValid }
    .subscribe(on: fixPublisherQueue)
    .receive(on: fixPublisherQueue)//.print()
    .eraseToAnyPublisher()

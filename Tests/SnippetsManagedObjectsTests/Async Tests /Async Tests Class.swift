@@ -3,8 +3,7 @@ import XCTest
 import NewsmanCoreDataModel
 
 @available(iOS 14.0, *)
-final class NMBaseSnippetsAsyncTests: XCTestCase
-{
+class NMBaseSnippetsAsyncTests: XCTestCase {
  var model: NMCoreDataModel!
  weak var locationManagerMock: NMLocationManagerMock!
  

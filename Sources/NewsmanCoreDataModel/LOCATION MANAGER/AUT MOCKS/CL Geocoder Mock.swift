@@ -54,8 +54,7 @@ public final class NMLocationsGeocoderMock: NMGeocoderProtocol
  
  private static var isNetworkAvailable = true
  
- public static func enableNetwork()
- {
+ public static func enableNetwork() {
   isolationQueue.sync {
    if isNetworkAvailable { return }
    isNetworkAvailable = true
@@ -63,20 +62,58 @@ public final class NMLocationsGeocoderMock: NMGeocoderProtocol
   }
  }
  
- public static func disableNetwork()
- {
-  isolationQueue.sync{
+ public static func disableNetwork() {
+  isolationQueue.sync {
    guard isNetworkAvailable else { return }
    isNetworkAvailable = false
    NotificationCenter.default.post(name: .networkDidBecomeUnavailableMock, object: nil, userInfo: nil)
   }
  }
  
+ private static var isPlacemarkAvailable = true
+ 
+ public static func setPlacemarkAvailable() {
+  isolationQueue.sync {
+   if isPlacemarkAvailable { return }
+   isPlacemarkAvailable = true
+  }
+ }
+ 
+ public static func setPlacemarkUnavailable() {
+  isolationQueue.sync {
+   guard isPlacemarkAvailable else { return }
+   isPlacemarkAvailable = false
+  }
+ }
+ 
+ private static var geocodeFoundPartialResult = false
+ 
+ public static func setGeocodeFoundPartialResult() {
+  isolationQueue.sync {
+   if geocodeFoundPartialResult { return }
+   geocodeFoundPartialResult = true
+  }
+ }
+ 
+ public static func setGeocodeFoundFullResult() {
+  isolationQueue.sync {
+   guard geocodeFoundPartialResult else { return }
+   geocodeFoundPartialResult = false
+  }
+ }
+ 
  public func reverseGeocodeLocation(_ location: CLLocation,
                                     completionHandler: @escaping NMGeocodeCompletionHandler) {
   Self.isolationQueue.sync {
+   
+   if Self.geocodeFoundPartialResult {
+    completionHandler(nil, CLError(.geocodeFoundPartialResult))
+    return
+   }
+                      
    if Self.isNetworkAvailable {
-    completionHandler([ NMPlacemarkDummy()], nil )
+    let placemark = Self.isPlacemarkAvailable ? [ NMPlacemarkDummy() ] : []
+    completionHandler(placemark , nil )
    } else {
     completionHandler(nil, CLError(.network) )
    }
@@ -84,7 +121,10 @@ public final class NMLocationsGeocoderMock: NMGeocoderProtocol
  }
 }
 
-@available(iOS 15.0, *) @available(macOS 12.0.0, *)
+
+
+@available(iOS 15.0, *)
+@available(macOS 12.0.0, *)
 public actor NMLocationsGeocoderMockActor: NMGeocoderProtocol
 {
  public func reverseGeocodeLocation(_ location: CLLocation) async throws -> [NMPlacemarkDummy] {

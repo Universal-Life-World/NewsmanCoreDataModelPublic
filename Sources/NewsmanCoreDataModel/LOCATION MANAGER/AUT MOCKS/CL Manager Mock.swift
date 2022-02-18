@@ -28,7 +28,7 @@ public class NMLocationManagerMock: CLLocationManager
  public var isLocationUnknown: Bool
  {
   get { isLocationUnknown_IQ.sync { _isLocationUnknown } }
-  set { isLocationUnknown_IQ.async(flags: [.barrier]){ [ self ] in _isLocationUnknown = newValue } }
+  set { isLocationUnknown_IQ.sync{  _isLocationUnknown = newValue } }
  }
  
  
@@ -179,7 +179,7 @@ public class NMLocationManagerMock: CLLocationManager
  
  public override func startUpdatingLocation() {
   
-//  print("START! Detecting Geo Location {\(#function)} in Thread [\(Thread.current)]")
+   //print("START! Detecting Geo Location {\(#function)} in Thread [\(Thread.current)]")
   
    if isUpdatingLocation { return }
    

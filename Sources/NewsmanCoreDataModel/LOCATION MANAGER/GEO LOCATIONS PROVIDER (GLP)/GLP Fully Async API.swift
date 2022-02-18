@@ -3,15 +3,17 @@ import CoreLocation
 
 @available(iOS 15.0, *)
 @available(macOS 12.0.0, *)
-public extension NMGeoLocationsProvider {
+public extension NMGeoLocationsProvider
+{
+ 
  
  var locationFix: NMLocation {
   get async throws {
    try await getLocationFix(retryCount: 0,
                             maxRetries: Self.maxRetries,
                             timeOut: .zero,
-                            timeOutInc: .milliseconds(10),
-                            maxTimeOut: .milliseconds(100))
+                            timeOutInc: Self.timeOutIncrement,
+                            maxTimeOut: Self.maxTimeOut)
   }
  }
  
@@ -36,10 +38,14 @@ public extension NMGeoLocationsProvider {
     case .authorizedWhenInUse: fallthrough
     case .authorizedAlways: return
    #endif
+    
     @unknown default: throw Failures.unknownStatus(status: status)
    }
   }
  }
+ 
+ 
+ 
  
  private final func getLocationFix(retryCount: Int,
                                    maxRetries: Int,
@@ -54,35 +60,35 @@ public extension NMGeoLocationsProvider {
   
   try await Task.sleep(timeInterval: timeOut)
   
-//  print ("REQUEST AUTH STATUS...")
-  locationProvider.requestWhenInUseAuthorization()
-//  print ("AUTH STATUS DONE!")
+   //print ("REQUEST AUTH STATUS...")
+  //locationProvider.requestWhenInUseAuthorization()
+   //print ("AUTH STATUS DONE!")
   
-//  print ("AWAIT FOR AUTH STATUS...")
+   //print ("AWAIT FOR AUTH STATUS...")
   
-
+  
   try await requestAuthorization()
   
-//  print ("DONE!!! AWAIT FOR AUTH STATUS")
+   //print ("DONE!!! AWAIT FOR AUTH STATUS")
   
   do {
    let location = try await withCheckedThrowingContinuation{ (cont: FixContinuation) -> () in
     
-//    print ("WAITING FOR MUTEX...")
+    print ("WAITING FOR MUTEX...")
     delegateResultMutex.wait()
-//    print ("DONE!!! WAITING FOR MUTEX...")
-    
+    print ("DONE!!! WAITING FOR MUTEX...")
+
     guard isCachedLocationStale else {
      cont.resume(returning: cachedLocation!)
      delegateResultMutex.signal()
      return
     }
     
-    locationFixContinuation = cont //    print ("NEW CONTINUATION IS SET [\(c)]!")
+    locationFixContinuation = cont
+    print ("NEW CONTINUATION IS SET [\(cont)]!")
     locationProvider.requestLocation()
     
    }
- 
    
    guard let location = location else {
     return try await getLocationFix(retryCount: retryCount + 1, maxRetries: maxRetries)
@@ -91,6 +97,7 @@ public extension NMGeoLocationsProvider {
    return NMLocation(location: location)
   }
   catch CLError.locationUnknown {
+   print ("LOCATION UNKNOWN --> RETRY\(retryCount + 1). TIMEOUT \(timeOut + timeOutInc)")
    return try await getLocationFix(retryCount: retryCount + 1,
                                    maxRetries: .max,
                                    timeOut:    timeOut + timeOutInc,
@@ -106,6 +113,8 @@ public extension NMGeoLocationsProvider {
   }
   
  }
+  
+ 
  
  
 }

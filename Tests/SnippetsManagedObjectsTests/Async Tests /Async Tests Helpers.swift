@@ -116,8 +116,7 @@ extension NMBaseSnippetsAsyncTests
  }// final func createAllSnippetsWithGeoLocations(...)
  
  
- final func storageRemoveHelperAsync(for snippets: [NMBaseSnippet]) async throws
- {
+ final func storageRemoveHelperAsync(for snippets: [NMBaseSnippet]) async throws {
   let ids = try await withThrowingTaskGroup(of: NMFileStorageManageable.self, returning: [UUID].self)
   { group in
    snippets.compactMap{$0 as? NMFileStorageManageable}.forEach{ snippet in
@@ -139,13 +138,23 @@ extension NMBaseSnippetsAsyncTests
  }//final func storageRemoveHelperAsync...
  
  
- final func snippetsPersistanceCheckHelperAsync(for snippets: [NMBaseSnippet]) async throws
- {
+ final func snippetsFetchHelper(with predicate: NSPredicate = .init(value: true)) async throws -> [NMBaseSnippet] {
+  let MOC = model.context
+  return try await MOC.persist{ () -> [NMBaseSnippet] in
+   let fetchRequest = NSFetchRequest<NMBaseSnippet>(entityName: "NMBaseSnippet")
+   fetchRequest.predicate = predicate
+   let SUTS = try MOC.fetch(fetchRequest)
+   return SUTS
+  }
+ }
+ 
+ 
+ 
+ final func snippetsPersistanceCheckHelperAsync(for snippets: [NMBaseSnippet]) async throws {
   let modelContext = model.context
   
   try await modelContext.perform {
-   for snippet in snippets
-   {
+   for snippet in snippets {
     XCTAssertNotNil(snippet.id)
     let snippetContext = try XCTUnwrap (snippet.managedObjectContext)
     XCTAssertFalse(snippet.objectID.isTemporaryID)

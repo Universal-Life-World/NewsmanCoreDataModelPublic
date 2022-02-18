@@ -1,14 +1,18 @@
 
 import CoreLocation
-import class Dispatch.DispatchSemaphore
+import Dispatch
 import Combine
+
 
 @available(iOS 13.0, *)
 public final class NMGeoLocationsProvider: NSObject, CLLocationManagerDelegate {
  
  public var locationProvider: NMLocationProvider
  public static var maxRetries = 5
- public static var locationStalenessInterval:  TimeInterval = .infinity
+ public static var maxTimeOut: DispatchTimeInterval = .milliseconds(100)
+ public static var timeOutIncrement: DispatchTimeInterval = .milliseconds(10)
+ public static var locationStalenessInterval: TimeInterval = .infinity
+ 
  
  typealias NMLocationFixHandler = (Result<CLLocation?, Error>) -> ()
  var handler: NMLocationFixHandler?
@@ -57,12 +61,16 @@ public final class NMGeoLocationsProvider: NSObject, CLLocationManagerDelegate {
    defer {
     cachedLocation = try? result.get() 
     delegateResultMutex.signal()
-//    print("UNBLOCK RESULT MUTEX WITH \(result) IN {\(#function)} IN Thread [\(Thread.current)]")
+    //print("UNBLOCK RESULT MUTEX WITH \(result) IN {\(#function)} IN Thread [\(Thread.current)]")
    }
    
    switch (handler, locationFixContinuation) {
-    case let (h?, nil): h(result);              handler = nil;
-    case let (nil, c?): c.resume(with: result); locationFixContinuation = nil
+    case let (h?, nil):
+     h(result)
+     handler = nil
+    case let (nil, c?):
+     c.resume(with: result) //print ("RESUMED [\(c)] with RESULT - \(result)")
+     locationFixContinuation = nil
     default: break
    }
   

@@ -4,7 +4,7 @@ import NewsmanCoreDataModel
 
 @available(iOS 15.0, *)
 @available(macOS 12.0.0, *)
-extension NMBaseSnippetsAsyncTests
+class NMBaseSnippetsGeoLocationCombineAPITests: NMBaseSnippetsAsyncTests
 {
  //MARK: Test that when all snippets are created they are correctly subscribed to the location fields updates.
  final func test_All_Snippets_Creation_And_Persistance_With_GEO_Locations_Updates_Available() async throws
@@ -32,8 +32,7 @@ extension NMBaseSnippetsAsyncTests
  //MARK: Test that when all snippets are created they are correctly subscribed to the location fields updates and get the same cached location within the Location Manager Staleness Interval.
  final func test_All_Snippets_Creation_And_Persistance_With_CACHED_GEO_Locations_Available() async throws
  {
- 
- 
+  //LOCATIONS ARE ALWAYS NOT STALE! USE CACHED ONES!
   let SUTS = try await createAllSnippets(persisted: true)
   
   let locExp = SUTS.map{ (SUT: NMBaseSnippet) -> [ XCTKVOExpectation ] in
@@ -46,7 +45,7 @@ extension NMBaseSnippetsAsyncTests
    
    return [ latExp, lonExp , locExp ] }.flatMap{ $0 }
   
-  let result = XCTWaiter.wait(for: locExp, timeout: 0.1)
+  let result = XCTWaiter.wait(for: locExp, timeout: 0.01)
   XCTAssertEqual(result, .completed)
   let uniqueLocations = Set(SUTS.compactMap{$0.geoLocation})
   XCTAssertTrue(uniqueLocations.count == 1) // ALL THE SAME CACHED ONES!
@@ -61,7 +60,7 @@ extension NMBaseSnippetsAsyncTests
 //MARK: Test that when all snippets are created they are correctly subscribed to the location fields updates and get the different values. Location Manager Staleness Interval == 0!
  final func test_All_Snippets_Creation_And_Persistance_With_GEO_Locations_STALENESS_and_caching() async throws
  {
-  
+   //LOCATIONS ARE ALWAYS STALE! USE NEW ONES!
   NMGeoLocationsProvider.locationStalenessInterval = 0
   
   let SUTS = try await createAllSnippets(persisted: true)
@@ -79,8 +78,11 @@ extension NMBaseSnippetsAsyncTests
   
   let result = XCTWaiter.wait(for: locExp, timeout: 0.1)
   XCTAssertEqual(result, .completed)
+  let suts_count = SUTS.count
   let uniqueLocations = Set(SUTS.compactMap{$0.geoLocation})
-  XCTAssertTrue(uniqueLocations.count == SUTS.count) // ALL UNIQUE AS THE STALENESS == 0!
+  XCTAssertTrue(uniqueLocations.count == suts_count) // ALL UNIQUE AS THE STALENESS == 0!
+  let addresses = SUTS.compactMap{ $0.location }
+  XCTAssertTrue(Set(addresses).count == suts_count)
   
   
   try await storageRemoveHelperAsync(for: SUTS)
@@ -164,9 +166,9 @@ extension NMBaseSnippetsAsyncTests
  
  //MARK: Test that when all snippets are created when location services initially available & internet is unavailable the latitude & longitude are received and location string is not mutated as soon as internet becomes available again.
  
- func test_All_Snippets_creation_with_GEO_locations_Available_AND_NO_Internet() async throws
- {
- 
+ func test_All_Snippets_creation_with_GEO_locations_Available_AND_NO_Internet() async throws {
+  
+  NMGeoLocationsProvider.locationStalenessInterval = 0
   NMLocationsGeocoderMock.disableNetwork()
   
   let SUTS = try await createAllSnippets(persisted: true)
@@ -187,9 +189,9 @@ extension NMBaseSnippetsAsyncTests
    return [ latExp, lonExp , locExp ] }.flatMap{$0}
   
   let resultDisabled = XCTWaiter.wait(for: locExpDisabled, timeout: 0.1)
+  
   XCTAssertEqual(resultDisabled, .completed)
-  
-  
+ 
   let locExpWhenEnabled = SUTS.map{ (sut: NMBaseSnippet) -> [ XCTKVOExpectation ] in
    
    let latExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.latitude),  object: sut)
@@ -279,130 +281,71 @@ extension NMBaseSnippetsAsyncTests
  }// func test_All_Snippets_creation_with_GEO_locations_Available_AND_Location_Unknown()
  
  
-//MARK: FULLY ASYNC GEO LOCATIONS API.
- 
-//*************************************************************************************************************
- //MARK: Test that when all snippets are created their fields updated if services geo location available using async version of create method with async geo location methods.
-//*************************************************************************************************************
- final func test_All_Snippets_Creation_And_Persistance_With_GEO_Locations_Available_ASYNC () async throws
- {
-  
-  let SUTS = try await createAllSnippetsWithGeoLocations()
-  XCTAssertEqual(SUTS.compactMap{ $0.latitude  }.count, SUTS.count)
-  XCTAssertEqual(SUTS.compactMap{ $0.longitude }.count, SUTS.count)
-  XCTAssertEqual(SUTS.compactMap{ $0.location  }.count, SUTS.count)
-  
-  try await storageRemoveHelperAsync(for: SUTS) //snippets folders async cleaup...
-  
 
- } //final func test_All_Snippets_Creation_And_Persistance_With_GEO_Locations_Available_ASYNC ()...
-//*************************************************************************************************************
- 
- //MARK: Test that when all snippets are created their fields updated if geo location available using async version of create method with async geo location methods with cached value using cached value stainless interval set to maximum value.
-//*************************************************************************************************************
- final func test_All_Snippets_Creation_And_Persistance_With_CACHED_GEO_locations_ASYNC () async throws
- {
-  let SUTS = try await createAllSnippetsWithGeoLocations()
-  let geoLocations = SUTS.compactMap{ $0.geoLocation }
-  let addresses = SUTS.compactMap{ $0.location }
-  XCTAssertEqual(geoLocations.count, SUTS.count)
-  XCTAssertEqual(addresses.count, SUTS.count)
-  XCTAssertTrue(Set(geoLocations).count == 1)
-  XCTAssertTrue(Set(addresses).count == 1)
-  
-  try await storageRemoveHelperAsync(for: SUTS) //snippets folders async cleaup...
- 
- }//final func test_All_Snippets_Creation_And_Persistance_With_CACHED_GEO_locations_ASYN...
-//*************************************************************************************************************
-
- //MARK: Test that when all snippets are created their fields updated if geo location available using async version of create method with async geo location methods with cached value with no caching, Staleness == 0
-  //*************************************************************************************************************
- final func test_All_Snippets_Creation_And_Persistance_WITHOUT_CACHING_GEO_locations_ASYNC () async throws {
-  
-  NMGeoLocationsProvider.locationStalenessInterval = 0
-  
-  let SUTS = try await createAllSnippetsWithGeoLocations()
-  let geoLocations = SUTS.compactMap{ $0.geoLocation }
-  let addresses = SUTS.compactMap{ $0.location }
-  XCTAssertEqual(geoLocations.count, SUTS.count)
-  XCTAssertEqual(addresses.count, SUTS.count)
-  XCTAssertTrue(Set(geoLocations).count == SUTS.count)
-  XCTAssertTrue(Set(addresses).count == SUTS.count)
-  
-  try await storageRemoveHelperAsync(for: SUTS) //snippets folders async cleaup...
-  
- }//final func test_All_Snippets_Creation_And_Persistance_WITHOUT_CACHING_GEO_locations_ASYNC
- //*************************************************************************************************************
- 
-  //MARK: Test that when all snippets are created when location services is prohibited & then authorised by user.
- final func test_All_Snippets_creation_with_GEO_locations_DENIED_and_then_Authorized_ASYNC() async throws {
-  
-  locationManagerMock.disableLocationServices()
-  NMGeoLocationsProvider.locationStalenessInterval = 0
-  
-  Task.detached{ [self] in
-   try await Task.sleep(timeInterval: .milliseconds(100))
-   locationManagerMock.enableLocationServicesWhenInUse()
-  }
-  
-  let SUTS = try await createAllSnippetsWithGeoLocations()
-  let geoLocations = SUTS.compactMap{ $0.geoLocation }
-  let addresses = SUTS.compactMap{ $0.location }
-  XCTAssertEqual(geoLocations.count, SUTS.count)
-  XCTAssertEqual(addresses.count, SUTS.count)
-  XCTAssertTrue(Set(geoLocations).count == SUTS.count)
-  XCTAssertTrue(Set(addresses).count == SUTS.count)
- 
-  try await storageRemoveHelperAsync(for: SUTS) //snippets folders async cleaup...
-  
- }//func test_All_Snippets_creation_with_GEO_locations_DENIED_and_then_Authorized_ASYNC
  
  
- 
- //MARK: Test that when all snippets are created when location services initially available & internet is available but location unknown error occurs and then location detected after a number of retries.
- final func test_All_Snippets_creation_with_Location_Unknown_AND_then_Detected_ASYNC() async throws
- {
-  NMGeoLocationsProvider.locationStalenessInterval = 0
-  locationManagerMock.isLocationUnknown = true
-  
-  Task.detached{ [self] in
-   try await Task.sleep(timeInterval: .milliseconds(100))
-   locationManagerMock.isLocationUnknown = false
-  }
-  
-  
-  let SUTS = try await createAllSnippetsWithGeoLocations()
-  let geoLocations = SUTS.compactMap{ $0.geoLocation }
-  let addresses = SUTS.compactMap{ $0.location }
-  XCTAssertEqual(geoLocations.count, SUTS.count)
-  XCTAssertEqual(addresses.count, SUTS.count)
-  XCTAssertTrue(Set(geoLocations).count == SUTS.count)
-  XCTAssertTrue(Set(addresses).count == SUTS.count)
-  
-  try await storageRemoveHelperAsync(for: SUTS) //snippets folders async cleaup...
-  
- 
- }
- 
- 
- final func test_All_Snippets_creation_with_Location_Unknown_AND_then_NOT_Detected_ASYNC() async throws
- {
-  NMGeoLocationsProvider.locationStalenessInterval = 0
-  locationManagerMock.isLocationUnknown = true
-  
-  
-  do {
-   let _ = try await createAllSnippetsWithGeoLocations()
-  } catch NMGeoLocationsProvider.Failures.maxTimeOutExceeded(timeOut: let timeout){
-   print (timeout)
- 
-   
-  } catch {
-   XCTFail()
-  }
- }
- 
-
+// func test_All_Snippets_creation_with_GEO_locations_Available_AND_NO_Internet_ASYNC() async throws {
+//
+//  let MOC = model.context
+//  NMLocationsGeocoderMock.disableNetwork()
+//  NMGeoLocationsProvider.locationStalenessInterval = 0
+//
+//
+//  let insertedSUTSExpectation = XCTNSNotificationExpectation(name: .NSManagedObjectContextObjectsDidChange,
+//                                                             object: MOC)
+//
+//  insertedSUTSExpectation.handler = { notification in
+//
+//   print ((notification.userInfo![NSInsertedObjectsKey] as! Set<NMBaseSnippet>).first!.id!)
+//   return true
+//  }
+//
+//
+//  let SUTS = try await createAllSnippets(persisted: true)
+//
+//  let res = XCTWaiter.wait(for: [insertedSUTSExpectation], timeout: 0.1)
+//
+//  XCTAssertEqual(res, .completed)
+//
+//  let locExpDisabled = SUTS.map{ (sut: NMBaseSnippet) -> [ XCTKVOExpectation ]  in
+//
+//   let latExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.latitude),  object: sut)
+//    //latExp.isInverted = true
+//
+//   let lonExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.longitude), object: sut)
+//    //lonExp.isInverted = true
+//
+//   let locExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.location),  object: sut)
+//   locExp.isInverted = true
+//
+//   sut.updateGeoLocations(with: NMLocationsGeocoderMock.self, using: NMNetworkWaiterMock.self)
+//
+//   return [ latExp, lonExp , locExp ] }.flatMap{$0}
+//
+//  let resultDisabled = XCTWaiter.wait(for: locExpDisabled, timeout: 1)
+//  XCTAssertEqual(resultDisabled, .completed)
+//
+//
+//  let locExpWhenEnabled = SUTS.map{ (sut: NMBaseSnippet) -> [ XCTKVOExpectation ] in
+//
+//   let latExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.latitude),  object: sut)
+//   latExp.isInverted = true
+//
+//   let lonExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.longitude), object: sut)
+//   lonExp.isInverted = true
+//
+//   let locExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.location),  object: sut)
+//
+//   return [ latExp, lonExp , locExp ] }.flatMap{$0}
+//
+//  NMLocationsGeocoderMock.enableNetwork()
+//
+//  let resultWhenEnabled = XCTWaiter.wait(for: locExpWhenEnabled, timeout: 1)
+//  XCTAssertEqual(resultWhenEnabled, .completed)
+//
+//  try await storageRemoveHelperAsync(for: SUTS)
+// }// func test_All_Snippets_creation_with_GEO_locations_Available_AND_NO_Internet...
+//
  
 }//extension NMBaseSnippetsAsyncTests...
 
