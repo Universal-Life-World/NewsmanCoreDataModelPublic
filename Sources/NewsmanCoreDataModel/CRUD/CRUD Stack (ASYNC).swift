@@ -6,6 +6,8 @@ import CoreData
 public extension NSManagedObject {
  
  func updated<T: NSManagedObject>(_ block: ( (T) throws -> () )? ) async throws -> T {
+  try Task.checkCancellation()
+  
   guard let self  = self as? T else {
    fatalError("Wrong object type!!! <T> must be NSManagedObject!")
   }
@@ -22,6 +24,7 @@ public extension NSManagedObject {
  
   return try await context.perform { [ unowned self ] in
    do {
+    try Task.checkCancellation()
     try block(self)
     return self
    }
@@ -34,9 +37,12 @@ public extension NSManagedObject {
  
  
  func persisted<T: NSManagedObject>(_ persist: Bool = true ) async throws -> T {
+  try Task.checkCancellation()
+  
   guard let self = self as? T else {
    fatalError("Wrong object type!!! <T> must be NSManagedObject!")
   }
+  
   guard persist else { return self }
  
   guard let context = self.managedObjectContext else {
@@ -44,6 +50,7 @@ public extension NSManagedObject {
   }
   
   return try await context.perform { [ unowned self ] in
+   try Task.checkCancellation()
    guard self.hasChanges else { return self }
    try context.save()
    return self
@@ -51,7 +58,9 @@ public extension NSManagedObject {
  }
  
  func withFileStorage<T: NSManagedObject>() async throws -> T {
-  guard let self  = self as? T else {
+  try Task.checkCancellation()
+  
+  guard let self = self as? T else {
    fatalError("Wrong object type!!! <T> must be NSManagedObject!")
   }
   guard let manageStorage = self as? NMFileStorageManageable else { return self  }
@@ -64,35 +73,59 @@ public extension NSManagedObject {
                              using networkMonitorType: N.Type) async throws -> NSManagedObject
                              where G: NMGeocoderProtocol,
                                    N: NMNetworkMonitorProtocol {
-//  print (#function, "START...")
+  
+  try Task.checkCancellation()
   guard let context = managedObjectContext else {
    throw ContextError.noContext(object: self, entity: .object, operation: .updateObject)
   }
-  
+ 
   guard isDeleted == false else {
    throw ContextError.isDeleted(object: self, entity: .object, operation: .updateObject)
   }
   
   guard let withLocations = self as? NMGeoLocationProvidable else { return self }
-  guard let locationsProvider = withLocations.locationsProvider else { return self }
   
+ 
+  guard let locationsProvider = withLocations.locationsProvider else { return self }
+                                    
+  print (#function, "START... \(locationsProvider)")
+                                    
   switch (await context.perform { (withLocations.geoLocation, withLocations.location) }) {
    case (let location?, nil ):
+    try Task.checkCancellation()
     let locationStr = try await location.getPlacemark(with: G.self, using: N.self).addressString
     
-    await context.perform {
+    try await context.perform {
+     try Task.checkCancellation()
+     guard withLocations.managedObjectContext != nil else { return }
      withLocations.location = locationStr
     }
     
    case ( nil , nil ):
-    //print ("AWAIT FOR LOCATION FIX...")
+    try Task.checkCancellation()
+    print ("AWAIT FOR LOCATION FIX...")
     let location = try await locationsProvider.locationFix
-    //print ("LOCATION FIX IS READY \(location.location)")
-    // print ("AWAIT FOR PLACEMARK...")
-    await context.perform { withLocations.geoLocation = location }
     
+    print ("AWAIT FOR PLACEMARK...")
+    try await context.perform {
+     try Task.checkCancellation()
+     guard withLocations.managedObjectContext != nil else { return }
+    
+     withLocations.geoLocation = location
+     
+     print ("UPDATED GEO LOCATION FOR \(String(describing: Swift.type(of: self))) IN {\(String(describing: withLocations.managedObjectContext))} with VALUE: \(location)")
+    }
+    
+    try Task.checkCancellation()
     let address = try await location.getPlacemark(with: G.self, using: N.self).addressString
-    await context.perform { withLocations.location = address }
+    try await context.perform {
+     try Task.checkCancellation()
+     guard withLocations.managedObjectContext != nil else { return }
+     withLocations.location = address
+     
+
+     print ("UPDATED GEOCODED ADDRESS \(String(describing: Swift.type(of: self))) IN {\(String(describing: withLocations.managedObjectContext))} with VALUE: \(address)")
+    }
     
    
     // print ("PLACEMARK IS READY \(address)")
@@ -119,10 +152,13 @@ public extension NMCoreDataModel {
                                  with updates: ((T) throws -> ())? = nil) async throws -> T {
   
   try await context.perform { [unowned self] () -> T in
+   try Task.checkCancellation()
    let newObject = T(context: self.context)
    (newObject as? NMGeoLocationProvidable)?.locationsProvider = locationsProvider
    return newObject
-  }.updated(updates).persisted(persist).withFileStorage()
+  }.updated(updates)   //1
+   .persisted(persist) //2
+   .withFileStorage()  //3
  }
   
  

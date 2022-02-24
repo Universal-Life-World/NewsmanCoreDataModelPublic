@@ -99,6 +99,8 @@ public extension NMFileStorageManageable
  }
  
  func withFileStorage() async throws -> Self {
+  try Task.checkCancellation()
+  
   guard let context = self.managedObjectContext else {
    throw ContextError.noContext(object: self, entity: .object, operation: .storageCreate)
   }

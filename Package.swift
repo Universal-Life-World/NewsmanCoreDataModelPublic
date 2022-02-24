@@ -22,9 +22,14 @@ let package = Package(
         .target(name: "NewsmanCoreDataModel", dependencies: ["RxSwift"]),
         
         .testTarget(name: "NewsmanCoreDataModelBasicTests", dependencies: ["NewsmanCoreDataModel"]),
+        
+        
         .testTarget(name: "SnippetsManagedObjectsTests"   , dependencies: ["NewsmanCoreDataModel"]),
         .testTarget(name: "NewsmanCoreDataModelTests"     , dependencies: ["NewsmanCoreDataModel"]),
         .testTarget(name: "NewsmanLocationServicesTests"  , dependencies: ["NewsmanCoreDataModel"]),
         
     ]
 )
+
+
+ 

@@ -9,18 +9,29 @@ final class NMBaseSnippetsCreationAsyncTests: NMBaseSnippetsAsyncTests
 {
  //MARK: Test that when all snippets are created without persistance they have not NILID field!
  
- final func test_Snippets_CREATED_Correctly_with_NO_Persistance() async throws
- {
+ final func test_Snippets_CREATED_Correctly_with_NO_Persistance() async throws{
   let SUTS = try await createAllSnippets(persisted: false)
   XCTAssertEqual(SUTS.compactMap{ $0.id }.count, 6)
   try await storageRemoveHelperAsync(for: SUTS)
   
  }
  
+ 
+ //MARK: Test that when all snippets are created with task cancellation error!
+ final func test_Snippets_CREATED_WITH_CANCELLATION () async throws {
+  let SUTS_task = Task {try await createAllSnippets(persisted: true)}
+  SUTS_task.cancel()
+  
+  try await XCTAssertThrowsErrorAsync(try await SUTS_task.value, errorType: CancellationError.self)
+ 
+  
+
+ 
+ }
+ 
  //MARK: Test that when all snippets are created and persisted they can be fetched from MOC.
  
- final func test_Snippets_CREATED_correctly_With_Persistance() async throws
- {
+ final func test_Snippets_CREATED_correctly_With_Persistance() async throws{
   let SUTS = try await createAllSnippets(persisted: true)
   try await snippetsPersistanceCheckHelperAsync(for: SUTS) //FETCH SNIPPETS...
   try await storageRemoveHelperAsync(for: SUTS)

@@ -5,9 +5,10 @@ import CoreLocation
 import Combine
 
 
-@available(iOS 14.0, *)
+@available(iOS 13.0, *)
 public protocol NMGeoLocationProvidable where Self: NSManagedObject
 {
+
  var locationsProvider: NMGeoLocationsProvider?           { get set }
  var dergreesLatitude: CLLocationDegrees?                 { get set }
  var dergreesLongitude: CLLocationDegrees?                { get set }
@@ -15,16 +16,53 @@ public protocol NMGeoLocationProvidable where Self: NSManagedObject
  
  var geoLocationSubscription: AnyCancellable?             { get set }
  
+ @available(iOS 15.0, macOS 12.0, *)
+ func updateGeoLocationsAfterFetch()
+ 
+ var updateGeoLocationsTask: Task<NSManagedObject, Error>? { get set }
+ 
  func updateGeoLocations<G, N> (with geocoderType: G.Type,
                                 using networkWaiterType: N.Type)
                                 where G: NMGeocoderProtocol,
                                       N: NMNetworkMonitorProtocol
+}
+
+
+
+@available(iOS 13.0, *)
+public extension NMBaseSnippet {
+ @available(iOS 15.0, macOS 12.0, *)
+ func updateGeoLocationsAfterFetch() {
+  print("\(#function)")
+  locationsProvider = managedObjectContext?.locationsProvider
+  let workingTask = updateGeoLocationsTask
+  updateGeoLocationsTask = Task.detached(priority: .medium) {
+   if let snippet = try? await workingTask?.value { return snippet }
+   
+   return try await self.withGeoLocations(with: NMLocationsGeocoderMock.self,
+                                          using: NMNetworkWaiterMock.self)
+  }
  }
+}
+
+
+@available(iOS 15.0, macOS 12.0, *)
+public extension NMGeoLocationProvidable {
+ func updateGeoLocationsAfterFetch() {
+  locationsProvider = managedObjectContext?.locationsProvider
+  let workingTask = updateGeoLocationsTask
+  updateGeoLocationsTask = Task.detached(priority: .medium) {
+   if let snippet = try? await workingTask?.value { return snippet }
+   return try await self.withGeoLocations(with: CLGeocoder.self, using: NMNetworkWaiter.self)
+  }
+ }
+}
+
+
 
 
 @available(iOS 14.0, *)
-extension NMGeoLocationProvidable
-{
+extension NMGeoLocationProvidable {
  public var geoLocation: NMLocation?{
   get {
    guard let longitude = dergreesLongitude, let latitude = dergreesLatitude else { return nil }
@@ -45,7 +83,7 @@ extension NMGeoLocationProvidable
    guard let context = managedObjectContext else {
     throw ContextError.noContext(object: self, entity: .object, operation: .updateObject)
    }
-   return await context.persist{ [unowned self] in geoLocation }
+   return await context.perform{ [unowned self] in geoLocation }
   }
  }
  
@@ -56,13 +94,16 @@ extension NMGeoLocationProvidable
    guard let context = managedObjectContext else {
     throw ContextError.noContext(object: self, entity: .object, operation: .updateObject)
    }
-   return await context.persist{ [unowned self] in location }
+   return await context.perform { [unowned self] in location }
   }
  }
+ 
+ 
 }
 
-@available(iOS 14.0, *)
+@available(iOS 14.0, macOS 12.0.0, *)
 extension NMBaseSnippet: NMGeoLocationProvidable {
+ 
 
  public var dergreesLatitude: CLLocationDegrees? {
   get { latitude?.doubleValue }
@@ -100,13 +141,9 @@ extension NMBaseSnippet: NMGeoLocationProvidable {
        //print ("UPDATE LOCATION FOR \(String(describing: Swift.type(of: self)))")
       }
     })
-    .flatMap{
-     
-     $0.getPlacemarkPublisher(geocoderType.self, networkWaiterType.self)
-     
-    }
+    .flatMap { $0.getPlacemarkPublisher(geocoderType.self, networkWaiterType.self) }
     .replaceError(with: nil)
-    .compactMap{ $0?.addressString }
+    .compactMap { $0?.addressString }
     .sink { [ unowned self ] address in
       managedObjectContext?.perform { location = address }
     }

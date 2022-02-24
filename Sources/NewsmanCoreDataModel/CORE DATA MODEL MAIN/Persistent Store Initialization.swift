@@ -5,15 +5,23 @@ import Foundation
 import UIKit
 #endif
 
+@available(iOS 13.0, *)
+public extension NSManagedObjectContext{
+ 
+ static let locationsProviderKey = "locationsProvider"
+ var locationsProvider: NMGeoLocationsProvider? {
+  get { userInfo[Self.locationsProviderKey] as? NMGeoLocationsProvider }
+  set { userInfo[Self.locationsProviderKey] = newValue }
+ }
+ 
+}
 
-public extension NSManagedObjectModel
-{
+public extension NSManagedObjectModel{
  static var empty: Self { .init() }
 }
 
 @available(iOS 14.0, *)
-public final class NMCoreDataModel
-{
+public final class NMCoreDataModel {
  
  private static var moms: [String: NSManagedObjectModel] = [:]
  
@@ -31,8 +39,7 @@ public final class NMCoreDataModel
  }
  
  
- public enum StoreType
- {
+ public enum StoreType {
   case inMemorySQLight  // init SQLite store with "/dev/null" in memory for Unit Testing.
   case persistedSQLight // init SQLite persisted store on disk for production.
  }
@@ -47,7 +54,23 @@ public final class NMCoreDataModel
  
  private let mocIsq = DispatchQueue(label: "MOC access isolation queue")
  
- public var context: NSManagedObjectContext { mocIsq.sync{ persistentContainer.viewContext } }
+ public var context: NSManagedObjectContext {
+  mocIsq.sync{
+   let context = persistentContainer.viewContext
+   context.locationsProvider = locationsProvider
+   return context
+   
+  }
+ }
+ 
+ public var bgContext: NSManagedObjectContext {
+  mocIsq.sync{
+   let bgContext = persistentContainer.newBackgroundContext()
+   bgContext.locationsProvider = locationsProvider
+   return bgContext
+   
+  }
+ }
  
  private func registerDataTransformers()
  {
@@ -73,8 +96,7 @@ public final class NMCoreDataModel
   
   let container = NSPersistentContainer(name: modelName, managedObjectModel: mom)
  
-  if storeType == .inMemorySQLight
-  {
+  if storeType == .inMemorySQLight {
    container.persistentStoreDescriptions.first!.url = URL(fileURLWithPath: "/dev/null")
   }
  
@@ -88,8 +110,8 @@ public final class NMCoreDataModel
  
  public init(name: String = "Model",
              for storeType: StoreType = .persistedSQLight,
-             locationsProvider: NMGeoLocationsProvider = NMGeoLocationsProvider())
- {
+             locationsProvider: NMGeoLocationsProvider = NMGeoLocationsProvider()) {
+  
   self.modelName = name
   self.storeType = storeType
   self.locationsProvider = locationsProvider

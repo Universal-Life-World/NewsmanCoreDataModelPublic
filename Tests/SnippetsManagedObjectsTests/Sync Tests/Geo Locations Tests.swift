@@ -2,6 +2,7 @@
 import XCTest
 import NewsmanCoreDataModel
 
+@available(macOS 12.0, *)
 @available(iOS 14.0, *)
 extension NMBaseSnippetsTests
 {

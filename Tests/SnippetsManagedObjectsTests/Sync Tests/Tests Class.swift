@@ -5,7 +5,7 @@ import NewsmanCoreDataModel
 import Foundation
 
 @available(iOS 14.0, *)
-final class NMBaseSnippetsTests: XCTestCase
+final class NMBaseSnippetsTests: XCTestCase, NMSnippetsTestsStorageRemovable
 {
  var model: NMCoreDataModel!
  

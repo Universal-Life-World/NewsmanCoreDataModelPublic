@@ -15,6 +15,7 @@ import CoreLocation
 @objc(NMBaseSnippet)
 public class NMBaseSnippet : NSManagedObject
 {
+ 
  // Declared primitive properties for mutating this object silently without KVO & MOCDC notifications.
  // MOCDC = .NSManagedObjectContextDidChange notification posted to the default local NotificationCenter.
  
@@ -25,15 +26,16 @@ public class NMBaseSnippet : NSManagedObject
  @NSManaged fileprivate var primitiveLastAccessedTimeStamp: Date?
  
 
+ //public static var geocoderType: NMGeocoderTypeProtocol.Type?
  public var geoLocationSubscription: AnyCancellable?
  
  public weak var locationsProvider: NMGeoLocationsProvider?
+
  
  //MARK: Accessors for Snippet Status
  @NSManaged fileprivate var primitiveStatus: String
  public static let statusKey = "status"
- public fileprivate (set) var status: SnippetStatus
- {
+ public fileprivate (set) var status: SnippetStatus {
   get {
    willAccessValue(forKey: Self.statusKey)
    guard let value = SnippetStatus(rawValue: primitiveStatus) else {
@@ -96,14 +98,22 @@ public class NMBaseSnippet : NSManagedObject
  }
  
  
+ public var updateGeoLocationsTask: Task<NSManagedObject, Error>?
  
- 
+ public override func awakeFromFetch(){
+  super.awakeFromFetch()
+  print ("\(#function)")
+  if #available(iOS 15.0, macOS 12.0, *) {
+    updateGeoLocationsAfterFetch()
+  } else {
+    // Fallback on earlier versions
+  }
+ }
  
 
 
  // initial silent set-up of snippets service properties.
- public override func awakeFromInsert()
- {
+ public override func awakeFromInsert() {
   super.awakeFromInsert()
   primitiveId = UUID()
  
@@ -117,21 +127,29 @@ public class NMBaseSnippet : NSManagedObject
  
  }
  
- public override func willSave()
- {
+ public override func willSave() {
   super.willSave()
   primitiveStatus = Self.SnippetStatus.privy.rawValue
   primitiveLastModifiedTimeStamp = Date()
  }
  
- public override func didAccessValue(forKey key: String?)
- {
+ public override func didAccessValue(forKey key: String?) {
   super.didAccessValue(forKey: key)
   primitiveLastAccessedTimeStamp = Date()
+  
+//  if #available(iOS 15.0, macOS 12.0, *) {
+//   if key == #keyPath(NMBaseSnippet.latitude) ||
+//      key == #keyPath(NMBaseSnippet.longitude) ||
+//       key == #keyPath(NMBaseSnippet.location) {
+//     updateGeoLocationsAfterFetch()
+//   }
+//  } else {
+//    // Fallback on earlier versions
+//  }
+
  }
  
- public override func didChangeValue(forKey key: String)
- {
+ public override func didChangeValue(forKey key: String) {
   super.didChangeValue(forKey: key)
   primitiveLastModifiedTimeStamp = Date()
  }

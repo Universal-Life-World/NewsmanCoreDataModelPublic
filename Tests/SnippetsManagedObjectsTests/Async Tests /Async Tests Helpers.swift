@@ -4,8 +4,7 @@ import NewsmanCoreDataModel
 import CoreData
 
 @available(iOS 15.0, *) @available(macOS 12.0.0, *)
-extension NMBaseSnippetsAsyncTests
-{
+extension NMBaseSnippetsAsyncTests {
 
  final func snippet_base_cheking_helper(_ snippet: NMBaseSnippet,
                                         _ snippetType: NMBaseSnippet.SnippetType) throws
@@ -110,37 +109,18 @@ extension NMBaseSnippetsAsyncTests
                                with: NMLocationsGeocoderMock.self,
                                using: NMNetworkWaiterMock.self,
                                updated: block)
-  
+
   return  try await [ s1,s2,s3,s4,s5,s6 ]
   
  }// final func createAllSnippetsWithGeoLocations(...)
  
  
- final func storageRemoveHelperAsync(for snippets: [NMBaseSnippet]) async throws {
-  let ids = try await withThrowingTaskGroup(of: NMFileStorageManageable.self, returning: [UUID].self)
-  { group in
-   snippets.compactMap{$0 as? NMFileStorageManageable}.forEach{ snippet in
-    group.addTask{
-     try await snippet.removeFileStorage()
-     return snippet
-    }
-   }
-   return try await group.reduce(into: []) {$0.append($1.id)}.compactMap{$0}
-  }
-  
-  XCTAssertEqual(snippets.count - 1, ids.count) // Minus 1 as the NMBaseSnippet has no file storage per se!
-  
-  let docsFolder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-  let paths = ids.map{ docsFolder.appendingPathComponent($0.uuidString).path }
-  
-  XCTAssertTrue(paths.allSatisfy{!FileManager.default.fileExists(atPath: $0)})
-  
- }//final func storageRemoveHelperAsync...
+ 
  
  
  final func snippetsFetchHelper(with predicate: NSPredicate = .init(value: true)) async throws -> [NMBaseSnippet] {
   let MOC = model.context
-  return try await MOC.persist{ () -> [NMBaseSnippet] in
+  return try await MOC.perform { () -> [NMBaseSnippet] in
    let fetchRequest = NSFetchRequest<NMBaseSnippet>(entityName: "NMBaseSnippet")
    fetchRequest.predicate = predicate
    let SUTS = try MOC.fetch(fetchRequest)
@@ -149,6 +129,7 @@ extension NMBaseSnippetsAsyncTests
  }
  
  
+
  
  final func snippetsPersistanceCheckHelperAsync(for snippets: [NMBaseSnippet]) async throws {
   let modelContext = model.context

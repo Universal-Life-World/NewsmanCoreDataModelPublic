@@ -2,6 +2,13 @@ import CoreData
 import Combine
 import RxSwift
 
+//@available(iOS 15.0, macOS 12.0, *)
+//public extension NSPersistentContainer{
+// func performBackgroundTask<T>(_ block: @escaping (NSManagedObjectContext) async throws -> T) async rethrows -> T{
+//  let context = await performBackgroundTask{$0}
+//  return try await block(context)
+// }
+//}
 
 public extension NSManagedObjectContext
 {

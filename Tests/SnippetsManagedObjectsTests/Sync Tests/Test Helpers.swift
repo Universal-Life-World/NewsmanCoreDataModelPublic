@@ -71,45 +71,7 @@ extension NMBaseSnippetsTests
   
  }
   
- final func storageRemoveHelperSync(for snippets: [NMBaseSnippet])
- {
-  let context = model.context
-  
-  let docsFolder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
  
-  let removeExpectations = snippets.compactMap { snippet -> XCTestExpectation? in
- 
-   let removeExpectation = XCTestExpectation(description: "Remove Snippet Storage Expectation")
-   
-   guard let fileStorageProvider = snippet as? NMFileStorageManageable else { return nil }
-   
-   fileStorageProvider.removeFileStorage{ result in
-    context.perform {
-     switch result {
-      case .success():
-       guard let snippet_id = snippet.id else {
-        XCTFail("Snippet Must Have ID after file storage removal")
-        break
-       }
-       
-       let path = docsFolder.appendingPathComponent(snippet_id.uuidString).path
-       XCTAssertFalse(FileManager.default.fileExists(atPath: path))
-       removeExpectation.fulfill()
-       
-      case .failure(let error):  XCTFail(error.localizedDescription)
-     }
-    }
-   }
-   return removeExpectation
-  }
-  
-  XCTAssertEqual(snippets.count - 1,  removeExpectations.count)
-   // Minus 1 as the NMBaseSnippet has no file storage per se!
-
-  let result = XCTWaiter.wait(for: removeExpectations, timeout: 0.1)
-  XCTAssertEqual(result, .completed)
-  
- }//final func storageRemoveHelper with callback...
   
 }
  

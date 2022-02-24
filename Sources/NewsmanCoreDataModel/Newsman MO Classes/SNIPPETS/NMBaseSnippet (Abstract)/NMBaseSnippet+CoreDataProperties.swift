@@ -10,8 +10,7 @@ import Foundation
 import CoreData
 
 @available(iOS 13.0, *)
-extension NMBaseSnippet
-{
+extension NMBaseSnippet {
 
   @nonobjc public class func fetchRequest() -> NSFetchRequest<NMBaseSnippet> {
     NSFetchRequest<NMBaseSnippet>(entityName: "NMBaseSnippet")

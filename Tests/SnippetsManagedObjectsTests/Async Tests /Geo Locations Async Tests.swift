@@ -7,8 +7,7 @@ import NewsmanCoreDataModel
 class NMBaseSnippetsGeoLocationCombineAPITests: NMBaseSnippetsAsyncTests
 {
  //MARK: Test that when all snippets are created they are correctly subscribed to the location fields updates.
- final func test_All_Snippets_Creation_And_Persistance_With_GEO_Locations_Updates_Available() async throws
- {
+ final func test_All_Snippets_Creation_And_Persistance_With_GEO_Locations_Updates_Available() async throws {
   let SUTS = try await createAllSnippets(persisted: true)
   
   let locExp = SUTS.map{ (SUT: NMBaseSnippet) -> [ XCTKVOExpectation ] in

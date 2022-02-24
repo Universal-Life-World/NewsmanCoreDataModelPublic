@@ -10,6 +10,7 @@ public extension NMLocation {
                 where G: NMGeocoderProtocol,
                       N: NMNetworkMonitorProtocol
  {
+  try Task.checkCancellation()
   
   if retryCount == 0 {
    let cachedPlacemark = await Self.locationsCacheActor.placemark(for: self)
@@ -22,6 +23,7 @@ public extension NMLocation {
   
   let geocodingTask = Task.detached(priority: .medium) { [ self ] () -> NMPlacemarkAddressRepresentable in
    print ("GEOCODER TASK START...")
+   try Task.checkCancellation()
    guard retryCount <= Self.maxRetries else {
     throw NMGeoLocationsProvider.Failures.maxRetryCountExceeded(count: retryCount)
  

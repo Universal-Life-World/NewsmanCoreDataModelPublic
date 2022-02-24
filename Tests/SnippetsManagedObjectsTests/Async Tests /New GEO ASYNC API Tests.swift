@@ -4,6 +4,8 @@
 
 import XCTest
 import NewsmanCoreDataModel
+import CoreData
+
 
 @available(iOS 15.0, *)
 @available(macOS 12.0.0, *)
@@ -150,7 +152,7 @@ final class NMBaseSnippetsGeoLocationAsyncAPITests: NMBaseSnippetsAsyncTests
   NMLocation.maxRetries = .max
   
   //ACTION AGAIN...
-  Task.detached (priority: .background){
+  Task.detached (priority: .high){
    try await Task.sleep(timeInterval: .milliseconds(200))
    NMLocationsGeocoderMock.setGeocodeFoundFullResult()
   }
@@ -191,7 +193,7 @@ final class NMBaseSnippetsGeoLocationAsyncAPITests: NMBaseSnippetsAsyncTests
   NMLocation.maxRetries = .max
   
   //ACTION AGAIN AFTER DELAY...
-  Task.detached (priority: .background){
+  Task.detached (priority: .medium){
    try await Task.sleep(timeInterval: .milliseconds(200))
    NMLocationsGeocoderMock.setGeocodeFoundFullResult() // MOCK RECOVER FROM GCS PARTIAL RESULT ERROR..
   }
@@ -254,6 +256,67 @@ final class NMBaseSnippetsGeoLocationAsyncAPITests: NMBaseSnippetsAsyncTests
  }//func test_All_Snippets_creation_with_GEO_locations_DENIED_and_then_Authorized_ASYNC
  
  
+ 
+//MARK: Test that when all snippets are created whithout GL when refetched again the GL fields initialised.
+ final func test_GEO_LOCATION_UNUSED_AND_WHEN_MO_FETCHED_FROM_MOC_DONE_ASYNC() async throws {
+  
+  addTeardownBlock {
+   NMGeoLocationsProvider.locationStalenessInterval = .infinity  //RECOVER DEFAULT SETTINGS...
+  }
+  
+   //ARRANGE...
+  NMGeoLocationsProvider.locationStalenessInterval = 0 // ALL GL UNIQUE AND NOT STALE...
+  
+  
+  //ACTION FIRST...
+  let SUTS = try await createAllSnippets() //CREATE ALL 6 TYPES OF SNIPPETS WITHOUT GL INFO IN MAIN QUEUE MOC!
+  
+  let snippets_count = SUTS.count
+  let geoLocations = SUTS.compactMap{ $0.geoLocation }
+  let addresses = SUTS.compactMap{ $0.location }
+ 
+  //ASSERT WHEN CREATED AND INSERTED INTO MOC...
+  XCTAssertTrue(snippets_count == 6)
+  XCTAssertTrue(geoLocations.count == 0)
+  XCTAssertTrue(addresses.count == 0)
+  
+   //ARRANGE BG CONTEXT...
+  let bgContext = model.bgContext
+ 
+  //ACTION SECOND! FETCH SNIPPETS FROM PS IN BG CONTEXT...
+  let SUTS_BG = try await bgContext.perform { () ->  [NMBaseSnippet] in
+   
+   //FETCH ALL SAVED SNIPPETS AS FULLY MATERIALISED MO IN BG CONTEXT...
+   let fetchRequest = NSFetchRequest<NMBaseSnippet>(entityName: "NMBaseSnippet")
+   fetchRequest.returnsObjectsAsFaults = false
+   let SUTS = try bgContext.fetch(fetchRequest)
+    
+   //ASSERT WHEN FETCHED IN BG CONTEXT...
+   let geoLocations = SUTS.compactMap{ $0.geoLocation }
+   let addresses = SUTS.compactMap{ $0.location }
+   XCTAssertEqual(geoLocations.count, 0)
+   XCTAssertEqual(addresses.count, 0)
+   
+   return SUTS
+  }
+  
+  XCTAssertEqual(SUTS_BG.count, snippets_count)
+  
+  try await Task.sleep(timeInterval: .milliseconds(100)) //AWAIT...
+  
+  //ASSERT (IN BG CONTEXT QUEUE) ALL SNIPPETS HAVE GL FIELDS INITIALIZED AFTER AWAKE FROM FETCH...
+  await bgContext.perform {
+   let geoLocations = SUTS_BG.compactMap{ $0.geoLocation }
+   let addresses = SUTS_BG.compactMap{ $0.location }
+   XCTAssertEqual(geoLocations.count, 6)
+   XCTAssertEqual(addresses.count, 6)
+   
+  }
+  
+  try await storageRemoveHelperAsync(for: SUTS) //snippets folders async cleaup...
+  
+ }//func test_All_Snippets_creation_with_GEO_locations_DENIED_and_then_Authorized_ASYNC
+
 //MARK: Test that when all snippets are created when location GLS & GCS are available but location unknown error occurs and then location detected after a number of retries.
  
  final func test_LOCATION_UNKNOWN_ERROR_AND_THEN_Detected_ASYNC() async throws {

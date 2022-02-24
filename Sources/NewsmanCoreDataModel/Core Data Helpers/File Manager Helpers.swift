@@ -166,8 +166,8 @@ public extension FileManager
  
  @available(iOS 15.0, *)
  @available(macOS 12.0.0, *)
- static func createDirectoryOnDisk(at url: URL) async throws
- {
+ static func createDirectoryOnDisk(at url: URL) async throws {
+  try Task.checkCancellation()
   try FileManager.default.createDirectory(at: url, withIntermediateDirectories: false, attributes: nil)
  }
  

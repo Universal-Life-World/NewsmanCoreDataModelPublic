@@ -3,9 +3,7 @@ import CoreLocation
 
 @available(iOS 15.0, *)
 @available(macOS 12.0.0, *)
-public extension NMGeoLocationsProvider
-{
- 
+public extension NMGeoLocationsProvider {
  
  var locationFix: NMLocation {
   get async throws {
@@ -18,12 +16,14 @@ public extension NMGeoLocationsProvider
  }
  
  
+
  private final func requestAuthorization() async throws {
   
+  try Task.checkCancellation()
   let authStatusSequence = statusSubject.values
   
   for await status in authStatusSequence {
-   
+   try Task.checkCancellation()
    guard let status = status else {
     locationProvider.requestWhenInUseAuthorization()
     continue
@@ -51,8 +51,9 @@ public extension NMGeoLocationsProvider
                                    maxRetries: Int,
                                    timeOut: DispatchTimeInterval = .never,
                                    timeOutInc: DispatchTimeInterval = .never,
-                                   maxTimeOut: DispatchTimeInterval = .never) async throws -> NMLocation
- {
+                                   maxTimeOut: DispatchTimeInterval = .never) async throws -> NMLocation {
+  
+  try Task.checkCancellation()
   
   guard retryCount < maxRetries else { throw Failures.maxRetryCountExceeded(count: retryCount) }
   
@@ -61,15 +62,15 @@ public extension NMGeoLocationsProvider
   try await Task.sleep(timeInterval: timeOut)
   
    //print ("REQUEST AUTH STATUS...")
-  //locationProvider.requestWhenInUseAuthorization()
+  locationProvider.requestWhenInUseAuthorization()
    //print ("AUTH STATUS DONE!")
   
-   //print ("AWAIT FOR AUTH STATUS...")
+   print ("AWAIT FOR AUTH STATUS...")
   
   
   try await requestAuthorization()
   
-   //print ("DONE!!! AWAIT FOR AUTH STATUS")
+   print ("DONE!!! AWAIT FOR AUTH STATUS")
   
   do {
    let location = try await withCheckedThrowingContinuation{ (cont: FixContinuation) -> () in
@@ -91,13 +92,14 @@ public extension NMGeoLocationsProvider
    }
    
    guard let location = location else {
+    print ("LOCATION <<<NIL>>> --> RETRY : \(retryCount + 1)")
     return try await getLocationFix(retryCount: retryCount + 1, maxRetries: maxRetries)
    }
    
    return NMLocation(location: location)
   }
   catch CLError.locationUnknown {
-   print ("LOCATION UNKNOWN --> RETRY\(retryCount + 1). TIMEOUT \(timeOut + timeOutInc)")
+   print ("LOCATION UNKNOWN --> RETRY : \(retryCount + 1). TIMEOUT: \(timeOut + timeOutInc)")
    return try await getLocationFix(retryCount: retryCount + 1,
                                    maxRetries: .max,
                                    timeOut:    timeOut + timeOutInc,

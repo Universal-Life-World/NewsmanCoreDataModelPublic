@@ -29,6 +29,10 @@ public protocol NMGeocoderProtocol {
 
 
 @available(iOS 13.0, *)
+public protocol NMGeocoderTypeProtocol: NMGeocoderProtocol {
+}
+
+@available(iOS 13.0, *)
 extension NMGeocoderProtocol {
  public func placemarkPublisher(for location: CLLocation) -> AnyPublisher<NMPlacemark?, Error>
  {
