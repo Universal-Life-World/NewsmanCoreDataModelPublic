@@ -10,17 +10,21 @@ protocol NMSnippetsTestsStorageRemovable where Self: XCTestCase {
 extension NMSnippetsTestsStorageRemovable{
  
  func storageRemoveHelperSync(for snippets: [NMBaseSnippet]) {
-  let context = model.context
   
   let docsFolder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
   
-  let removeExpectations = snippets.compactMap { snippet -> XCTestExpectation? in
+  let withFileStorage = snippets.compactMap { $0 as? NMFileStorageManageable }
+  
+  let removeExpectations = withFileStorage.compactMap { snippet -> XCTestExpectation? in
    
    let removeExpectation = XCTestExpectation(description: "Remove Snippet Storage Expectation")
    
-   guard let fileStorageProvider = snippet as? NMFileStorageManageable else { return nil }
+   guard let context = snippet.managedObjectContext else {
+    XCTFail("Snippet Must Have MOC during file storage removal")
+    return nil
+   }
    
-   fileStorageProvider.removeFileStorage{ result in
+   snippet.removeFileStorage{ result in
     context.perform {
      switch result {
       case .success():
@@ -33,15 +37,14 @@ extension NMSnippetsTestsStorageRemovable{
        XCTAssertFalse(FileManager.default.fileExists(atPath: path))
        removeExpectation.fulfill()
        
-      case .failure(let error):  XCTFail(error.localizedDescription)
+      case .failure(let error):
+       XCTFail(error.localizedDescription)
      }
     }
    }
    return removeExpectation
   }
   
-  XCTAssertEqual(snippets.count - 1,  removeExpectations.count)
-   // Minus 1 as the NMBaseSnippet has no file storage per se!
   
   let result = XCTWaiter.wait(for: removeExpectations, timeout: 0.1)
   XCTAssertEqual(result, .completed)
@@ -49,22 +52,24 @@ extension NMSnippetsTestsStorageRemovable{
  }//final func storageRemoveHelper with callback...
 }
 
-@available(iOS 15.0, *)
-@available(macOS 12.0, *)
+@available(iOS 15.0, macOS 12.0, *)
 extension NMSnippetsTestsStorageRemovable{
  func storageRemoveHelperAsync(for snippets: [NMBaseSnippet]) async throws {
-  let ids = try await withThrowingTaskGroup(of: NMFileStorageManageable.self, returning: [UUID].self)
-  { group in
-   snippets.compactMap{$0 as? NMFileStorageManageable}.forEach{ snippet in
+  let withFileStorage = snippets.compactMap{ $0 as? NMFileStorageManageable }
+  let ids = try await withThrowingTaskGroup(of: NMFileStorageManageable.self,
+                                            returning: [UUID].self) { group in
+   withFileStorage.forEach{ snippet in
     group.addTask{
      try await snippet.removeFileStorage()
      return snippet
     }
    }
-   return try await group.reduce(into: []) {$0.append($1.id)}.compactMap{$0}
+   return try await group.compactMap{ snippet in // make sure we get snippet id in proper MOC!!!
+    await snippet.managedObjectContext?.perform { snippet.id }
+   }.reduce(into: []) { $0.append($1)}
   }
   
-  XCTAssertEqual(snippets.count - 1, ids.count) // Minus 1 as the NMBaseSnippet has no file storage per se!
+  XCTAssertEqual(withFileStorage.count, ids.count)
   
   let docsFolder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
   let paths = ids.map{ docsFolder.appendingPathComponent($0.uuidString).path }

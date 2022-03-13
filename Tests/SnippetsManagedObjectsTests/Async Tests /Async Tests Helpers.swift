@@ -49,7 +49,7 @@ extension NMBaseSnippetsAsyncTests {
  {
   let snippet = try await model.create(persist: persist, objectType: T.self)
   
-  try await model.context.perform {
+  try await model.mainContext.perform {
    try self.snippet_base_cheking_helper(snippet, snippetType)
   }
   
@@ -66,6 +66,20 @@ extension NMBaseSnippetsAsyncTests {
   async let s4 = model.create(persist: persisted, objectType: NMTextSnippet.self,  with: block)
   async let s5 = model.create(persist: persisted, objectType: NMVideoSnippet.self, with: block)
   async let s6 = model.create(persist: persisted, objectType: NMMixedSnippet.self, with: block)
+  
+  return try await [s1,s2,s3,s4,s5,s6]
+  
+ }// final func createAllSnippets(persisted: Bool = true)...
+ 
+ final func backgroundCreateAllSnippets(persisted: Bool = true,
+                                       block: ((NMBaseSnippet) throws -> ())? = nil) async throws -> [NMBaseSnippet]
+ {
+  async let s1 = model.backgroundCreate(persist: persisted, objectType: NMBaseSnippet.self,  with: block)
+  async let s2 = model.backgroundCreate(persist: persisted, objectType: NMPhotoSnippet.self, with: block)
+  async let s3 = model.backgroundCreate(persist: persisted, objectType: NMAudioSnippet.self, with: block)
+  async let s4 = model.backgroundCreate(persist: persisted, objectType: NMTextSnippet.self,  with: block)
+  async let s5 = model.backgroundCreate(persist: persisted, objectType: NMVideoSnippet.self, with: block)
+  async let s6 = model.backgroundCreate(persist: persisted, objectType: NMMixedSnippet.self, with: block)
   
   return try await [s1,s2,s3,s4,s5,s6]
   
@@ -119,7 +133,7 @@ extension NMBaseSnippetsAsyncTests {
  
  
  final func snippetsFetchHelper(with predicate: NSPredicate = .init(value: true)) async throws -> [NMBaseSnippet] {
-  let MOC = model.context
+  let MOC = await model.mainContext
   return try await MOC.perform { () -> [NMBaseSnippet] in
    let fetchRequest = NSFetchRequest<NMBaseSnippet>(entityName: "NMBaseSnippet")
    fetchRequest.predicate = predicate
@@ -132,7 +146,8 @@ extension NMBaseSnippetsAsyncTests {
 
  
  final func snippetsPersistanceCheckHelperAsync(for snippets: [NMBaseSnippet]) async throws {
-  let modelContext = model.context
+  
+  let modelContext = await model.mainContext
   
   try await modelContext.perform {
    for snippet in snippets {

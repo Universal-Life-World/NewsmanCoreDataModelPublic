@@ -52,25 +52,45 @@ public final class NMCoreDataModel {
 
  public var mom: NSManagedObjectModel { Self[named: modelName] }
  
- private let mocIsq = DispatchQueue(label: "MOC access isolation queue")
+ private let mocIsq = DispatchQueue(label: "MOC access isolation queue", attributes: [.concurrent])
  
- public var context: NSManagedObjectContext {
-  mocIsq.sync{
+ @available(iOS 15.0, macOS 12.0, *)
+ @MainActor public var mainContext: NSManagedObjectContext {
+  get async {
    let context = persistentContainer.viewContext
-   context.locationsProvider = locationsProvider
+   await context.perform{ context.locationsProvider = self.locationsProvider }
+   return context
+  }
+ }
+
+ public var context: NSManagedObjectContext {
+  mocIsq.sync {
+   let context = persistentContainer.viewContext
+   context.performAndWait { context.locationsProvider = locationsProvider }
    return context
    
   }
  }
  
- public var bgContext: NSManagedObjectContext {
-  mocIsq.sync{
+ @available(iOS 15.0, macOS 12.0, *)
+ @MainActor public var newBackgroundContext: NSManagedObjectContext {
+  get async {
    let bgContext = persistentContainer.newBackgroundContext()
-   bgContext.locationsProvider = locationsProvider
+   await bgContext.perform { bgContext.locationsProvider = self.locationsProvider }
    return bgContext
    
   }
  }
+ 
+ public var bgContext: NSManagedObjectContext {
+  mocIsq.sync {
+   let bgContext = persistentContainer.newBackgroundContext()
+   bgContext.performAndWait { bgContext.locationsProvider = locationsProvider }
+   return bgContext
+   
+  }
+ }
+ 
  
  private func registerDataTransformers()
  {

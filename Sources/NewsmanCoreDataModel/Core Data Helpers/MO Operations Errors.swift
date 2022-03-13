@@ -82,6 +82,8 @@ public enum ContextError
                                entity: ContextEntityTypes,
                                operation: ContextOperationTypes,
                                description: String)
+ 
+ case multipleContextsInCollection(collection: [NSManagedObject])
 }
 
 extension ContextError: LoggableError
@@ -133,6 +135,8 @@ extension ContextError: LoggableError
    
    case let .performCnangesError(context: moc, object: obj, entity: ent, operation: op, blockError: error):
     return "\(op + ent): <\(obj)> PERFORM BLOCK CHANGES FAILED FOR: <\(moc)> WITH BLOCK ERROR <\(error.localizedDescription)>."
+   case let .multipleContextsInCollection(collection: collection):
+    return "MULTIPLE CONTEXTS ENCOUNTERED IN MODIFIED OBJECTS COLLECTION \(collection)"
   }
  }
  

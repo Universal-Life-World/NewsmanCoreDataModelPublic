@@ -1,32 +1,104 @@
 
 import CoreData
 
-@available(iOS 15.0, *)
-@available(macOS 12.0.0, *)
+@available(iOS 15.0, macOS 12.0, *)
+public extension Collection where Element: NSManagedObject {
+ func updated(_ block: ( ([Element]) throws -> () )? ) async throws -> [ Element ] {
+  try Task.checkCancellation()
+  
+  guard let block = block else { return Array(self) }
+  
+  let contexts = Array(Set(compactMap(\.managedObjectContext)))
+  
+  if contexts.isEmpty { return [] }
+  
+  guard contexts.count == 1 else {
+   throw ContextError.multipleContextsInCollection(collection: Array(self))
+  }
+  
+  let context = contexts.first!
+  
+  return try await context.perform {
+   try Task.checkCancellation()
+   let validObjects = filter{ $0.managedObjectContext != nil && $0.isDeleted == false }
+   do {
+    try block(validObjects)
+    return validObjects
+   }
+   catch {
+    validObjects.forEach{ context.delete($0) }
+    throw error
+   }
+  }
+  
+ }
+ 
+ func persisted(_ persist: Bool = true ) async throws -> [ Element ] {
+  try Task.checkCancellation()
+
+  guard persist else { return Array(self) }
+  
+  let contexts = Array(Set(compactMap(\.managedObjectContext)))
+  
+  if contexts.isEmpty { return [] }
+  
+  guard contexts.count == 1 else {
+   throw ContextError.multipleContextsInCollection(collection: Array(self))
+  }
+  
+  let context = contexts.first!
+  
+  return try await context.perform {
+   try Task.checkCancellation()
+   let validObjects = filter{ $0.managedObjectContext != nil && $0.isDeleted == false }
+   guard validObjects.contains(where: \.hasChanges) else { return validObjects }
+   try context.save()
+   return validObjects
+  }
+ }
+ 
+ func withFileStorage() async throws -> [ Element ] {
+  try Task.checkCancellation()
+  
+  return try await withThrowingTaskGroup(of: Element?.self, returning: [Element].self)
+  { group in
+   forEach { object in
+    guard let context = object.managedObjectContext else { return }
+    group.addTask {
+     try Task.checkCancellation()
+     if ( await context.perform { object.isDeleted }) { return nil }
+     return try await object.withFileStorage()
+     
+    }
+   }
+   return try await group.compactMap{ $0 }.reduce(into: []) { $0.append($1) }
+  }
+ }
+ 
+}
+
+@available(iOS 15.0, macOS 12.0, *)
 public extension NSManagedObject {
  
  func updated<T: NSManagedObject>(_ block: ( (T) throws -> () )? ) async throws -> T {
   try Task.checkCancellation()
-  
-  guard let self  = self as? T else {
-   fatalError("Wrong object type!!! <T> must be NSManagedObject!")
-  }
  
   guard let context = self.managedObjectContext else {
    throw ContextError.noContext(object: self, entity: .object, operation: .updateObject)
   }
  
-  guard self.isDeleted == false else {
-   throw ContextError.isDeleted(object: self, entity: .object, operation: .updateObject)
-  }
-  
-  guard let block = block else { return self }
+  guard let block = block else { return self as! T }
  
   return try await context.perform { [ unowned self ] in
    do {
     try Task.checkCancellation()
-    try block(self)
-    return self
+    
+    guard self.isDeleted == false else {
+     throw ContextError.isDeleted(object: self, entity: .object, operation: .updateObject)
+    }
+    
+    try block(self as! T)
+    return self as! T
    }
    catch {
     context.delete(self)
@@ -36,14 +108,12 @@ public extension NSManagedObject {
  }
  
  
+ 
+ 
  func persisted<T: NSManagedObject>(_ persist: Bool = true ) async throws -> T {
   try Task.checkCancellation()
   
-  guard let self = self as? T else {
-   fatalError("Wrong object type!!! <T> must be NSManagedObject!")
-  }
-  
-  guard persist else { return self }
+  guard persist else { return self as! T }
  
   guard let context = self.managedObjectContext else {
    throw ContextError.noContext(object: self, entity: .object, operation: .persistObject )
@@ -51,19 +121,15 @@ public extension NSManagedObject {
   
   return try await context.perform { [ unowned self ] in
    try Task.checkCancellation()
-   guard self.hasChanges else { return self }
+   guard self.hasChanges else { return self as! T }
    try context.save()
-   return self
+   return self as! T
   }
  }
  
  func withFileStorage<T: NSManagedObject>() async throws -> T {
   try Task.checkCancellation()
-  
-  guard let self = self as? T else {
-   fatalError("Wrong object type!!! <T> must be NSManagedObject!")
-  }
-  guard let manageStorage = self as? NMFileStorageManageable else { return self  }
+  guard let manageStorage = self as? NMFileStorageManageable else { return self as! T  }
   return try await manageStorage.withFileStorage() as! T
  }
  
@@ -75,17 +141,18 @@ public extension NSManagedObject {
                                    N: NMNetworkMonitorProtocol {
   
   try Task.checkCancellation()
-  guard let context = managedObjectContext else {
+  guard let context = self.managedObjectContext else {
    throw ContextError.noContext(object: self, entity: .object, operation: .updateObject)
   }
  
-  guard isDeleted == false else {
-   throw ContextError.isDeleted(object: self, entity: .object, operation: .updateObject)
+  try await context.perform {
+   guard self.isDeleted == false else {
+    throw ContextError.isDeleted(object: self, entity: .object, operation: .updateObject)
+   }
   }
   
   guard let withLocations = self as? NMGeoLocationProvidable else { return self }
   
- 
   guard let locationsProvider = withLocations.locationsProvider else { return self }
                                     
   print (#function, "START... \(locationsProvider)")
@@ -143,17 +210,18 @@ public extension NSManagedObject {
 
 
 
-@available(iOS 15.0, *)
-@available(macOS 12.0.0, *)
+// MARK: CREATE MO operations with model context with async API
+@available(iOS 15.0, macOS 12.0, *)
 public extension NMCoreDataModel {
- // MARK: CREATE MO operations with model context with async API
+ 
+ // MARK: CREATE in main context.
  func create<T: NSManagedObject>(persist: Bool = false,
                                  objectType: T.Type,
                                  with updates: ((T) throws -> ())? = nil) async throws -> T {
   
-  try await context.perform { [unowned self] () -> T in
+  try await mainContext.perform { [unowned self] () -> T in
    try Task.checkCancellation()
-   let newObject = T(context: self.context)
+   let newObject = T(context: context)
    (newObject as? NMGeoLocationProvidable)?.locationsProvider = locationsProvider
    return newObject
   }.updated(updates)   //1
@@ -162,6 +230,87 @@ public extension NMCoreDataModel {
  }
   
  
+  // MARK: CREATE in background context and fetch in main one for usage.
+ func backgroundCreate<T: NSManagedObject>(persist: Bool = false,
+                                           objectType: T.Type,
+                                           with updates: ((T) throws -> ())? = nil) async throws -> T {
+  let bgContext = await newBackgroundContext
+  let bgObject = try await bgContext.perform { [unowned self] () -> T in
+   try Task.checkCancellation()
+   let newObject = T(context: bgContext)
+   (newObject as? NMGeoLocationProvidable)?.locationsProvider = locationsProvider
+   return newObject
+  }.updated(updates)   //1
+   .persisted(persist) //2
+   .withFileStorage()  //3
+  
+  let modelMainContext = await mainContext
+  return try await modelMainContext.perform { () -> T in
+   try Task.checkCancellation()
+   return modelMainContext.object(with: bgObject.objectID) as! T
+   
+  }
+ }
+ 
+ 
+ // MARK: CREATE a batch of homogeneous MOs in background context and fetch in main one for usage.
+ func backgroundCreate<T: NSManagedObject>(persist: Bool,
+                                           objectType: T.Type,
+                                           objectCount: Int,
+                                           with updates: (([T]) throws -> ())? = nil) async throws -> [T] {
+  
+  let bgContext = await newBackgroundContext
+  let bgObjects = try await bgContext.perform { [unowned self] () -> [T] in
+   try Task.checkCancellation()
+   var newObjects = [T]()
+   for _ in 1...objectCount {
+    let newObject = T(context: bgContext)
+    (newObject as? NMGeoLocationProvidable)?.locationsProvider = locationsProvider
+    newObjects.append(newObject)
+   }
+   return newObjects
+  }.updated(updates)   //1
+   .persisted(persist) //2
+   .withFileStorage()  //3
+  
+  let modelMainContext = await mainContext
+  return try await modelMainContext.perform { [unowned self] () -> [T] in
+   try Task.checkCancellation()
+   return bgObjects.map{ context.object(with: $0.objectID) } as! [T]
+   
+  }
+ }
+ 
+ // MARK: CREATE a batch of heterogeous MOs in background context using MO type info and fetch in main one for usage.
+ func backgroundCreate(persist: Bool = false,
+                       entityTypes: [ NSManagedObject.Type ],
+                       with updates: (([NSManagedObject]) throws -> ())? = nil) async throws -> [NSManagedObject] {
+
+  let bgContext = await newBackgroundContext //MOM is loaded here when context is queried!!
+  let bgObjects = try await bgContext.perform { [unowned self] () -> [NSManagedObject] in
+   try Task.checkCancellation()
+   var newObjects = [NSManagedObject]()
+   let entityDescriptions = entityTypes.map{ $0.entity() }
+    //make sure entity descriptions are initialised after MOM is loaded above!!
+   for entityDescription in entityDescriptions {
+    let newObject = NSManagedObject(entity: entityDescription, insertInto: bgContext)
+    (newObject as? NMGeoLocationProvidable)?.locationsProvider = locationsProvider
+    newObjects.append(newObject)
+   }
+   return newObjects
+  }.updated(updates)   //1
+   .persisted(persist) //2
+   .withFileStorage()  //3
+
+  let modelMainContext = await mainContext
+  return try await modelMainContext.perform { [unowned self] () -> [NSManagedObject] in
+   try Task.checkCancellation()
+   return bgObjects.map{context.object(with: $0.objectID)} 
+
+  }
+ }
+ 
+ // MARK: CREATE in main context with GL info if such services are available.
  func create<T, G, N>(persisted: Bool = true,
                       of objectType: T.Type,
                       with: G.Type,
@@ -175,6 +324,24 @@ public extension NMCoreDataModel {
                     objectType: T.self,
                     with: byBlock).withGeoLocations(with: G.self, using: N.self) as! T
  }
+ 
+ 
+ // MARK: CREATE with GL info if such services are available in background context and fetch in main one for usage.
+ func backgroundCreate<T, G, N>(persisted: Bool = true,
+                                of objectType: T.Type,
+                                with: G.Type,
+                                using: N.Type,
+                                updated byBlock: ((T) throws -> ())? = nil) async throws -> T
+ where T: NSManagedObject,
+       G: NMGeocoderProtocol,
+       N: NMNetworkMonitorProtocol {
+        
+        try await backgroundCreate(persist: persisted,
+                                   objectType: T.self,
+                                    with: byBlock).withGeoLocations(with: G.self, using: N.self) as! T
+       }
+ 
+ 
  
  
  

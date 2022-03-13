@@ -2,8 +2,7 @@
 import XCTest
 import NewsmanCoreDataModel
 
-@available(iOS 15.0, *)
-@available(macOS 12.0.0, *)
+@available(iOS 15.0, macOS 12.0, *)
 class NMBaseSnippetsGeoLocationCombineAPITests: NMBaseSnippetsAsyncTests
 {
  //MARK: Test that when all snippets are created they are correctly subscribed to the location fields updates.
@@ -281,70 +280,7 @@ class NMBaseSnippetsGeoLocationCombineAPITests: NMBaseSnippetsAsyncTests
  
  
 
- 
- 
-// func test_All_Snippets_creation_with_GEO_locations_Available_AND_NO_Internet_ASYNC() async throws {
-//
-//  let MOC = model.context
-//  NMLocationsGeocoderMock.disableNetwork()
-//  NMGeoLocationsProvider.locationStalenessInterval = 0
-//
-//
-//  let insertedSUTSExpectation = XCTNSNotificationExpectation(name: .NSManagedObjectContextObjectsDidChange,
-//                                                             object: MOC)
-//
-//  insertedSUTSExpectation.handler = { notification in
-//
-//   print ((notification.userInfo![NSInsertedObjectsKey] as! Set<NMBaseSnippet>).first!.id!)
-//   return true
-//  }
-//
-//
-//  let SUTS = try await createAllSnippets(persisted: true)
-//
-//  let res = XCTWaiter.wait(for: [insertedSUTSExpectation], timeout: 0.1)
-//
-//  XCTAssertEqual(res, .completed)
-//
-//  let locExpDisabled = SUTS.map{ (sut: NMBaseSnippet) -> [ XCTKVOExpectation ]  in
-//
-//   let latExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.latitude),  object: sut)
-//    //latExp.isInverted = true
-//
-//   let lonExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.longitude), object: sut)
-//    //lonExp.isInverted = true
-//
-//   let locExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.location),  object: sut)
-//   locExp.isInverted = true
-//
-//   sut.updateGeoLocations(with: NMLocationsGeocoderMock.self, using: NMNetworkWaiterMock.self)
-//
-//   return [ latExp, lonExp , locExp ] }.flatMap{$0}
-//
-//  let resultDisabled = XCTWaiter.wait(for: locExpDisabled, timeout: 1)
-//  XCTAssertEqual(resultDisabled, .completed)
-//
-//
-//  let locExpWhenEnabled = SUTS.map{ (sut: NMBaseSnippet) -> [ XCTKVOExpectation ] in
-//
-//   let latExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.latitude),  object: sut)
-//   latExp.isInverted = true
-//
-//   let lonExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.longitude), object: sut)
-//   lonExp.isInverted = true
-//
-//   let locExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.location),  object: sut)
-//
-//   return [ latExp, lonExp , locExp ] }.flatMap{$0}
-//
-//  NMLocationsGeocoderMock.enableNetwork()
-//
-//  let resultWhenEnabled = XCTWaiter.wait(for: locExpWhenEnabled, timeout: 1)
-//  XCTAssertEqual(resultWhenEnabled, .completed)
-//
-//  try await storageRemoveHelperAsync(for: SUTS)
-// }// func test_All_Snippets_creation_with_GEO_locations_Available_AND_NO_Internet...
-//
+
  
 }//extension NMBaseSnippetsAsyncTests...
 
