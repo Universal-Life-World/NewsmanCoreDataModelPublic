@@ -10,6 +10,8 @@ import Foundation
 import CoreData
 
 @objc(NMAudioFolder)
-public class NMAudioFolder: NMBaseContent {
+public class NMAudioFolder: NMBaseContent, NMSnippetContained {
+ public var snippetID: UUID? { audioSnippet?.id }
+ 
 
 }

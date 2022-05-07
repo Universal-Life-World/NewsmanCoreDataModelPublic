@@ -10,6 +10,7 @@ import Foundation
 import CoreData
 
 @objc(NMMixedFolder)
-public class NMMixedFolder: NMBaseContent {
+public class NMMixedFolder: NMBaseContent, NMSnippetContained {
+ public var snippetID: UUID? { mixedSnippet?.id }
 
 }

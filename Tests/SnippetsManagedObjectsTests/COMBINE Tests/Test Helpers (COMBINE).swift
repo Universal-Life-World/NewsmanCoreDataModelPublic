@@ -1,5 +1,6 @@
 import XCTest
 import NewsmanCoreDataModel
+import CoreData
 
 @available(iOS 14.0, *)
 extension NMBaseSnippetsCombineAPITests {
@@ -28,6 +29,34 @@ extension NMBaseSnippetsCombineAPITests {
    }.store(in: &disposeBag)
   
  
+ }
+ 
+ final func snippet_creation_with_checkup_helper(entityType: NSManagedObject.Type,
+                                                 persist: Bool,
+                                                 updates: ((NSManagedObject) -> ())? = nil,
+                                                 snippetType: NMBaseSnippet.SnippetType,
+                                                 handler: @escaping (NSManagedObject) -> () ) {
+  
+  model.create(persist: persist, entityType: entityType.self, with: updates)
+   .compactMap{ $0 as? NMBaseSnippet }
+   .subscribe(on: DispatchQueue.global(qos: .utility))
+   .receive(on: DispatchQueue.main)
+   .sink { completion in
+    switch completion {
+     case .finished: break
+     case .failure(let error): XCTFail(error.localizedDescription)
+    }
+   } receiveValue: { [unowned self] snippet in
+    
+    do {
+     try snippet_base_cheking_helper(snippet, snippetType, persist, handler)
+    } catch {
+     XCTFail(error.localizedDescription)
+    }
+    
+   }.store(in: &disposeBag)
+  
+  
  }
  
  final func snippet_background_creation_with_checkup_helper<T: NMBaseSnippet>(objectType:T.Type,
@@ -93,7 +122,7 @@ extension NMBaseSnippetsCombineAPITests {
     XCTAssertEqual(snippet.priority, .normal)
     XCTAssertTrue(snippet.type == snippetType)
     
-    XCTAssertEqual(created.timeIntervalSinceReferenceDate, now, accuracy: 0.1)
+    XCTAssertEqual(created.timeIntervalSinceReferenceDate, now, accuracy: 1)
     
     XCTAssertNil(snippet.trashedTimeStamp)
     XCTAssertNil(snippet.ck_metadata)
@@ -145,6 +174,41 @@ extension NMBaseSnippetsCombineAPITests {
    } receiveValue: { snippet in
      XCTFail("Snippet \(snippet) must be removed from context!")
    }.store(in: &disposeBag)
+  
+  
+  
+  
+ }
+ 
+ final func snippet_throwing_modification_helper(entityType: NSManagedObject.Type,
+                                                 snippetType: NMBaseSnippet.SnippetType,
+                                                 expectationHandler: @escaping () -> () ) {
+  
+  model.create(persist: true, entityType: entityType.self) {
+   throw SnippetTestError.failed(snippet: $0)
+  }.sink { completion in
+   switch completion {
+    case .failure(let error as SnippetTestError<NSManagedObject>):
+     guard case let .failed(snippet as NMBaseSnippet) = error else {
+      XCTFail("UNKNOWN TEST ERROR CASE \(error.localizedDescription)")
+      return
+     }
+     
+     XCTAssertTrue(snippet.objectID.isTemporaryID)
+     XCTAssertTrue(snippet.hasChanges)
+     XCTAssertTrue(snippet.isDeleted)
+     
+     if let path = (snippet as? NMFileStorageManageable)?.url?.path {
+      XCTAssertFalse(FileManager.default.fileExists(atPath: path))
+     }
+     
+     expectationHandler()
+     
+    default: XCTFail("UNEXPECTED TEST RESULT \(completion)")
+   }
+  } receiveValue: { snippet in
+   XCTFail("Snippet \(snippet) must be removed from context!")
+  }.store(in: &disposeBag)
   
   
   

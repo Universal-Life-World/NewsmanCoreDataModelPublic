@@ -215,22 +215,45 @@ public extension NSManagedObject {
 public extension NMCoreDataModel {
  
  // MARK: CREATE in main context.
+ @discardableResult
  func create<T: NSManagedObject>(persist: Bool = false,
                                  objectType: T.Type,
                                  with updates: ((T) throws -> ())? = nil) async throws -> T {
   
-  try await mainContext.perform { [unowned self] () -> T in
+  let modelMainContext = await mainContext
+  return try await mainContext.perform { [unowned self] () -> T in
    try Task.checkCancellation()
-   let newObject = T(context: context)
+   let newObject = T(context: modelMainContext)
    (newObject as? NMGeoLocationProvidable)?.locationsProvider = locationsProvider
+   //(newObject as? NMDateGroupStateObservable)?.dateGroupStateUpdater = dateGroupStateUpdater
    return newObject
   }.updated(updates)   //1
    .persisted(persist) //2
    .withFileStorage()  //3
  }
   
+ // MARK: CREATE in main context using entity description.
+ @discardableResult
+ func create(persist: Bool = false,
+             entityType: NSManagedObject.Type,
+             with updates: ((NSManagedObject) throws -> ())? = nil) async throws -> NSManagedObject {
+  
+  
+  
+  let modelMainContext = await mainContext
+  return try await modelMainContext.perform { [unowned self] () -> NSManagedObject in
+   try Task.checkCancellation()
+   let newObject = NSManagedObject(entity: entityType.entity(), insertInto: modelMainContext)
+   (newObject as? NMGeoLocationProvidable)?.locationsProvider = locationsProvider
+//   try updates?(newObject)
+   return newObject
+  }.updated(updates)   //1
+   .persisted(persist) //2
+   .withFileStorage()  //3
+ }
  
   // MARK: CREATE in background context and fetch in main one for usage.
+
  func backgroundCreate<T: NSManagedObject>(persist: Bool = false,
                                            objectType: T.Type,
                                            with updates: ((T) throws -> ())? = nil) async throws -> T {
@@ -279,6 +302,28 @@ public extension NMCoreDataModel {
    return bgObjects.map{ context.object(with: $0.objectID) } as! [T]
    
   }
+ }
+ 
+  // MARK: CREATE a batch of heterogeous MOs in MAIN context!!!
+ func create(persist: Bool = false,
+             entityTypes: [ NSManagedObject.Type ],
+             with updates: (([NSManagedObject]) throws -> ())? = nil) async throws -> [NSManagedObject] {
+  
+  let modelMainContext = await mainContext
+  return try await modelMainContext.perform { [ unowned self] () -> [NSManagedObject] in
+   try Task.checkCancellation()
+   var newObjects = [NSManagedObject]()
+   let entityDescriptions = entityTypes.map{ $0.entity() }
+   for entityDescription in entityDescriptions {
+    let newObject = NSManagedObject(entity: entityDescription, insertInto: modelMainContext)
+    (newObject as? NMGeoLocationProvidable)?.locationsProvider = locationsProvider
+    newObjects.append(newObject)
+   }
+   return newObjects
+  }.updated(updates)   //1
+   .persisted(persist) //2
+   .withFileStorage()  //3
+  
  }
  
  // MARK: CREATE a batch of heterogeous MOs in background context using MO type info and fetch in main one for usage.
@@ -345,11 +390,5 @@ public extension NMCoreDataModel {
  
  
  
-  // MARK: READ (FETCH) MO operations from model context
-  
-  
-  // MARK: UPDATE MO operations in the model context
-  
-  
-  // MARK: DELETE MO operations
+ 
 }

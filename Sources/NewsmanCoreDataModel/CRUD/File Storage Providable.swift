@@ -2,30 +2,16 @@
 import Foundation
 import CoreData
 
-public protocol NMFileStorageManageable where Self: NSManagedObject
-{
+public protocol NMFileStorageManageable where Self: NSManagedObject {
  var id: UUID? { get }
  var url: URL? { get }
 }
 
 
-//MARK: Extesion URL getter for Snippets classes.
-@available(iOS 13.0, *)
-public extension NMFileStorageManageable where Self: NMBaseSnippet
-{
- var url: URL? {
-  get {
-   guard let snippetID = self.id?.uuidString else { return nil }
-   return docFolder.appendingPathComponent(snippetID)
-  }
- }
-}
-
 
 //MARK: Block based async methods for creating and deleting file storage.
-public extension NMFileStorageManageable
-{
- private var docFolder: URL {
+public extension NMFileStorageManageable {
+ var docFolder: URL {
   FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
  }
  
@@ -69,10 +55,8 @@ public extension NMFileStorageManageable
 
 //MARK: Fully async methods for creating and deleting file storage.
 
-@available(iOS 15.0, *)
-@available(macOS 12.0.0, *)
-public extension NMFileStorageManageable
-{
+@available(iOS 15.0, macOS 12.0.0, *)
+public extension NMFileStorageManageable {
  func removeFileStorage() async throws {
   
   guard let context = self.managedObjectContext else {

@@ -23,7 +23,7 @@ extension NMBaseSnippet {
   @NSManaged public var contentElementsInRow: Int16
   @NSManaged public var contentElementsSortingType: String?
   @NSManaged public var contentElementsSortOrder: String?
-  @NSManaged public private (set) var date: Date?
+  @NSManaged public /*private (set)*/ var date: Date?
   @NSManaged public var dateSearchFormatIndex: String?
   @NSManaged public var hiddenSectionsBitset: Int16
   @NSManaged public private (set) var id: UUID?
@@ -47,17 +47,18 @@ extension NMBaseSnippet {
   @NSManaged public  var longitude: NSNumber?
   @NSManaged public  var latitude: NSNumber?
  
-  @NSManaged public var nameTag: String?
-  //@NSManaged public var priority: String?
+  //@NSManaged public var nameTag: String? //get/set using primitive property!
+  //@NSManaged public var priority: String?//get/set using primitive property!
   @NSManaged public var publishedTimeStamp: Date?
   @NSManaged public var sectionAlphaIndex: String?
-  @NSManaged public var sectionDateIndex: String?
+  //@NSManaged public var sectionDateIndex: String?
   @NSManaged public var sectionPriorityIndex: String?
+  @NSManaged public var sectionTypeIndex: String?
   @NSManaged public var showsContentElementsPositions: Bool
   @NSManaged public var showsHiddenContentElements: Bool
-  //@NSManaged public var status: String?
+  //@NSManaged public var status: String? //get/set using primitive property!
   @NSManaged public var trashedTimeStamp: Date?
-  //@NSManaged public var type: Int16
+  //@NSManaged public var type: Int16 //get/set using primitive property!
   @NSManaged public var connectedWithTopNews: NSSet?
 
 }

@@ -10,6 +10,8 @@ import Foundation
 import CoreData
 
 @objc(NMPhotoFolder)
-public class NMPhotoFolder: NMBaseContent {
+public class NMPhotoFolder: NMBaseContent, NMSnippetContained {
+ public var snippetID: UUID? { photoSnippet?.id }
+ 
 
 }

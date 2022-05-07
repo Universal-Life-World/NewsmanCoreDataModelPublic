@@ -45,7 +45,7 @@ public final class NMNetworkWaiter: NSObject, NMNetworkMonitorProtocol
     return
    }
    
-   pathMonitor.pathUpdateHandler = { path in
+   pathMonitor.pathUpdateHandler = { [ unowned self ] path in
     if path.status == .satisfied {
      promise(.success(()))
      pathMonitor.cancel()

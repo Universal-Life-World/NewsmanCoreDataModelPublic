@@ -11,10 +11,18 @@ import Combine
 import CoreLocation
 
 
+
 @available(iOS 13.0, *)
 @objc(NMBaseSnippet)
-public class NMBaseSnippet : NSManagedObject
-{
+public class NMBaseSnippet : NSManagedObject {
+ 
+ public override var description: String {
+  var description = String(describing: Swift.type(of: self))
+  description.removeFirst(2)
+  let ind = description.firstIndex(of: "S")!
+  description.insert(" ", at: ind)
+  return description
+ }
  
  // Declared primitive properties for mutating this object silently without KVO & MOCDC notifications.
  // MOCDC = .NSManagedObjectContextDidChange notification posted to the default local NotificationCenter.
@@ -31,6 +39,26 @@ public class NMBaseSnippet : NSManagedObject
  
  public weak var locationsProvider: NMGeoLocationsProvider?
 
+ //MARK: Accessors for Snippet nameTag
+ @NSManaged fileprivate var primitiveNameTag: String?
+ public static let nameTagKey = "nameTag"
+ @objc public var nameTag: String? {
+  get {
+   willAccessValue(forKey: Self.nameTagKey)
+   let value = primitiveNameTag
+   didAccessValue(forKey: Self.nameTagKey)
+   return value
+  }
+  
+  set {
+   willChangeValue(forKey: Self.nameTagKey)
+   primitiveNameTag = newValue
+   sectionAlphaIndex = String(nameTag?.prefix(1) ?? "")
+   didChangeValue(forKey: Self.nameTagKey)
+   
+  }
+ }
+ 
  
  //MARK: Accessors for Snippet Status
  @NSManaged fileprivate var primitiveStatus: String
@@ -39,7 +67,7 @@ public class NMBaseSnippet : NSManagedObject
   get {
    willAccessValue(forKey: Self.statusKey)
    guard let value = SnippetStatus(rawValue: primitiveStatus) else {
-    fatalError("Invalid SnippetStatus enum value!")
+    fatalError("Invalid Snippet Status Primitive Value - [\(primitiveStatus)]")
    }
    didAccessValue(forKey: Self.statusKey)
    return value
@@ -56,12 +84,11 @@ public class NMBaseSnippet : NSManagedObject
  //MARK: Accessors for Snippet Priority
  @NSManaged fileprivate var primitivePriority: String
  public static let priorityKey = "priority"
- public var priority: SnippetPriority
- {
+ public var priority: SnippetPriority {
   get {
    willAccessValue(forKey: Self.priorityKey)
    guard let value = SnippetPriority(rawValue: primitivePriority) else {
-    fatalError("Invalid SnippetPriority enum value")
+    fatalError("Invalid Snippet Priority Primitive Property Value - [\(primitivePriority)]")
    }
    didAccessValue(forKey: Self.priorityKey)
    return value
@@ -78,15 +105,14 @@ public class NMBaseSnippet : NSManagedObject
  //MARK: Accessors for Snippet Type
  @NSManaged fileprivate var primitiveType: NSNumber
  public static let typeKey = "type"
- public fileprivate (set) var type: SnippetType
- {
+ @objc public fileprivate (set) var type: SnippetType {
   get {
    willAccessValue(forKey: Self.typeKey)
-   guard let val = SnippetType(rawValue: primitiveType.int16Value) else {
-    fatalError("Invalid SnippetType enum value")
+   guard let enumValue = SnippetType(rawValue: primitiveType.int16Value) else {
+    fatalError("Invalid Snippet Type Primitive Value - [\(primitiveType.debugDescription)]")
    }
    didAccessValue(forKey: Self.typeKey)
-   return val
+   return enumValue
   }
  
   set {
@@ -97,12 +123,60 @@ public class NMBaseSnippet : NSManagedObject
   }
  }
  
+
+ 
+// var currentTimerCancellable: AnyCancellable?
+// var dateGroupStateUpdater: PassthroughSubject<() -> (), Never>?
+//
+
+// public static var currentTimerInterval: TimeInterval = .oneDay
+// public static var fireDateCalendarComponent: Calendar.Component = .day
+// 
+ //MARK: Accessors for Snippet Date Group Index
+ 
+ 
+ @NSManaged fileprivate var primitiveSectionDateIndex: String
+ public static let sectionDateIndexKey = "sectionDateIndex"
+ public internal (set) var sectionDateIndexGroup: DateGroup {
+  get {
+   willAccessValue(forKey: Self.sectionDateIndexKey)
+   guard let enumValue = DateGroup(rawValue: primitiveSectionDateIndex) else {
+    fatalError("Invalid Snippet Creation Date Group Primitive value - [\(primitiveSectionDateIndex)]")
+   }
+   didAccessValue(forKey: Self.sectionDateIndexKey)
+   return enumValue
+  }
+  
+  set {
+//   guard newValue.rawValue != primitiveSectionDateIndex else { return }
+   willChangeValue(forKey: Self.sectionDateIndexKey)
+   //if ( newValue == .later ) { currentTimerCancellable?.cancel() }
+   primitiveSectionDateIndex = newValue.rawValue
+   didChangeValue(forKey: Self.sectionDateIndexKey)
+   
+  }
+ }
+ 
  
  public var updateGeoLocationsTask: Task<NSManagedObject, Error>?
  
+ private func updateDateGroupAfterFetch(){
+  
+  guard let dateCreated = date else { fatalError("Snippet Creation Date MUST NOT BE NIL!") }
+  
+  let fetchDate = Date()
+  let newSectionDateIndex = DateGroup.current(of: dateCreated, at: fetchDate).rawValue
+  if primitiveSectionDateIndex != newSectionDateIndex {
+   primitiveSectionDateIndex = newSectionDateIndex
+  }
+ }
+ 
  public override func awakeFromFetch(){
   super.awakeFromFetch()
-  print ("\(#function)")
+  //sheduleDateGroupTimerAfterFetch()
+  
+  //updateDateGroupAfterFetch()
+  //print ("\(#function)")
   if #available(iOS 15.0, macOS 12.0, *) {
     updateGeoLocationsAfterFetch()
   } else {
@@ -111,6 +185,7 @@ public class NMBaseSnippet : NSManagedObject
  }
  
 
+ 
 
  // initial silent set-up of snippets service properties.
  public override func awakeFromInsert() {
@@ -119,9 +194,12 @@ public class NMBaseSnippet : NSManagedObject
  
   let now = Date()
   primitiveDate = now
+  //sheduleDateGroupTimer(from: now)
   primitiveLastAccessedTimeStamp = now
   primitiveLastModifiedTimeStamp = now
-  primitiveType = NSNumber(value: SnippetType(snippet: self).rawValue)
+  let typeIndex = SnippetType(snippet: self).rawValue
+  primitiveType = NSNumber(value: typeIndex)
+  sectionTypeIndex = "\(typeIndex)_" + String(describing: self) + "s"
   
 //  subscribeToLocationUpdate()
  
@@ -152,5 +230,32 @@ public class NMBaseSnippet : NSManagedObject
  public override func didChangeValue(forKey key: String) {
   super.didChangeValue(forKey: key)
   primitiveLastModifiedTimeStamp = Date()
+ }
+ 
+ 
+ public override func prepareForDeletion() {
+  super.prepareForDeletion()
+  
+  let description = String(describing: Swift.type(of: self)) + "[\(id!.uuidString)]"
+  (self as? NMFileStorageManageable)?.removeFileStorage{  result in
+   
+   switch result {
+    case .success():
+     print("\(description) FILE STORAGE REMOVED SUCCESSFULLY!")
+    case .failure(let error):
+     print("\(description) <<<FILE STORAGE REMOVE ERROR>>> \(error.localizedDescription)")
+   }
+   
+  }
+ }
+}
+
+@available(iOS 13.0, *)
+public extension NMFileStorageManageable where Self: NMBaseSnippet {
+ var url: URL? {
+  get {
+   guard let snippetID = id?.uuidString else { return nil }
+   return docFolder.appendingPathComponent(snippetID)
+  }
  }
 }

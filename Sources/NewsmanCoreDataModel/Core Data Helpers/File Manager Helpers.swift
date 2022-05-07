@@ -126,8 +126,7 @@ public extension FileManager
 
  static func removeItemFromDisk (at url: URL, completion: @escaping (Result<Void, Error>) -> ())
  {
-  DispatchQueue.global(qos: .userInitiated).async
-  {
+  DispatchQueue.global(qos: .userInitiated).async {
    completion(Result{ try FileManager.default.removeItem(at: url) })
   }
  }

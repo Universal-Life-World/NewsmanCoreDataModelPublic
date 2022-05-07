@@ -166,7 +166,79 @@ final class NMBaseSnippetsCreationAsyncTests: NMBaseSnippetsAsyncTests {
   
  }
  
-
+ /* MARK: Test that when 1 random snippet out of predefined types of Snippets are created in MAIN MOC using entity descriptions with persistance it has not NIL ID field! */
+ 
+ final func test_Random_Snippet_CREATED_IN_MAIN_MOC_USING_NSEntityDescriptions_Correctly_with_Persistance() async throws{
+   //ARRANGE...
+  let nameTag = "Random Named"
+  let PERSISTED = true // PERSISTANCE!
+  let modelMainContext = await model.mainContext // GET ASYNC MAIN MODEL CONTEXT!
+  
+  let randomEntity = [NMBaseSnippet.self,
+                      NMTextSnippet.self,
+                      NMPhotoSnippet.self,
+                      NMVideoSnippet.self,
+                      NMAudioSnippet.self,
+                      NMMixedSnippet.self].randomElement()!
+  
+   //ACTION...
+  
+  let SUT = try await model.create(persist: PERSISTED, entityType: randomEntity){
+   ($0 as? NMBaseSnippet)?.nameTag = nameTag
+  }
+  
+   //ASSERT...
+  
+  try await modelMainContext.perform {
+   let context = try XCTUnwrap(SUT.managedObjectContext)
+   XCTAssertTrue(context.concurrencyType == .mainQueueConcurrencyType)
+   XCTAssertTrue(context == modelMainContext)
+   XCTAssertFalse(SUT.objectID.isTemporaryID )
+   XCTAssertNotNil((SUT as? NMBaseSnippet)?.id )
+   XCTAssertTrue((SUT as? NMBaseSnippet)?.nameTag == nameTag )
+  }
+  
+  try await storageRemoveHelperAsync(for: [SUT] as! [NMBaseSnippet])
+ 
+ }
+ 
+ /* MARK: Test that when all 6 defined types of Snippets are created in MAIN MOC using entity descriptions with persistance they have not NIL ID! */
+ 
+ final func test_Snippets_CREATED_IN_MAIN_MOC_USING_NSEntityDescriptions_Correctly_with_Persistance() async throws{
+  
+   //ARRANGE...
+  let nameTag = "Random Named"
+  let PERSISTED = true // PERSISTANCE!
+  let modelMainContext = await model.mainContext // GET ASYNC MAIN MODEL CONTEXT!
+  
+  let entitites = [NMBaseSnippet.self,
+                   NMTextSnippet.self,
+                   NMPhotoSnippet.self,
+                   NMVideoSnippet.self,
+                   NMAudioSnippet.self,
+                   NMMixedSnippet.self]
+  
+   //ACTION...
+  
+  let SUTS = try await model.create(persist: PERSISTED, entityTypes: entitites){
+   XCTAssertTrue($0.count == entitites.count)
+   ($0.randomElement() as? NMBaseSnippet)?.nameTag = nameTag
+  }
+  
+   //ASSERT...
+  
+  await modelMainContext.perform {
+   let contexts = Set(SUTS.compactMap(\.managedObjectContext))
+   XCTAssertTrue(contexts.count == 1)
+   XCTAssertTrue(contexts.first!.concurrencyType == .mainQueueConcurrencyType)
+   XCTAssertTrue(contexts.first! == modelMainContext)
+   XCTAssertFalse(SUTS.allSatisfy{ $0.objectID.isTemporaryID })
+   XCTAssertEqual(SUTS.compactMap{ ($0 as? NMBaseSnippet)?.id }.count, entitites.count)
+   XCTAssertTrue(SUTS.contains{ ($0 as? NMBaseSnippet)?.nameTag == nameTag })
+  }
+  
+  try await storageRemoveHelperAsync(for: SUTS as! [NMBaseSnippet])
+ }
  
  //MARK: Test that when all 6 defined types of Snippets are created in BG MOC using entity descriptions with persistance they have not NIL ID field when fetched in main context!
  final func test_Snippets_CREATED_IN_BACKGROUND_MOC_USING_NSEntityDescriptions_Correctly_with_Persistance() async throws{

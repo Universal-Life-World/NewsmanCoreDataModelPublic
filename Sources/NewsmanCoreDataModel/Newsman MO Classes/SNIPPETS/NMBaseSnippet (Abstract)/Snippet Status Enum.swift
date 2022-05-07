@@ -2,10 +2,8 @@
 import Foundation
 
 @available(iOS 13.0, *)
-public extension NMBaseSnippet
-{
- enum SnippetStatus: String, CaseIterable, NMEnumCasesStringLocalizable, NMEnumOptionalCasesManageable
- {
+public extension NMBaseSnippet {
+ enum SnippetStatus: String, CaseIterable, NMEnumCasesStringLocalizable, NMEnumOptionalCasesManageable {
   public static var isolationQueue = DispatchQueue(label: "Snippet Status")
   
   static public var enabled = Dictionary(uniqueKeysWithValues: allCases.map{($0, true)})

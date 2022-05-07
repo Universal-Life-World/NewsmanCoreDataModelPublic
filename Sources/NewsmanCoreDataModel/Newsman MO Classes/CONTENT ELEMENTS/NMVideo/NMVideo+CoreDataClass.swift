@@ -10,6 +10,8 @@ import Foundation
 import CoreData
 
 @objc(NMVideo)
-public class NMVideo: NMBaseContent {
+public class NMVideo: NMBaseContent, NMContainerContained {
+ public var snippetID: UUID? { videoSnippet?.id }
+ public var folderID: UUID?  { videoFolder?.id  }
 
 }

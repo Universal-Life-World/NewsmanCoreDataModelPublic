@@ -11,7 +11,6 @@ import CoreData
 
 @available(iOS 13.0, *)
 @objc(NMPhotoSnippet)
-public class NMPhotoSnippet: NMBaseSnippet, NMFileStorageManageable
-{
+public class NMPhotoSnippet: NMBaseSnippet, NMFileStorageManageable {
 
 }

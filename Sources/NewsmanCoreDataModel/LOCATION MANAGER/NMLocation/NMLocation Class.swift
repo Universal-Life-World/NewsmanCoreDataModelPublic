@@ -1,4 +1,5 @@
 
+import Combine
 import CoreLocation
 import class Foundation.NSCache
 import class Foundation.NSValue
@@ -23,11 +24,12 @@ extension NSValue {
 
 @available(iOS 13.0, *)
 public class NMPlacemarksCache {
- var container = [NMLocation: NMPlacemarkAddressRepresentable]()
-
- final subscript(_ location: NMLocation) -> NMPlacemarkAddressRepresentable? {
-  get { container[location] }
-  set { container[location] = newValue }
+ private var container = [NMLocation: AnyPublisher<NMPlacemarkAddressRepresentable?, Error>]()
+ private var isQueue = DispatchQueue(label: "NMPlacemarksCache.isolation", attributes: [.concurrent])
+ 
+ final subscript(_ location: NMLocation) -> AnyPublisher<NMPlacemarkAddressRepresentable?, Error>? {
+  get { isQueue.sync {container[location]} }
+  set { isQueue.sync {container[location] = newValue} }
  }
  
  

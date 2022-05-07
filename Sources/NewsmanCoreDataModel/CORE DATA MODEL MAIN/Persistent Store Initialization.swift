@@ -1,5 +1,6 @@
 import CoreData
 import Foundation
+import Combine
 
 #if !os(macOS)
 import UIKit
@@ -23,12 +24,37 @@ public extension NSManagedObjectModel{
 @available(iOS 14.0, *)
 public final class NMCoreDataModel {
  
+ public lazy var dateGroupStateUpdater = { () -> PassthroughSubject<() -> (), Never> in
+  let subject = PassthroughSubject<() -> (), Never>()
+  let interval = RunLoop.SchedulerTimeType.Stride(Self.dateGroupStateUpdateInterval)
+  let blocks = NSMutableArray()
+  
+  dateGroupStateUpdaterSubscription = subject
+   .scan(blocks){
+     $0.add($1)
+     return $0
+   }
+   .debounce(for: interval, scheduler: RunLoop.main)
+   .print()
+   .sink{ [ unowned self ]  in
+    let blocks = $0.copy() as! [() -> ()]
+     context.perform { blocks.forEach{$0()} }
+    $0.removeAllObjects()
+   }
+  
+  return subject
+  
+ }()
+ 
+ var dateGroupStateUpdaterSubscription: AnyCancellable?
+ 
+ public static var dateGroupStateUpdateInterval: TimeInterval = 0.1
+ 
  private static var moms: [String: NSManagedObjectModel] = [:]
  
  private static let momIsq = DispatchQueue(label: "MOM isolation queue")
  
- static private subscript(named modelName: String) -> NSManagedObjectModel
- {
+ static private subscript(named modelName: String) -> NSManagedObjectModel {
   momIsq.sync {
    if let existingMOM = Self.moms[modelName] { return existingMOM  }
    guard let momURL = Bundle.module.url(forResource: modelName, withExtension: "momd") else { return .empty }
@@ -50,7 +76,7 @@ public final class NMCoreDataModel {
  public let locationsProvider: NMGeoLocationsProvider
  
 
- public var mom: NSManagedObjectModel { Self[named: modelName] }
+ public var mom: NSManagedObjectModel { NMCoreDataModel[named: modelName] }
  
  private let mocIsq = DispatchQueue(label: "MOC access isolation queue", attributes: [.concurrent])
  
@@ -128,6 +154,10 @@ public final class NMCoreDataModel {
   return container
  }()
  
+ private func createDateGroupStateUpdaterSubscription(){
+  
+ }
+ 
  public init(name: String = "Model",
              for storeType: StoreType = .persistedSQLight,
              locationsProvider: NMGeoLocationsProvider = NMGeoLocationsProvider()) {
@@ -135,5 +165,10 @@ public final class NMCoreDataModel {
   self.modelName = name
   self.storeType = storeType
   self.locationsProvider = locationsProvider
+  
+  
+   
  }
+   
+
 }

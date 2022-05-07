@@ -26,8 +26,7 @@ public extension NMCoreDataModel
      return 
    }
    
-   guard let objectWithStorage = newObject as? NMFileStorageManageable else
-   {
+   guard let objectWithStorage = newObject as? NMFileStorageManageable else {
     guard persist else { handler(.success(newObject)); return }
     let persistResult = Result { try context.saveIfNeeded() }.map{_ in newObject }
     handler (persistResult)
@@ -41,10 +40,9 @@ public extension NMCoreDataModel
     return
    }
    
-   switch Result(catching: { try context.saveIfNeeded() })
-   {
+   switch Result(catching: { try context.saveIfNeeded() }) {
     case .success():
-     objectWithStorage.initFileStorage { initResult in
+     objectWithStorage.initFileStorage { [unowned self] initResult in
       switch initResult {
         case .success() : handler(.success(newObject))
         case .failure(let error): context.delete(newObject)

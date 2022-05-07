@@ -32,9 +32,11 @@ extension NMBaseSnippetsTests
  }
  
  
- final func test_snippet_creation_with_geo_locations_services_available() async
- {
+ @available(iOS 15.0, *)
+ final func test_snippet_creation_with_geo_locations_services_available() async throws {
+  
   let persisted = true
+
   let queue = DispatchQueue(label: "test_snippet_creation_with_geo_locations")
   
   var SUTS = [NMBaseSnippet]()
@@ -81,20 +83,24 @@ extension NMBaseSnippetsTests
   
   XCTAssertEqual(resultWhenCreated, .completed)
   
-  let locExpGroup = SUTS.map{ (sut: NMBaseSnippet) -> [XCTKVOExpectation] in
+  let locExpGroup = await model.context.perform {
+    SUTS.map{ (sut: NMBaseSnippet) -> [XCTKVOExpectation] in
+    
+    let latExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.latitude),  object: sut)
+    let lonExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.longitude), object: sut)
+    let locExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.location),  object: sut)
+    
+    sut.updateGeoLocations(with: NMLocationsGeocoderMock.self, using: NMNetworkWaiterMock.self)
+    
+    return [latExp, lonExp , locExp ] }.flatMap{ $0 }
    
-   let latExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.latitude),  object: sut)
-   let lonExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.longitude), object: sut)
-   let locExp =  XCTKVOExpectation(keyPath: #keyPath(NMBaseSnippet.location),  object: sut)
    
-   sut.updateGeoLocations(with: NMLocationsGeocoderMock.self, using: NMNetworkWaiterMock.self)
-   
-   return [latExp, lonExp , locExp ] }.flatMap{ $0 }
+  }
   
   let resultWithLocationsUpdates = XCTWaiter.wait(for: locExpGroup, timeout: 0.1)
   XCTAssertEqual(resultWithLocationsUpdates, .completed)
   
-  storageRemoveHelperSync(for: SUTS)
+  try await storageRemoveHelperAsync(for: SUTS)
   
   
   

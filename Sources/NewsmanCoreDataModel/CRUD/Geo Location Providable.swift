@@ -6,8 +6,7 @@ import Combine
 
 
 @available(iOS 13.0, *)
-public protocol NMGeoLocationProvidable where Self: NSManagedObject
-{
+public protocol NMGeoLocationProvidable where Self: NSManagedObject {
 
  var locationsProvider: NMGeoLocationsProvider?           { get set }
  var dergreesLatitude: CLLocationDegrees?                 { get set }
@@ -135,17 +134,19 @@ extension NMBaseSnippet: NMGeoLocationProvidable {
    
    geoLocationSubscription = locationsProvider?
     .locationFixPublisher
-    .receive(on: DispatchQueue.global(qos: .utility))
     .handleEvents(receiveOutput: { [ unowned self ] location in
-      managedObjectContext?.perform { geoLocation = location
-       //print ("UPDATE LOCATION FOR \(String(describing: Swift.type(of: self)))")
+      managedObjectContext?.perform { [ unowned self ] in 
+       geoLocation = location
+       print ("UPDATE LOCATION FOR \(String(describing: Swift.type(of: self)))")
       }
     })
     .flatMap { $0.getPlacemarkPublisher(geocoderType.self, networkWaiterType.self) }
     .replaceError(with: nil)
     .compactMap { $0?.addressString }
     .sink { [ unowned self ] address in
-      managedObjectContext?.perform { location = address }
+      managedObjectContext?.perform { [ unowned self ] in
+       location = address
+     }
     }
   }
  }

@@ -11,10 +11,9 @@ extension NMBaseSnippetsTests
 {
  final func snippet_creation_with_checkup_helper<T: NMBaseSnippet>(objectType:T.Type,
                                                                    snippetType: NMBaseSnippet.SnippetType,
-                                                                    handler: @escaping (T) -> () )
- {
+                                                                    handler: @escaping (T) -> () ) {
   model.create(objectType: T.self) { [unowned self] result in
-   DispatchQueue.main.async{
+   DispatchQueue.main.async{ [unowned self] in
     switch result {
      case let .success(snippet):
       do {
@@ -41,7 +40,9 @@ extension NMBaseSnippetsTests
   let created =  try XCTUnwrap(snippet.date, "Snippet Date Must be set up on creation")
   let modified = try XCTUnwrap(snippet.lastModifiedTimeStamp, "Snippet Last Modified Date Must be set up!")
   
-  XCTAssertEqual(created, modified)
+  XCTAssertEqual(created.timeIntervalSinceReferenceDate,
+                 modified.timeIntervalSinceReferenceDate, accuracy: 0.1)
+  
   XCTAssertTrue(created <= accessed) //! Id property already accessed in snippet create!
   
   XCTAssertNotNil(snippet.id)

@@ -43,7 +43,7 @@ public class NMLocationManagerMock: CLLocationManager
    
     if _status != newValue {
      _status = newValue
-     delegateQueue.async {
+     delegateQueue.async { [self] in
       delegate?.locationManagerDidChangeAuthorization?(self)
      }
     }

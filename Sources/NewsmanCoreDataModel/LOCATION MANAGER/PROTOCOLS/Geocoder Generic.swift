@@ -6,6 +6,7 @@ import class CoreLocation.CLPlacemark
 import struct Combine.AnyPublisher
 import class  Combine.Future
 import struct Combine.Deferred
+import Combine
 
 extension CLGeocoder: NMGeocoderProtocol {
  public typealias NMPlacemark = CLPlacemark
@@ -34,22 +35,29 @@ public protocol NMGeocoderTypeProtocol: NMGeocoderProtocol {
 
 @available(iOS 13.0, *)
 extension NMGeocoderProtocol {
- public func placemarkPublisher(for location: CLLocation) -> AnyPublisher<NMPlacemark?, Error>
- {
-  Deferred {
-   Future { [ self ] promise in
-    reverseGeocodeLocation(location){ placemarks, error in
-     switch (placemarks, error) {
-      case (nil, let error?):
-       promise(.failure(error))
-      case (let placemarks?, nil):
-       promise (.success(placemarks.first))
-      default:
-       promise(.success(nil))
-       
-     }
+ public func placemarkPublisher(for location: CLLocation) -> AnyPublisher<NMPlacemark?, Error> {
+  Future { [ self ] promise in
+   reverseGeocodeLocation(location){ placemarks, error in
+    switch (placemarks, error) {
+     case (nil, let error?):
+      promise(.failure(error))
+     case (let placemarks?, nil):
+      promise (.success(placemarks.first))
+     default:
+      promise(.success(nil))
+      
     }
    }
   }.eraseToAnyPublisher()
  }
 }//extension NMGeocoderProtocol { ... }
+
+@available(iOS 13.0, *)
+public extension AnyPublisher {
+ var deferred: AnyPublisher<Output, Failure>{
+  Deferred { self }.eraseToAnyPublisher()
+  
+ }
+}
+
+

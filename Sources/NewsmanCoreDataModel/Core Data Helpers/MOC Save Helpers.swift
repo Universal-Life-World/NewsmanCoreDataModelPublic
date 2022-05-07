@@ -60,16 +60,14 @@ public extension NSManagedObjectContext
  }
  
  @available(iOS 13.0, *)
- final func persist<T>( _ block: @escaping () throws -> T) -> Future<T, Error>
- {
+ final func persist<T>( _ block: @escaping () throws -> T) -> Future<T, Error> {
   Future<T,Error>{ [unowned self] promise in
    self.persist(block, handler: promise)
   }
  }
  
  @available(iOS 13.0, *)
- final func persist<T>( block: @escaping () throws -> T) -> AnyPublisher<T, Error>
- {
+ final func persist<T>( block: @escaping () throws -> T) -> AnyPublisher<T, Error> {
   persist(block).eraseToAnyPublisher()
  }
  
@@ -83,8 +81,7 @@ public extension NSManagedObjectContext
  }
  
 
- final func persistAndWait( _ block: @escaping () -> Void, handler: ((Result<Void, Error>) -> Void)?) -> Void
- {
+ final func persistAndWait( _ block: @escaping () -> Void, handler: ((Result<Void, Error>) -> Void)?) -> Void {
   performAndWait { executeBlockAndSaveContext(block: block, handler: handler) }
  }
  

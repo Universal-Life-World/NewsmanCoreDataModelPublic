@@ -3,7 +3,7 @@ import Foundation
 
 @available(iOS 13.0, *)
 public extension NMBaseSnippet {
- enum SnippetType: Int16, CaseIterable, Hashable {
+@objc enum SnippetType: Int16, CaseIterable, Hashable {
   init(snippet: NMBaseSnippet) {
    switch snippet {
     case is NMPhotoSnippet: self = .photo
@@ -14,6 +14,8 @@ public extension NMBaseSnippet {
     default: self = .base
    }
   }
+  
+
   case base  = 0 // the case for abstract entity NMBaseSnippet type
   case photo = 1 // the case for derived entity  NMPhotoSnippet type
   case video = 2 // the case for derived entity  NMVideoSnippet type
@@ -24,3 +26,5 @@ public extension NMBaseSnippet {
  
  
 }
+
+

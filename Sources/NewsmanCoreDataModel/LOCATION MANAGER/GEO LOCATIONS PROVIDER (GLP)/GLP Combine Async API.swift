@@ -12,7 +12,7 @@ public extension NMGeoLocationsProvider {
   Future<CLLocation?, Error>{ [ unowned self ] promise in
    
    dispatchPrecondition(condition: .onQueue(fixPublisherQueue))
-    //print("WAITING FOR CLD MUTEX... in {\(#function)} Thread [\(Thread.current)]")
+    print("WAITING FOR CLD MUTEX... in {\(#function)} Thread [\(Thread.current)]")
    
    delegateResultMutex.wait()
    guard isCachedLocationStale else {
@@ -20,7 +20,7 @@ public extension NMGeoLocationsProvider {
     delegateResultMutex.signal()
     return
    }
-    //print("UPDATE FUTURE HANDLER TO FETCH LOCATION {\(#function)} Thread [\(Thread.current)]")
+    print("UPDATE FUTURE HANDLER TO FETCH LOCATION {\(#function)} Thread [\(Thread.current)]")
    
    handler = promise
    locationProvider.requestLocation()

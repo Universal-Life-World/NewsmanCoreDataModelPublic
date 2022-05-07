@@ -146,7 +146,6 @@ public extension NSManagedObject {
      case (nil, nil):
       withLocations.geoLocationSubscription = locationsProvider
        .locationFixPublisher
-       .receive(on: DispatchQueue.global(qos: .utility))
        .handleEvents(receiveOutput: { location in
         context.perform { withLocations.geoLocation = location }
        })
@@ -160,7 +159,6 @@ public extension NSManagedObject {
      case (let geoLocation?, nil):
       withLocations.geoLocationSubscription = geoLocation
        .getPlacemarkPublisher(geocoderType.self, networkMonitorType.self)
-       .receive(on: DispatchQueue.global(qos: .utility))
        .replaceError(with: nil)
        .compactMap{ $0?.addressString }
        .sink { address in
@@ -181,6 +179,90 @@ public extension NSManagedObject {
  
  
 }
+
+@available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
+public extension Collection where Element: NSManagedObject {
+ func updated(_ block: ( ([Element]) throws -> () )? ) -> AnyPublisher<[Element], Error> {
+  Future<[Element], Error> { promise in
+   guard let block = block else {
+    promise(.success(Array(self)))
+    return
+   }
+   
+   let contexts = Array(Set(compactMap(\.managedObjectContext)))
+   
+   if contexts.isEmpty {
+    promise(.success([]))
+    return
+    
+   }
+   
+   guard contexts.count == 1 else {
+    promise(.failure(ContextError.multipleContextsInCollection(collection: Array(self))))
+    return
+   }
+   
+   let context = contexts.first!
+   
+   context.perform {
+    let validObjects = filter{ $0.managedObjectContext != nil && $0.isDeleted == false }
+    do {
+     try block(validObjects)
+     promise(.success(validObjects))
+    }
+    catch {
+     validObjects.forEach{ context.delete($0) }
+     promise(.failure(error))
+    }
+   }
+  }.eraseToAnyPublisher()
+ }//func updated(_ block: ( ([Element]) throws -> () )? ) -> AnyPublisher<[Element], Error>...
+ 
+ func persisted(_ persist: Bool = true )  -> AnyPublisher<[Element], Error> {
+  Future<[Element], Error> { promise in
+   guard persist else {
+    promise(.success(Array(self)))
+    return
+   }
+   
+   let contexts = Array(Set(compactMap(\.managedObjectContext)))
+   
+   if contexts.isEmpty {
+    promise(.success([]))
+    return
+   }
+   
+   guard contexts.count == 1 else {
+    promise(.failure(ContextError.multipleContextsInCollection(collection: Array(self))))
+    return
+   }
+   
+   let context = contexts.first!
+   
+   context.perform {
+    let validObjects = filter{ $0.managedObjectContext != nil && $0.isDeleted == false }
+    guard validObjects.contains(where: \.hasChanges) else {
+     promise(.success(validObjects))
+     return
+    }
+    
+    promise(Result { try context.save() }.map{_ in validObjects })
+  
+   }
+  }.eraseToAnyPublisher()
+ }// func persisted(_ persist: Bool = true )  -> AnyPublisher<[Element], Error>...
+  
+ func withFileStorage() -> AnyPublisher<[Element], Error> {
+
+  publisher
+   .filter{$0.managedObjectContext != nil }
+   .flatMap{$0.withFileStorage()}
+   .collect()
+   .eraseToAnyPublisher()
+  
+ }
+ 
+}//public extension Collection where Element: NSManagedObject...
  
 @available(macOS 11.0, iOS 14.0, tvOS 14.0, watchOS 7.0, *)
 public extension NMCoreDataModel {
@@ -191,8 +273,27 @@ public extension NMCoreDataModel {
                                  with updates: ((T) throws -> ())? = nil)  -> AnyPublisher<T, Error> {
   
   Future<T, Error> { [unowned self] promise in
-   context.perform {
+   context.perform { [unowned self] in
     let newObject = T(context: context)
+    (newObject as? NMGeoLocationProvidable)?.locationsProvider = locationsProvider
+    promise(.success(newObject))
+   }
+  }
+  .flatMap{ $0.updated(updates) }
+  .flatMap{ $0.persisted(persist) }
+  .flatMap{ $0.withFileStorage() }
+  .eraseToAnyPublisher()
+  
+ }
+ 
+  // MARK: CREATE in main context using MO Entity Description style.
+ func create(persist: Bool = false,
+             entityType: NSManagedObject.Type,
+             with updates: ((NSManagedObject) throws -> ())? = nil)  -> AnyPublisher<NSManagedObject, Error> {
+  
+  Future<NSManagedObject, Error> { [unowned self] promise in
+   context.perform { [unowned self]  in
+    let newObject = NSManagedObject(entity: entityType.entity(), insertInto: context)
     (newObject as? NMGeoLocationProvidable)?.locationsProvider = locationsProvider
     promise(.success(newObject))
    }
@@ -208,9 +309,11 @@ public extension NMCoreDataModel {
  func backgroundCreate<T: NSManagedObject>(persist: Bool = false,
                                            objectType: T.Type,
                                            with updates: ((T) throws -> ())? = nil) -> AnyPublisher<T, Error> {
-  Future<T, Error> { [unowned self] promise in
-   let bgMOC = bgContext // cerate one BG MOC ONCE & use it...
-   bgMOC.perform {
+  
+  let bgMOC = bgContext // cerate one BG MOC ONCE & use it...
+  
+  return Future<T, Error> { [unowned self] promise in
+   bgMOC.perform { [unowned self] in
     let newObject = T(context:  bgMOC)
     (newObject as? NMGeoLocationProvidable)?.locationsProvider = locationsProvider
     promise(.success(newObject))
@@ -221,11 +324,45 @@ public extension NMCoreDataModel {
   .flatMap{ $0.withFileStorage() }
   .flatMap{ bgObject in
     Future<T, Error> { [unowned self] promise in
-     context.perform {
+     context.perform { [unowned self] in
+      let _ = bgMOC
       let mainContextObject = context.object(with: bgObject.objectID) as! T
       promise(.success(mainContextObject))
      }
     }
+  }.eraseToAnyPublisher()
+  
+ }
+ 
+ // MARK: CREATE a batch of homogeneous MOs in background context and fetch in main one for usage.
+ func backgroundCreate<T: NSManagedObject>(persist: Bool,
+                                           objectType: T.Type,
+                                           objectCount: Int,
+                                           with updates: (([T]) throws -> ())? = nil) -> AnyPublisher<[T], Error> {
+  let bgMOC = bgContext // cerate one BG MOC ONCE & use it...
+  
+  return Future<[T], Error> { [unowned self] promise in
+   bgMOC.perform { [unowned self] in
+    var newObjects = [T]()
+    for _ in 1...objectCount {
+     let newObject = T(context: bgMOC)
+     (newObject as? NMGeoLocationProvidable)?.locationsProvider = locationsProvider
+     newObjects.append(newObject)
+    }
+    promise(.success(newObjects))
+   }
+  }
+  .flatMap{ $0.updated(updates) }
+  .flatMap{ $0.persisted(persist) }
+  .flatMap{ $0.withFileStorage() }
+  .flatMap{ bgObjects in
+   Future<[T], Error> { [unowned self] promise in
+    context.perform { [unowned self] in 
+     let _ = bgMOC
+     let mainContextObjects = bgObjects.map{context.object(with: $0.objectID)} as! [T]
+     promise(.success(mainContextObjects))
+    }
+   }
   }.eraseToAnyPublisher()
   
  }
@@ -238,13 +375,26 @@ public extension NMCoreDataModel {
                       with updates: ((T) throws -> ())? = nil)  -> AnyPublisher<T, Error>
                       where T: NSManagedObject,
                             G: NMGeocoderProtocol,
-                            N: NMNetworkMonitorProtocol
- 
- {
+                            N: NMNetworkMonitorProtocol {
   
   create(persist: persist, objectType: T.self, with: updates)
    .flatMap{ $0.withGeoLocations(with: G.self, using: N.self) }
    .map { $0 as! T}
+   .eraseToAnyPublisher()
+  
+ }
+ 
+  // MARK: CREATE in main context with GL info using MO Entity Description
+ func create<G, N>(persist: Bool = false,
+                   entityType: NSManagedObject.Type,
+                   with geocoderType: G.Type,
+                   using networkMonitorType: N.Type,
+                   with updates: ((NSManagedObject) throws -> ())? = nil)  -> AnyPublisher<NSManagedObject, Error>
+ where G: NMGeocoderProtocol,
+       N: NMNetworkMonitorProtocol {
+  
+  create(persist: persist, entityType: entityType.self, with: updates)
+   .flatMap{ $0.withGeoLocations(with: G.self, using: N.self) }
    .eraseToAnyPublisher()
   
  }

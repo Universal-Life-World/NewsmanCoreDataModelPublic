@@ -13,8 +13,7 @@ public extension LoggableError
 }
 
 
-public enum ContextError
-{
+public enum ContextError {
  
  case performCnangesError(context: NSManagedObjectContext,
                           object: NSManagedObject,
@@ -84,6 +83,7 @@ public enum ContextError
                                description: String)
  
  case multipleContextsInCollection(collection: [NSManagedObject])
+ 
 }
 
 extension ContextError: LoggableError

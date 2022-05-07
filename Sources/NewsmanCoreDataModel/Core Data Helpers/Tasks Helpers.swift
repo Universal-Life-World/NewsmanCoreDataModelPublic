@@ -1,7 +1,6 @@
 import Foundation
 
-extension DispatchTimeInterval: Comparable, AdditiveArithmetic
-{
+extension DispatchTimeInterval: Comparable, AdditiveArithmetic {
  public static func - (lhs: DispatchTimeInterval, rhs: DispatchTimeInterval) -> DispatchTimeInterval {
   Self.nanoseconds(lhs.nanoseconds - rhs.nanoseconds)
  }
@@ -14,8 +13,7 @@ extension DispatchTimeInterval: Comparable, AdditiveArithmetic
  
  public static var zero: DispatchTimeInterval { .never }
  
- public var nanoseconds: Int
- {
+ public var nanoseconds: Int {
   switch self {
    case .nanoseconds(let value) where value > 0: return value
    case .milliseconds(let value) where value > 0: return value * 1_000_000
@@ -29,13 +27,11 @@ extension DispatchTimeInterval: Comparable, AdditiveArithmetic
   lhs.nanoseconds < rhs.nanoseconds
  }
  
- public static func random(in closedRange: ClosedRange<Self>) -> Self
- {
+ public static func random(in closedRange: ClosedRange<Self>) -> Self {
   Self.nanoseconds(Int.random(in: closedRange.lowerBound.nanoseconds...closedRange.upperBound.nanoseconds))
  }
  
- public static func random(in range: Range<Self>) -> Self
- {
+ public static func random(in range: Range<Self>) -> Self {
   Self.nanoseconds(Int.random(in: range.lowerBound.nanoseconds...range.upperBound.nanoseconds))
  }
  

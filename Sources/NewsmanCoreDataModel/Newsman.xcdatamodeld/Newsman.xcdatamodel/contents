@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="19574" systemVersion="21D5025f" minimumToolsVersion="Xcode 11.0" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="20086" systemVersion="21E230" minimumToolsVersion="Xcode 11.0" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="NMAudio" representedClassName="NMAudio" parentEntity="NMBaseContent" syncable="YES">
         <attribute name="defaultPreviewMode" attributeType="String" defaultValueString="Shows Static Waves"/>
         <attribute name="showsDuration" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
@@ -111,11 +111,12 @@
         <attribute name="location" optional="YES" attributeType="String"/>
         <attribute name="longitude" optional="YES" attributeType="Double" usesScalarValueType="YES"/>
         <attribute name="nameTag" attributeType="String" defaultValueString="Unnamed Snippet"/>
-        <attribute name="priority" attributeType="String" defaultValueString="Normal"/>
+        <attribute name="priority" attributeType="String" defaultValueString="3_Normal"/>
         <attribute name="publishedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="sectionAlphaIndex" optional="YES" attributeType="String"/>
-        <attribute name="sectionDateIndex" optional="YES" attributeType="String"/>
+        <attribute name="sectionDateIndex" attributeType="String" defaultValueString="0_Today"/>
         <attribute name="sectionPriorityIndex" optional="YES" attributeType="String"/>
+        <attribute name="sectionTypeIndex" optional="YES" attributeType="String"/>
         <attribute name="showsContentElementsPositions" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
         <attribute name="showsHiddenContentElements" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <attribute name="status" attributeType="String" defaultValueString="New"/>
@@ -643,7 +644,7 @@
         <element name="NMAudioRecordingSettings" positionX="-584.3857421875" positionY="-1453.415542602539" width="219.0896606445312" height="118"/>
         <element name="NMAudioSnippet" positionX="-567.8550109863281" positionY="-1251.026901245116" width="236.5485534667969" height="118"/>
         <element name="NMBaseContent" positionX="-602.8646240234375" positionY="-423.2487640380859" width="274.3505249023438" height="584"/>
-        <element name="NMBaseSnippet" positionX="-811.0332641601562" positionY="-1852.591018676758" width="263.5743408203125" height="644"/>
+        <element name="NMBaseSnippet" positionX="-811.0332641601562" positionY="-1852.591018676758" width="263.5743408203125" height="659"/>
         <element name="NMBaseSubscription" positionX="-881.7544250488281" positionY="-2628.178497314453" width="170.4893493652344" height="223"/>
         <element name="NMChatConnection" positionX="-222.8324584960938" positionY="127.8166198730468" width="150.4974365234375" height="73"/>
         <element name="NMChatItem" positionX="-116.4295654296876" positionY="-5.57501220703125" width="162.0484619140625" height="88"/>

@@ -10,6 +10,10 @@ import Foundation
 import CoreData
 
 @objc(NMText)
-public class NMText: NMBaseContent {
+public class NMText: NMBaseContent, NMContainerContained {
+ public var snippetID: UUID? { textSnippet?.id }
+ 
+ public var folderID: UUID? {textFolder?.id }
+ 
 
 }

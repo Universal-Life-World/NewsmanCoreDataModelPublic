@@ -271,19 +271,24 @@ final class NMBaseSnippetsGeoLocationAsyncAPITests: NMBaseSnippetsAsyncTests
   //ACTION FIRST...
   let SUTS = try await createAllSnippets() //CREATE ALL 6 TYPES OF SNIPPETS WITHOUT GL INFO IN MAIN QUEUE MOC!
   
+  //ASSERT WHEN CREATED AND INSERTED INTO MAIN MOC...
+  
   let snippets_count = SUTS.count
-  let geoLocations = SUTS.compactMap{ $0.geoLocation }
-  let addresses = SUTS.compactMap{ $0.location }
- 
-  //ASSERT WHEN CREATED AND INSERTED INTO MOC...
   XCTAssertTrue(snippets_count == 6)
-  XCTAssertTrue(geoLocations.count == 0)
-  XCTAssertTrue(addresses.count == 0)
+  
+  await model.mainContext.perform {
+   
+   let geoLocations = SUTS.compactMap{ $0.geoLocation }
+   let addresses = SUTS.compactMap{ $0.location }
+ 
+   XCTAssertTrue(geoLocations.count == 0)
+   XCTAssertTrue(addresses.count == 0)
+  }
   
    //ARRANGE BG CONTEXT...
-  let bgContext = model.bgContext
+  let bgContext = await model.newBackgroundContext
  
-  //ACTION SECOND! FETCH SNIPPETS FROM PS IN BG CONTEXT...
+  //ACTION SECOND! FETCH SNIPPETS FROM PSC IN BG CONTEXT...
   let SUTS_BG = try await bgContext.perform { () ->  [NMBaseSnippet] in
    
    //FETCH ALL SAVED SNIPPETS AS FULLY MATERIALISED MO IN BG CONTEXT...

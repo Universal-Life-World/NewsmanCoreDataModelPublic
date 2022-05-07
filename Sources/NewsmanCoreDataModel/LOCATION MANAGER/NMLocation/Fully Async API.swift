@@ -8,8 +8,7 @@ public extension NMLocation {
  
  func getPlacemark<G, N> (with GC: G.Type, using NW: N.Type) async throws -> G.NMPlacemark
                 where G: NMGeocoderProtocol,
-                      N: NMNetworkMonitorProtocol
- {
+                      N: NMNetworkMonitorProtocol {
   try Task.checkCancellation()
   
   if retryCount == 0 {
