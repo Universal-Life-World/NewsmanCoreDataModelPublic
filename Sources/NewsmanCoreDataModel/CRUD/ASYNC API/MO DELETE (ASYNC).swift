@@ -13,6 +13,7 @@ public extension NMFileStorageManageable {
  }
 }
 
+
 @available(iOS 15.0, macOS 12.0, *)
 public extension NMFileStorageManageable {
  func delete() async throws {
