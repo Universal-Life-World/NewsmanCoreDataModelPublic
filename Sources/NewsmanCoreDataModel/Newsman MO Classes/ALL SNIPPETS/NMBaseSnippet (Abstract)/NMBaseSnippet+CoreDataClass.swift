@@ -16,6 +16,8 @@ import CoreLocation
 @objc(NMBaseSnippet)
 public class NMBaseSnippet : NSManagedObject {
  
+ public var fileManagerTask: Task<Void, Error>?
+ 
  public override var description: String {
   var description = String(describing: Swift.type(of: self))
   description.removeFirst(2)
@@ -28,20 +30,23 @@ public class NMBaseSnippet : NSManagedObject {
  // MOCDC = .NSManagedObjectContextDidChange notification posted to the default local NotificationCenter.
  
  @NSManaged fileprivate var primitiveId: UUID?
- 
  @NSManaged fileprivate var primitiveDate: Date?
  @NSManaged fileprivate var primitiveLastModifiedTimeStamp: Date?
  @NSManaged fileprivate var primitiveLastAccessedTimeStamp: Date?
  
 
  //public static var geocoderType: NMGeocoderTypeProtocol.Type?
- public var geoLocationSubscription: AnyCancellable?
  
+ //GLS NEEDED PROPERTIES...
+ public var geoLocationSubscription: AnyCancellable?
  public weak var locationsProvider: NMGeoLocationsProvider?
 
- //MARK: Accessors for Snippet nameTag
+ //MARK: Accessors for Snippet MO <.nameTag> field.
  @NSManaged fileprivate var primitiveNameTag: String?
  public static let nameTagKey = "nameTag"
+ public static let normalizedSearchNameTagKey = "normalizedSearchNameTag"
+ //the publicly exposed key for updating ASCII normalised variant of nameTag string for optimized predicate fetching using formats ... CONTAINS[n]... BEGINWITH[n]... etc.
+ 
  @objc public var nameTag: String? {
   get {
    willAccessValue(forKey: Self.nameTagKey)
@@ -54,13 +59,37 @@ public class NMBaseSnippet : NSManagedObject {
    willChangeValue(forKey: Self.nameTagKey)
    primitiveNameTag = newValue
    sectionAlphaIndex = String(nameTag?.prefix(1) ?? "")
+   setValue(newValue?.normalizedForSearch, forKey: Self.normalizedSearchNameTagKey) //NORMALIZED!
    didChangeValue(forKey: Self.nameTagKey)
    
   }
  }
  
+  //MARK: Accessors for Snippet MO <.about> field.
+ @NSManaged fileprivate var primitiveAbout: String?
+ public static let aboutKey = "about"
+ public static let normalizedSearchAboutKey = "normalizedSearchAbout"
+  //the publicly exposed key for updating ASCII normalised variant of nameTag string for optimized predicate fetching using formats ... CONTAINS[n]... BEGINWITH[n]... etc.
  
- //MARK: Accessors for Snippet Status
+ @objc public var about: String? {
+  get {
+   willAccessValue(forKey: Self.aboutKey)
+   let value = primitiveAbout
+   didAccessValue(forKey: Self.aboutKey)
+   return value
+  }
+  
+  set {
+   willChangeValue(forKey: Self.aboutKey)
+   primitiveAbout = newValue
+   setValue(newValue?.normalizedForSearch, forKey: Self.normalizedSearchAboutKey) //NORMALIZED!
+   didChangeValue(forKey: Self.aboutKey)
+   
+  }
+ }
+ 
+ 
+ //MARK: Accessors for Snippet MO <.status> field.
  @NSManaged fileprivate var primitiveStatus: String
  public static let statusKey = "status"
  public fileprivate (set) var status: SnippetStatus {
@@ -81,7 +110,7 @@ public class NMBaseSnippet : NSManagedObject {
   }
  }
  
- //MARK: Accessors for Snippet Priority
+ //MARK: Accessors for Snippet MO <.priority> field.
  @NSManaged fileprivate var primitivePriority: String
  public static let priorityKey = "priority"
  public var priority: SnippetPriority {
@@ -205,11 +234,13 @@ public class NMBaseSnippet : NSManagedObject {
  
  }
  
+
  public override func willSave() {
   super.willSave()
   primitiveStatus = Self.SnippetStatus.privy.rawValue
   primitiveLastModifiedTimeStamp = Date()
  }
+ 
  
  public override func didAccessValue(forKey key: String?) {
   super.didAccessValue(forKey: key)
@@ -233,29 +264,29 @@ public class NMBaseSnippet : NSManagedObject {
  }
  
  
+// private func removeFileStorage(){
+//  guard let storageManaged = self as? NMFileStorageManageable else { return }
+//
+//  let description = String(describing: Swift.type(of: self)) + "[\(id!.uuidString)]"
+//  storageManaged.removeFileStorage{  result in
+//
+//   switch result {
+//    case .success():
+//     print("\(description) FILE STORAGE REMOVED SUCCESSFULLY!")
+//
+//    case .failure(let error):
+//     print("\(description) <<<FILE STORAGE REMOVE ERROR>>> \(error.localizedDescription)")
+//   }
+//
+//  }
+// }
+ 
+ 
+ 
  public override func prepareForDeletion() {
   super.prepareForDeletion()
-  
-  let description = String(describing: Swift.type(of: self)) + "[\(id!.uuidString)]"
-  (self as? NMFileStorageManageable)?.removeFileStorage{  result in
-   
-   switch result {
-    case .success():
-     print("\(description) FILE STORAGE REMOVED SUCCESSFULLY!")
-    case .failure(let error):
-     print("\(description) <<<FILE STORAGE REMOVE ERROR>>> \(error.localizedDescription)")
-   }
-   
-  }
+  //removeFileStorage()
  }
 }
 
-@available(iOS 13.0, *)
-public extension NMFileStorageManageable where Self: NMBaseSnippet {
- var url: URL? {
-  get {
-   guard let snippetID = id?.uuidString else { return nil }
-   return docFolder.appendingPathComponent(snippetID)
-  }
- }
-}
+

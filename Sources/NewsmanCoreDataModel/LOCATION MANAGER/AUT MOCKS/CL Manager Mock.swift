@@ -5,7 +5,9 @@ import Foundation
 @available(iOS 14.0, *)
 public class NMLocationManagerMock: CLLocationManager
 {
- 
+ deinit {
+  print ("NMLocationManagerMock is DESTROYED!")
+ }
  private let delegateQueue = DispatchQueue(label: "delegateQueue",
                                            qos: .userInitiated,
                                            attributes: [.concurrent])
@@ -128,7 +130,7 @@ public class NMLocationManagerMock: CLLocationManager
   set {
    delegate_IQ.sync {
     _delegate = newValue
-    delegateQueue.async {
+    delegateQueue.async { 
      newValue?.locationManagerDidChangeAuthorization?(self)
     }
    }

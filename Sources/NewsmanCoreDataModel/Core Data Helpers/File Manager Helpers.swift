@@ -123,6 +123,11 @@ public extension FileManager
   Result{try FileManager.default.moveItem(at: sourceURL, to: destinationURL)}
  }
  
+ @available(iOS 15.0, macOS 12.0, *)
+ static func moveItemOnDisk(from sourceURL: URL, to destinationURL: URL) async throws {
+  try Task.checkCancellation()
+  try FileManager.default.moveItem(at: sourceURL, to: destinationURL)
+ }
 
  static func removeItemFromDisk (at url: URL, completion: @escaping (Result<Void, Error>) -> ())
  {
@@ -169,5 +174,8 @@ public extension FileManager
   try Task.checkCancellation()
   try FileManager.default.createDirectory(at: url, withIntermediateDirectories: false, attributes: nil)
  }
+ 
+ 
+ 
  
 }

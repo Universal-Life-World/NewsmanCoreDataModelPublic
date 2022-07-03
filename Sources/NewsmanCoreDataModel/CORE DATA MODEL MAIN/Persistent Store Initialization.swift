@@ -10,9 +10,21 @@ import UIKit
 public extension NSManagedObjectContext{
  
  static let locationsProviderKey = "locationsProvider"
+ 
+ private typealias LocationsProviderBlock = () -> NMGeoLocationsProvider?
+ 
  var locationsProvider: NMGeoLocationsProvider? {
-  get { userInfo[Self.locationsProviderKey] as? NMGeoLocationsProvider }
-  set { userInfo[Self.locationsProviderKey] = newValue }
+  get {
+   
+    let block = userInfo[Self.locationsProviderKey] as? LocationsProviderBlock
+    return block?() as? NMGeoLocationsProvider
+   
+  }
+ 
+  set {
+   userInfo[Self.locationsProviderKey] = { [ weak newValue ] () -> NMGeoLocationsProvider? in newValue }
+   
+  }
  }
  
 }
@@ -24,33 +36,7 @@ public extension NSManagedObjectModel{
 @available(iOS 14.0, *)
 public final class NMCoreDataModel {
  
- public lazy var dateGroupStateUpdater = { () -> PassthroughSubject<() -> (), Never> in
-  let subject = PassthroughSubject<() -> (), Never>()
-  let interval = RunLoop.SchedulerTimeType.Stride(Self.dateGroupStateUpdateInterval)
-  let blocks = NSMutableArray()
-  
-  dateGroupStateUpdaterSubscription = subject
-   .scan(blocks){
-     $0.add($1)
-     return $0
-   }
-   .debounce(for: interval, scheduler: RunLoop.main)
-   .print()
-   .sink{ [ unowned self ]  in
-    let blocks = $0.copy() as! [() -> ()]
-     context.perform { blocks.forEach{$0()} }
-    $0.removeAllObjects()
-   }
-  
-  return subject
-  
- }()
- 
- var dateGroupStateUpdaterSubscription: AnyCancellable?
- 
- public static var dateGroupStateUpdateInterval: TimeInterval = 0.1
- 
- private static var moms: [String: NSManagedObjectModel] = [:]
+ public static var moms: [String: NSManagedObjectModel] = [:]
  
  private static let momIsq = DispatchQueue(label: "MOM isolation queue")
  
@@ -121,6 +107,7 @@ public final class NMCoreDataModel {
  private func registerDataTransformers()
  {
   //if #available(iOS 12.0, *) {
+  //NSValueDataSecureTransformer.register()
    GenericDataSecureTransformer<NSValue>.register()
 //  } else {
 //   // Fallback on earlier versions
@@ -128,7 +115,8 @@ public final class NMCoreDataModel {
  
 // if #available(iOS 12.0, *) {
   #if !os(macOS)
-    GenericDataSecureTransformer<UIColor>.register()
+   //UIColorDataSecureTransformer.register()
+   GenericDataSecureTransformer<UIColor>.register()
   #endif
  //} else {
    // Fallback on earlier versions
@@ -168,6 +156,12 @@ public final class NMCoreDataModel {
   
   
    
+ }
+ 
+ deinit{
+  print ("NMCoreDataModel is DESTROYED!")
+  
+  //persistentContainer.viewContext.locationsProvider = nil
  }
    
 

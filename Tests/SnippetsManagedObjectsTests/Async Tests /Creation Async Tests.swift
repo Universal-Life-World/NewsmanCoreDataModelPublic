@@ -8,6 +8,7 @@ final class NMBaseSnippetsCreationAsyncTests: NMBaseSnippetsAsyncTests {
   //MARK: Test that when all snippets are created in MAIN MOC without persistance they have not NIL ID field!
  final func test_Snippets_CREATED_Correctly_with_NO_Persistance() async throws {
   
+ 
   //ARRANGE...
   let SUTS_COUNT = 6
   let PERSISTED = false // NO PERSISTANCE!
@@ -15,25 +16,30 @@ final class NMBaseSnippetsCreationAsyncTests: NMBaseSnippetsAsyncTests {
   
   //ACTION...
   let SUTS = try await createAllSnippets(persisted: PERSISTED)
+  
  
   //ASSERT (IN MAIN QUEUE CONTEXT)...
   await modelMainContext.perform {
+  //await MainActor.run{
    XCTAssertEqual(SUTS.count, SUTS_COUNT)
    XCTAssertTrue(SUTS.allSatisfy{ $0.objectID.isTemporaryID }) //Assert that all snippets are not persisted yet!
-   
+
    let ids = SUTS.compactMap{ $0.id }
    XCTAssertEqual(ids.count, SUTS_COUNT) // Assert that all snippets have id!
-   
+
    let contexts = SUTS.compactMap{$0.managedObjectContext}
    XCTAssertEqual(contexts.count, SUTS_COUNT) // Assert that all snippets have MOC!
-  
+
    XCTAssertEqual(Set(contexts).count, 1) // Assert that all snippets have the same unique MOC!
    XCTAssertEqual(Set(contexts).first, modelMainContext) // Assert that snippets' MOC is model main MOC!
-   
+  //}
   }
-  
+
   //FINALLY - STORAGE CLEAN-UP!
-  try await storageRemoveHelperAsync(for: SUTS)
+   try await storageRemoveHelperAsync(for: SUTS)
+  
+  
+  
   
  }
  
@@ -49,6 +55,7 @@ final class NMBaseSnippetsCreationAsyncTests: NMBaseSnippetsAsyncTests {
   //ACTION...
   let SUTS = try await createAllSnippets(persisted: PERSISTED)
   
+ 
   
   //ASSERT (IN MAIN QUEUE CONTEXT)...
   await modelMainContext.perform {
@@ -67,6 +74,194 @@ final class NMBaseSnippetsCreationAsyncTests: NMBaseSnippetsAsyncTests {
   }
   
   //FINALLY - STORAGE CLEAN-UP!
+  try await storageRemoveHelperAsync(for: SUTS)
+  
+ }
+ 
+  //MARK: Test that when all snippets are created in MAIN MOC with corresponding child MO!
+ final func test_Snippets_CREATED_Correctly_WITH_Persistance_WITH_CHILDREN() async throws {
+  
+   //ARRANGE...
+  let SUTS_COUNT = 6
+  let CHILDREN_COUNT = Int.random(in: 1...100)
+  let FOLDERS_COUNT = 1 //Int.random(in: 1...100)
+  let PERSISTED = true // WITH PERSISTANCE!
+  let modelMainContext = await model.mainContext // GET ASYNC MAIN MODEL CONTEXT!
+  let folderName = "Folder"
+  
+  func assertChildren<E: NMContentElement,
+                      C: NMContentElementsContainer>(children: [E],
+                                                     in container: C,
+                                                     _ CHILDREN_COUNT: Int) async throws
+  {
+   await modelMainContext.perform {
+    XCTAssertFalse(children.allSatisfy{ $0.objectID.isTemporaryID })
+    XCTAssertTrue(children.allSatisfy{ $0.id != nil })
+     // Assert that all snippets single elements have id!
+    
+    let contexts = children.compactMap{$0.managedObjectContext}
+    XCTAssertEqual(contexts.count, CHILDREN_COUNT)
+     // Assert that all snippets single elements have MOC!
+    
+    XCTAssertEqual(Set(contexts).count, 1)
+     // Assert that all snippets single elements have the same unique MOC!
+    XCTAssertEqual(Set(contexts).first, modelMainContext)
+     // Assert that snippets' single elements  MOC is model main MOC!
+    
+    XCTAssertEqual(container.singleContentElements.count, CHILDREN_COUNT)
+    XCTAssertEqual(Set(container.singleContentElements), Set(children))
+    XCTAssertFalse(children.allSatisfy{ $0.isNew })
+    XCTAssertTrue(children.allSatisfy{ $0.isFoldered })
+    XCTAssertTrue(children.allSatisfy{ $0.folder?.tag == folderName })
+    XCTAssertTrue(children.allSatisfy{ $0.folder?.container == container })
+    XCTAssertTrue(children.allSatisfy{ $0.isValid })
+    let P1 = NSPredicate(format: "SELF.container == %@", container)
+    let P2 = NSPredicate(format: "SELF.mixedSnippet == %@", container)
+    let XOR = NSCompoundPredicate(xorPredicateWithSubpredicates: [P1, P2])
+    XCTAssertTrue(children.allSatisfy{ XOR.evaluate(with: $0)})
+    
+   }
+  }
+  
+  func assertFolders <F: NMContentFolder,
+                      C: NMContentElementsContainer>(folders: [F],
+                                                     in container: C,
+                                                     _ FOLDERS_COUNT: Int) async throws
+  {
+   await modelMainContext.perform {
+    XCTAssertFalse(folders.allSatisfy{ $0.objectID.isTemporaryID })
+    XCTAssertTrue(folders.allSatisfy{ $0.id != nil })
+     // Assert that all snippets folders have id!
+    
+    let contexts = folders.compactMap{$0.managedObjectContext}
+    XCTAssertEqual(contexts.count, FOLDERS_COUNT)
+     // Assert that all snippets folders have MOC!
+    
+    XCTAssertEqual(Set(contexts).count, 1)
+     // Assert that all snippets folders have the same unique MOC!
+    XCTAssertEqual(Set(contexts).first, modelMainContext)
+     // Assert that snippets' folders MOC is model main MOC!
+    
+    XCTAssertEqual(container.folders.count, FOLDERS_COUNT)
+    XCTAssertEqual(Set(container.folders), Set(folders))
+    XCTAssertFalse(folders.allSatisfy{ $0.isNew })
+    XCTAssertTrue(folders.allSatisfy{ $0.isValid })
+    let P1 = NSPredicate(format: "SELF.container == %@", container)
+    let P2 = NSPredicate(format: "SELF.mixedSnippet == %@", container)
+    let XOR = NSCompoundPredicate(xorPredicateWithSubpredicates: [P1, P2])
+    XCTAssertTrue(folders.allSatisfy{ XOR.evaluate(with: $0)})
+    
+   }
+  }
+  
+  
+   //ACTION...
+  let SUTS = try await createAllSnippets(persisted: PERSISTED)
+  
+  for SUT in SUTS {
+   
+   switch SUT {
+    case let photoSnippet as NMPhotoSnippet:
+     
+     let photoFolders = try await photoSnippet.createFolders(FOLDERS_COUNT,
+                                                             persist: PERSISTED){ $0[0].tag = folderName }
+     
+     try await assertFolders(folders: photoFolders, in: photoSnippet, FOLDERS_COUNT )
+     
+     let photos = try await photoSnippet.createSingles(CHILDREN_COUNT,
+                                                       persist: PERSISTED,
+                                                       in: photoFolders[0])
+     
+     try await assertChildren(children: photos, in: photoSnippet, CHILDREN_COUNT)
+     
+     
+    case let audioSnippet as NMAudioSnippet:
+     
+     let audioFolders = try await audioSnippet.createFolders(FOLDERS_COUNT,
+                                                             persist: PERSISTED){ $0[0].tag = folderName }
+     
+     try await assertFolders(folders: audioFolders, in: audioSnippet, FOLDERS_COUNT)
+     
+     let audios = try await audioSnippet.createSingles(CHILDREN_COUNT,
+                                                       persist: PERSISTED,
+                                                       in: audioFolders[0])
+     
+     try await assertChildren(children: audios, in: audioSnippet, CHILDREN_COUNT)
+     
+     
+    case let textSnippet as NMTextSnippet:
+     
+     let textFolders = try await textSnippet.createFolders(FOLDERS_COUNT,
+                                                           persist: PERSISTED) { $0[0].tag = folderName }
+     
+     try await assertFolders(folders: textFolders, in: textSnippet, FOLDERS_COUNT)
+
+     
+     let texts = try await textSnippet.createSingles(CHILDREN_COUNT,
+                                                     persist: PERSISTED,
+                                                     in: textFolders[0])
+     
+     try await assertChildren(children: texts, in: textSnippet, CHILDREN_COUNT)
+     
+     
+    case let videoSnippet as NMVideoSnippet:
+     
+     let videoFolders = try await videoSnippet.createFolders(FOLDERS_COUNT,
+                                                             persist: PERSISTED){ $0[0].tag = folderName }
+     
+     try await assertFolders(folders: videoFolders, in: videoSnippet, FOLDERS_COUNT)
+     
+     let videos = try await videoSnippet.createSingles(CHILDREN_COUNT,
+                                                       persist: PERSISTED,
+                                                       in: videoFolders[0])
+     
+     try await assertChildren(children: videos, in: videoSnippet, CHILDREN_COUNT)
+     
+     
+
+    case let mixedSnippet as NMMixedSnippet:
+
+     let photoFolders = try await mixedSnippet.createFolders(FOLDERS_COUNT,
+                                                             of: NMPhotoFolder.self,
+                                                             persist: PERSISTED){ $0[0].tag = folderName }
+
+     try await assertFolders(folders: photoFolders as! [NMPhotoFolder], in: mixedSnippet, FOLDERS_COUNT)
+
+     let photos = try await mixedSnippet.createSingles(CHILDREN_COUNT,
+                                                       of: NMPhoto.self,
+                                                       in: photoFolders[0] as? NMPhotoFolder,
+                                                       persist: PERSISTED)
+
+     try await assertChildren(children: photos, in: mixedSnippet, CHILDREN_COUNT)
+
+    
+     
+     
+     
+    default: break
+   }
+  
+  }
+  
+  
+   //ASSERT (IN MAIN QUEUE CONTEXT)...
+  await modelMainContext.perform {
+   XCTAssertEqual(SUTS.count, SUTS_COUNT)
+   XCTAssertFalse(SUTS.allSatisfy{ $0.objectID.isTemporaryID }) //Assert that all snippets are persisted in PS!
+   
+   let ids = SUTS.compactMap{ $0.id }
+   XCTAssertEqual(ids.count, SUTS_COUNT) // Assert that all snippets have id!
+   
+   let contexts = SUTS.compactMap{$0.managedObjectContext}
+   XCTAssertEqual(contexts.count, SUTS_COUNT) // Assert that all snippets have MOC!
+   
+   XCTAssertEqual(Set(contexts).count, 1) // Assert that all snippets have the same unique MOC!
+   XCTAssertEqual(Set(contexts).first, modelMainContext) // Assert that snippets' MOC is model main MOC!
+   
+  
+  }
+  
+   //FINALLY - STORAGE CLEAN-UP!
   try await storageRemoveHelperAsync(for: SUTS)
   
  }

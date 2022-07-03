@@ -95,9 +95,19 @@ final class NMSnippetsTestableCellContentView: UIView, UIContentView{
   }
  }
  
+ var intrinsicContentViewHeight: CGFloat = .zero {
+  didSet{
+   invalidateIntrinsicContentSize()
+  }
+ }
+ 
+ override var intrinsicContentSize: CGSize {
+  guard intrinsicContentViewHeight != .zero else { return super.intrinsicContentSize }
+  return .init(width: super.intrinsicContentSize.width, height: intrinsicContentViewHeight)
+ }
+ 
  fileprivate lazy var nameTagLabel = { () -> UILabel in
   let label = UILabel()
-  label.tag = 1
   addSubview(label)
   label.translatesAutoresizingMaskIntoConstraints = false
   label.topAnchor.constraint(equalTo: topAnchor, constant: 0).isActive = true
@@ -110,11 +120,8 @@ final class NMSnippetsTestableCellContentView: UIView, UIContentView{
  
  fileprivate lazy var aboutLabel = { () -> UILabel in
   let label = UILabel()
-  label.tag = 2
   addSubview(label)
   label.translatesAutoresizingMaskIntoConstraints = false
-  let nameTagLabel = subviews.first{ $0.tag == 1 } as! UILabel
-  label.topAnchor.constraint(equalTo: nameTagLabel.bottomAnchor, constant: 0).isActive = true
   label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 0).isActive = true
   label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: 0).isActive = true
   label.bottomAnchor.constraint(equalTo: bottomAnchor, constant: 0).isActive = true
@@ -139,6 +146,11 @@ final class NMSnippetsTestableTableViewCell: UITableViewCell, NMBaseSnippetUISta
  
  var nameTagLabelText: String? { (contentView as? NMSnippetsTestableCellContentView)?.nameTagLabel.text }
  var aboutLabelText:   String? { (contentView as? NMSnippetsTestableCellContentView)?.aboutLabel.text }
+ var intrinsicContentViewHeight: CGFloat = .zero {
+  didSet{
+   (contentView as? NMSnippetsTestableCellContentView)?.intrinsicContentViewHeight = intrinsicContentViewHeight
+  }
+ }
  
  weak var snippet: NMBaseSnippet?{
   didSet{
@@ -159,37 +171,58 @@ final class NMSnippetsTestableTableView: UITableView{
  
  let reuseID = "NMSnippetsTestableTableViewCell"
  weak var context: NSManagedObjectContext!
+ let cellHeight: CGFloat
  
  
  required init?(coder: NSCoder) {
-  super.init(coder: coder)
+  fatalError("init(coder:) has not been implemented")
  }
  
- init(frame: CGRect, style: UITableView.Style, using context: NSManagedObjectContext) {
+ init(frame: CGRect,
+      style: UITableView.Style,
+      using context: NSManagedObjectContext, cellHeight: CGFloat) {
+  
+  self.cellHeight = cellHeight
   super.init(frame: frame, style: style)
   self.context = context
+  self.separatorStyle = .none
+ 
  }
  
 }
 
 @available(iOS 14.0, *)
-final class NMSnippetsTestableTableViewDiffableDataSource: UITableViewDiffableDataSource<String, NSManagedObjectID>, UITableViewDelegate
-{
+final class NMSnippetsTestableTableViewDiffableDataSource: UITableViewDiffableDataSource<String, NSManagedObjectID>, UITableViewDelegate {
  override func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
   snapshot().sectionIdentifiers[section]
-  
  }
+ 
+ 
 }
 
 @available(iOS 15.0, *)
 final class NMSnippetsTestableTableViewController: UIViewController {
  
- let context: NSManagedObjectContext
- let fetcher: NMSnapshotFetchController<NMBaseSnippet>
+ weak var context: NSManagedObjectContext!
+ weak var fetcher: NMSnapshotFetchController<NMBaseSnippet>?
  let animateSnapshots: Bool
  let testHandler: NMSnapshotsTestsHandler
+ let tableViewRowHeight: CGFloat
  
- private weak var snippetsTableView: NMSnippetsTestableTableView!
+ override func loadView() {
+  //print(#function)
+  //let frame = CGRect(x: 0, y: 0, width: 100, height: 1000)
+  let tableView = NMSnippetsTestableTableView(frame: .zero,
+                                              style: .plain,
+                                              using: context,
+                                              cellHeight: tableViewRowHeight)
+  self.view = tableView
+  snippetsTableView = tableView
+ }
+ 
+ private weak var snippetsTableView: NMSnippetsTestableTableView! {
+  didSet { snippetsTableView.delegate = datasource }
+ }
  
  lazy var datasource: NMSnippetsTestableTableViewDiffableDataSource = {
   print(#function)
@@ -203,6 +236,7 @@ final class NMSnippetsTestableTableViewController: UIViewController {
     
     fatalError("Wrong Table View Class Type!!! \(String(describing: type(of: tv)))")
    }
+   
    guard let cell = tv.dequeueReusableCell(withIdentifier: tv.reuseID, for: ip) as? NMSnippetsTestableTableViewCell
    else {
     fatalError("Unexpected Cell Class Type!!!")
@@ -210,6 +244,7 @@ final class NMSnippetsTestableTableViewController: UIViewController {
    
    print("NEW CELL CREATED \(cell)")
    cell.contentConfiguration = NMSnippetsTestableCellConfiguration(with: snippetID, in: tv.context)
+   cell.intrinsicContentViewHeight = tv.cellHeight
    
    return cell
   }
@@ -225,14 +260,18 @@ final class NMSnippetsTestableTableViewController: UIViewController {
  init(context: NSManagedObjectContext,
       fetcher: NMSnapshotFetchController<NMBaseSnippet>,
       animateSnapshots: Bool = false,
+      tableViewRowHeight: CGFloat = .zero,
       testHandler: @escaping  NMSnapshotsTestsHandler){
   
   self.context = context
   self.fetcher = fetcher
   self.animateSnapshots = animateSnapshots
   self.testHandler = testHandler
+  self.tableViewRowHeight = tableViewRowHeight
   
   super.init(nibName: nil, bundle: nil)
+  
+
   
  }
  
@@ -246,8 +285,10 @@ final class NMSnippetsTestableTableViewController: UIViewController {
  }
  
  private lazy var snapshotsAwaitHandle: Task<(), Error> = {
+
   loadViewIfNeeded()
   let handle = Task {
+   guard let fetcher = fetcher else { return }
    print("START SNAPSHOTING...")
    for try await snapshot in fetcher {
     try Task.checkCancellation()
@@ -268,17 +309,6 @@ final class NMSnippetsTestableTableViewController: UIViewController {
 
  }
  
- 
- 
- override func loadView() {
-  print(#function)
-  let frame = CGRect(x: 0, y: 0, width: 100, height: 1000)
-  let tableView = NMSnippetsTestableTableView(frame: frame, style: .plain, using: context)
-  self.view = tableView
- 
-  snippetsTableView = tableView
-  
- }
 }
 
 

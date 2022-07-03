@@ -15,6 +15,8 @@ public extension LoggableError
 
 public enum ContextError {
  
+ 
+ 
  case performCnangesError(context: NSManagedObjectContext,
                           object: NSManagedObject,
                           entity: ContextEntityTypes,
@@ -29,6 +31,15 @@ public enum ContextError {
  case noContext(object: NSManagedObject,
                 entity: ContextEntityTypes,
                 operation: ContextOperationTypes)
+ 
+ case isInvalid(object: NSManagedObject,
+                entity: ContextEntityTypes,
+                operation: ContextOperationTypes)
+ 
+ case cannotBeMoved(object: NSManagedObject,
+                    entity: ContextEntityTypes,
+                    destination: NSManagedObject,
+                    operation: ContextOperationTypes)
  
  case noURL(object: NSManagedObject,
             entity: ContextEntityTypes,
@@ -86,57 +97,62 @@ public enum ContextError {
  
 }
 
-extension ContextError: LoggableError
-{
+extension ContextError: LoggableError {
+ 
  public var errorLogHeader: String { return "ERROR OCCURED WHEN" }
  
- public var errorLogMessage: String
- {
-  switch self
-  {
-   case let .contextSaveError(context: context, object: object, entity: entity, operation: operation):
-    return "\(operation + entity): <\(object)> SAVE CONTEXT FAILED FOR: <\(context)>."
+ public var errorLogMessage: String {
+  switch self {
+   case let .contextSaveError(context: moc, object: o, entity: e, operation: op):
+    return "\(op + e): <\(o.objectID)> SAVE CONTEXT FAILED FOR: <\(moc)>."
    
-   case let .noContext(object: object, entity: entity, operation: operation):
-    return "\(operation + entity): <\(object)> \(entity.rawValue) HAS NO ASSOCIATED CONTEXT!"
+   case let .noContext(object: o, entity: e, operation: op):
+    return "\(op + e): <\(o.objectID)> \(e.rawValue) HAS NO ASSOCIATED CONTEXT!"
    
-   case let .noURL(object: object, entity: entity, operation: operation):
-    return "\(operation + entity): <\(object)> \(entity.rawValue) HAS NO DATA URL!"
+   case let .noURL(object: o, entity: e, operation: op):
+    return "\(op + e): <\(o.objectID)> \(e.rawValue) HAS NO DATA URL!"
    
-   case let .isDeleted(object: object, entity: entity, operation: operation):
-    return "\(operation + entity): <\(object)> \(entity.rawValue) IS MARKED DELETED FROM CONTEXT!"
+   case let .isDeleted(object: o, entity: e, operation: op):
+    return "\(op + e): <\(o.objectID)> \(e.rawValue) IS MARKED DELETED FROM CONTEXT!"
    
-   case let .noID(object: object, entity: entity, operation: operation):
-    return "\(operation + entity): <\(object)> \(entity.rawValue) HAS NO ID!"
+   case let .noID(object: o, entity: e, operation: op):
+    return "\(op + e): <\(o.objectID)> \(e.rawValue) HAS NO ID!"
    
-   case let .noContexts(objects: objects, entity: entity, operation: operation):
-    return "\(operation + entity): <\(objects)> \(entity.rawValue) HAVE NO ASSOCIATED CONTEXT!"
+   case let .noContexts(objects: os, entity: e, operation: op):
+    return "\(op + e): <\(os.map{$0.objectID})> \(e.rawValue) HAVE NO ASSOCIATED CONTEXT!"
     
-   case let .noSnippet(object: object, entity: entity, operation: operation):
-    return "\(operation + entity): <\(object)> \(entity.rawValue) HAS NO ASSOCIATED SNIPPET!"
+   case let .noSnippet(object: o, entity: e, operation: op):
+    return "\(op + e): <\(o.objectID)> \(e.rawValue) HAS NO ASSOCIATED SNIPPET!"
    
-   case let .noFolder(object: object, entity: entity, operation: operation):
-    return "\(operation + entity): <\(object)> \(entity.rawValue) IS NOT FOLDERED YET!"
+   case let .noFolder(object: o, entity: e, operation: op):
+    return "\(op + e): <\(o.objectID)> \(e.rawValue) IS NOT FOLDERED YET!"
    
-   case let .inFolder(object: object, folder: folder, entity: entity, operation: operation):
-    return "\(operation + entity): <\(object)> \(entity.rawValue) IS ALREADY FOLDERED INTO THIS FOLDER <\(folder)>!"
+   case let .inFolder(object: o, folder: f, entity: e, operation: op):
+    return "\(op + e): <\(o.objectID)> \(e.rawValue) IS ALREADY FOLDERED INTO THIS FOLDER <\(f.objectID)>!"
    
-   case let .dataFileMoveFailure(to: url, object: obj, entity: ent, operation: op, description: ds):
-    return "\(op + ent): <\(obj)> MOVING \(ent.rawValue) DATA TO NEW <\(url)> FAILED WITH MESSAGE <<\(ds)>>."
+   case let .dataFileMoveFailure(to: url, object: o, entity: e, operation: op, description: d):
+    return "\(op + e): <\(o.objectID)> MOVING \(e.rawValue) DATA TO NEW <\(url)> FAILED WITH MESSAGE <<\(d)>>."
    
-   case let .dataDeleteFailure(at: url, object: obj, entity: ent, operation: op, description: ds):
-    return "\(op + ent): <\(obj)> DELETING \(ent.rawValue) DATA AT <\(url)> FAILED WITH MESSAGE <<\(ds)>>."
+   case let .dataDeleteFailure(at: url, object: o, entity: e, operation: op, description: d):
+    return "\(op + e): <\(o.objectID)> DELETING \(e.rawValue) DATA AT <\(url)> FAILED WITH MESSAGE <<\(d)>>."
   
-   case let .emptyFolder(object: object, entity: entity, operation: operation):
-    return "\(operation + entity): <\(object)> UNEXPECTED EMPTY FOLDER ENCOUNTERED!"
+   case let .emptyFolder(object: o, entity: e, operation: op):
+    return "\(op + e): <\(o.objectID)> UNEXPECTED EMPTY FOLDER ENCOUNTERED!"
    
-   case let .dataFolderCreateFailure(at: url, object: obj, entity: ent, operation: op, description: ds):
-    return "\(op + ent): <\(obj)> CREATING DATA FOLDER AT <\(url)> FAILED WITH MESSAGE <<\(ds)>>."
+   case let .dataFolderCreateFailure(at: url, object: o, entity: e, operation: op, description: d):
+    return "\(op + e): <\(o.objectID)> CREATING DATA FOLDER AT <\(url)> FAILED WITH MESSAGE <<\(d)>>."
    
-   case let .performCnangesError(context: moc, object: obj, entity: ent, operation: op, blockError: error):
-    return "\(op + ent): <\(obj)> PERFORM BLOCK CHANGES FAILED FOR: <\(moc)> WITH BLOCK ERROR <\(error.localizedDescription)>."
+   case let .performCnangesError(context: moc, object: o, entity: e, operation: op, blockError: err):
+    return "\(op + e): <\(o.objectID)> PERFORM BLOCK CHANGES FAILED FOR: <\(moc)> WITH BLOCK ERROR <\(err.localizedDescription)>."
+    
    case let .multipleContextsInCollection(collection: collection):
     return "MULTIPLE CONTEXTS ENCOUNTERED IN MODIFIED OBJECTS COLLECTION \(collection)"
+    
+   case let .isInvalid(object: o, entity: e, operation: op):
+    return "\(e): <\(o.objectID)> IS INVALID FOR THIS CONTEXT OPERATION [\(op)])"
+    
+   case let .cannotBeMoved(object: o, entity: e, destination: d, operation: op):
+    return "\(e): <\(o.objectID)> CANNOT BE MOVED INTO DESTINATION OBJECT \(d.objectID) \(op)"
   }
  }
  

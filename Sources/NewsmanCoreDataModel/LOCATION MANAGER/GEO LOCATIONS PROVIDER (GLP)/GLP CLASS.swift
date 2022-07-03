@@ -7,6 +7,10 @@ import Combine
 @available(iOS 13.0, *)
 public final class NMGeoLocationsProvider: NSObject, CLLocationManagerDelegate {
  
+ deinit{
+  print ("NMGeoLocationsProvider is DESTROYED!")
+ }
+ 
  public var locationProvider: NMLocationProvider
  public static var maxRetries = 5
  public static var maxTimeOut: DispatchTimeInterval = .milliseconds(100)

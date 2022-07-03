@@ -10,8 +10,36 @@ import Foundation
 import CoreData
 
 @objc(NMAudioFolder)
-public class NMAudioFolder: NMBaseContent, NMSnippetContained {
- public var snippetID: UUID? { audioSnippet?.id }
- 
+public class NMAudioFolder: NMBaseContent {}
 
+extension NMAudioFolder: NMUndoManageable{}
+
+@available(iOS 15.0, macOS 12.0, *)
+extension NMAudioFolder: NMFileStorageManageable{}
+
+extension NMAudioFolder: NMContentFolder {
+ 
+ public typealias Element = NMAudio
+ public typealias Snippet = NMAudioSnippet
+ 
+ @objc(container) public var snippet: NMAudioSnippet? { audioSnippet }
+ 
+ @objc public var folderedElements: [NMAudio] {
+  (folderedAudios?.allObjects ?? []).compactMap{ $0 as? NMAudio }
+ }
+ 
+ public func addToContainer(singleElements: [NMAudio]) {
+  let newElements: NSSet = .init(array: singleElements)
+  addToFolderedAudios(newElements)
+  audioSnippet?.addToAudios(newElements)
+  mixedSnippet?.addToAudios(newElements)
+ }
+ 
+ public func removeFromContainer(singleElements: [NMAudio]) {
+  removeFromFolderedAudios(.init(array: singleElements))
+ }
+ 
 }
+
+
+

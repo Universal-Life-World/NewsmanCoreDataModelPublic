@@ -123,9 +123,9 @@ final class NMBaseSnippetsGeoLocationAsyncAPITests: NMBaseSnippetsAsyncTests
     let geoLocations = SUTS.compactMap{ $0.geoLocation }
     let addresses = SUTS.compactMap{ $0.location }
     
-    XCTAssertTrue(SUTS.count == 6, "THE FETCH MUST HAVE ALL SNIPPET TYPES!")
-    XCTAssertTrue(geoLocations.count == 6, "ALL SNIPPETS MUST HAVE GL DETECTED")
-    XCTAssertTrue(addresses.count == 0, "ALL SNIPPETS MUST HAVE GEOCODED ADDRESS == NIL")
+    XCTAssertEqual(SUTS.count, 6, "THE FETCH MUST HAVE ALL SNIPPET TYPES!")
+    XCTAssertEqual(geoLocations.count, 6, "ALL SNIPPETS MUST HAVE GL DETECTED")
+    XCTAssertEqual(addresses.count, 0, "ALL SNIPPETS MUST HAVE GEOCODED ADDRESS == NIL")
     
    }
    

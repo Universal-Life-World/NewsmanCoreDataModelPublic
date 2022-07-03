@@ -83,7 +83,6 @@
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "NO"
-      enableAddressSanitizer = "YES"
       region = "US">
       <CommandLineArguments>
          <CommandLineArgument

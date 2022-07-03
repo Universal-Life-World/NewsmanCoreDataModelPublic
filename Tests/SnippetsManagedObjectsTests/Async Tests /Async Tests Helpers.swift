@@ -67,7 +67,9 @@ extension NMBaseSnippetsAsyncTests {
   async let s5 = model.create(persist: persisted, objectType: NMVideoSnippet.self, with: block)
   async let s6 = model.create(persist: persisted, objectType: NMMixedSnippet.self, with: block)
   
-  return try await [s1,s2,s3,s4,s5,s6]
+  let SUTS = try await [s1,s2,s3,s4,s5,s6]
+  self.SUTS = SUTS
+  return SUTS
   
  }// final func createAllSnippets(persisted: Bool = true)...
  
@@ -126,7 +128,7 @@ extension NMBaseSnippetsAsyncTests {
                                using: NMNetworkWaiterMock.self,
                                updated: block)
 
-  return  try await [ s1,s2,s3,s4,s5,s6 ]
+  return  try await [ s1, s2 ,s3,s4,s5,s6  ]
   
  }// final func createAllSnippetsWithGeoLocations(...)
  

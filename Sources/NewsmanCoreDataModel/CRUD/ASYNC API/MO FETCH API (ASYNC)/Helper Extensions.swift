@@ -30,3 +30,22 @@ public extension NSCompoundPredicate{
    Self(andPredicateWithSubpredicates: [ Self(notPredicateWithSubpredicate: p2), p1 ]) ])
  }
 }
+
+
+public extension NSPredicate {
+ static func + (p1: NSPredicate, p2: NSPredicate) -> NSPredicate {
+  NSCompoundPredicate(orPredicateWithSubpredicates: [p1, p2])
+ }
+ 
+ static func - (p1: NSPredicate, p2: NSPredicate) -> NSPredicate {
+  NSCompoundPredicate(xorPredicateWithSubpredicates: [p1, p2])
+ }
+ 
+ static func * (p1: NSPredicate, p2: NSPredicate) -> NSPredicate {
+  NSCompoundPredicate(andPredicateWithSubpredicates: [p1, p2])
+ }
+ 
+ static prefix func !(p: NSPredicate) -> NSPredicate {
+  NSCompoundPredicate(notPredicateWithSubpredicate: p)
+ }
+}

@@ -13,8 +13,8 @@ import CoreData
 @available(iOS 13.0, *)
 extension NMVideo {
 
-    @nonobjc public class func fetchRequest() -> NSFetchRequest<NMVideo> {
-        return NSFetchRequest<NMVideo>(entityName: "NMVideo")
+   @nonobjc public class func fetchRequest() -> NSFetchRequest<NMVideo> {
+     NSFetchRequest<_>(entityName: "NMVideo")
     }
 
     @NSManaged public var defaultPreviewMode: String?

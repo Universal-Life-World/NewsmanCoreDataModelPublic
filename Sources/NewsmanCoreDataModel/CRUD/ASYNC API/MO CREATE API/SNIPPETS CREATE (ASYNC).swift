@@ -221,16 +221,40 @@ public extension NMCoreDataModel {
                                  with updates: ((T) throws -> ())? = nil) async throws -> T {
   
   let modelMainContext = await mainContext
-  return try await mainContext.perform { [unowned self] () -> T in
+  return try await mainContext.perform { [ unowned self ] () -> T in
    try Task.checkCancellation()
    let newObject = T(context: modelMainContext)
    (newObject as? NMGeoLocationProvidable)?.locationsProvider = locationsProvider
    //(newObject as? NMDateGroupStateObservable)?.dateGroupStateUpdater = dateGroupStateUpdater
    return newObject
   }.updated(updates)   //1
-   .persisted(persist) //2
-   .withFileStorage()  //3
+   .persisted(persist)   //2
+   .withFileStorage()    //3
  }
+ 
+ //MARK: CREATE single type child element with parent container in main context.
+// func create<T, P> (in parent: P, persist: Bool = false,
+//                    contained: T.Type,
+//                    with updates: ((T) throws -> ())? = nil) async throws -> T
+//
+// where P: NMContentElementsContainer, P.SingleType == T {
+//  try await create(persist: persist, objectType: T.self){
+//   parent.insert(newElements: [$0])
+//   try updates?($0)
+//  }
+// }
+ 
+  //MARK: CREATE folder type child element with parent container in main context.
+// func create<T, P> (in parent: P, persist: Bool = false,
+//                    contained: T.Type,
+//                    with updates: ((T) throws -> ())? = nil) async throws -> T
+// 
+// where P: NMContentElementsContainer, P.FolderType == T {
+//  try await create(persist: persist, objectType: T.self){
+//   parent.insert(newElements: [$0])
+//   try updates?($0)
+//  }
+// }
   
  // MARK: CREATE in main context using entity description.
  @discardableResult
@@ -275,6 +299,27 @@ public extension NMCoreDataModel {
   }
  }
  
+ // MARK: CREATE a batch of homogeneous MOs in MAIN context.
+ func create<T: NSManagedObject>(persist: Bool,
+                                 objectType: T.Type,
+                                 objectCount: Int,
+                                 with updates: (([T]) throws -> ())? = nil) async throws -> [T] {
+  
+  let modelMainContext = await mainContext
+  return try await modelMainContext.perform { [unowned self] () -> [T] in
+   try Task.checkCancellation()
+   var newObjects = [T]()
+   for _ in 1...objectCount {
+    let newObject = T(context: modelMainContext)
+    (newObject as? NMGeoLocationProvidable)?.locationsProvider = locationsProvider
+    newObjects.append(newObject)
+   }
+   return newObjects
+  }.updated(updates)   //1
+   .persisted(persist) //2
+   .withFileStorage()  //3
+  
+ }
  
  // MARK: CREATE a batch of homogeneous MOs in background context and fetch in main one for usage.
  func backgroundCreate<T: NSManagedObject>(persist: Bool,

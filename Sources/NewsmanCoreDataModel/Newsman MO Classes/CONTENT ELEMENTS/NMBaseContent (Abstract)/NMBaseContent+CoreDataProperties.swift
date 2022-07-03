@@ -52,16 +52,16 @@ extension NMBaseContent
     @NSManaged public var lastAccessedTimeStamp: Date?
     @NSManaged public var lastModifiedTimeStamp: Date?
     @NSManaged public var lastRatedTimeStamp: Date?
-    @NSManaged public var latitude: Double
+    @NSManaged public var latitude: NSNumber?
     @NSManaged public var location: String?
-    @NSManaged public var longitude: Double
+    @NSManaged public var longitude: NSNumber?
     @NSManaged public var positions: NSMutableDictionary?
     @NSManaged public var priority: String?
     @NSManaged public var publishedTimeStamp: Date?
     @NSManaged public var ratedCount: Int64
     @NSManaged public var rating: Double
     @NSManaged public var status: String?
-    @NSManaged public var tag: String?
+    //@NSManaged public var tag: String?
     @NSManaged public var trashedTimeStamp: Date?
     @NSManaged public var type: Int16
     @NSManaged public var attachedToChatItems: NSSet?

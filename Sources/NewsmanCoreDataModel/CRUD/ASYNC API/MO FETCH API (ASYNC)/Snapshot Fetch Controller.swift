@@ -34,7 +34,9 @@ public class NMSnapshotFetchController<T: NSManagedObject>: NSObject,
  
  let cacheName = UUID().uuidString
  
- let context: NSManagedObjectContext
+ unowned let context: NSManagedObjectContext
+ 
+ var preSearchConfiguration: NMSnapshotFetchControllerConfiguration?
  
  public var configuration: NMSnapshotFetchControllerConfiguration {
   didSet {
@@ -129,7 +131,7 @@ public class NMSnapshotFetchController<T: NSManagedObject>: NSObject,
  
  fileprivate var snapshotsObjectsPublisher: AnyPublisher<[NMDateGroupStateObservable], Never> {
   $lastSnapshot
-   .compactMap{[  self ] in
+   .compactMap{[ unowned self ] in
       $0?.itemIdentifiers
      .compactMap{ context.object(with: $0) as? NMDateGroupStateObservable}
      .filter{ $0.date != nil }
@@ -165,7 +167,8 @@ public class NMSnapshotFetchController<T: NSManagedObject>: NSObject,
     context.perform {
      objects.forEach{
       
-      let newGroup = NMBaseSnippet.DateGroup.current(of: $0.date!, at: today)
+      guard let date = $0.date else { return }
+      let newGroup = NMBaseSnippet.DateGroup.current(of: date, at: today)
       
 //      print($0.sectionDateIndexGroup, newGroup,
 //            $0.date!.description(with: .current),

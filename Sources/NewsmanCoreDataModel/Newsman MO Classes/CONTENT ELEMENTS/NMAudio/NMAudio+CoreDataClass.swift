@@ -10,10 +10,23 @@ import Foundation
 import CoreData
 
 @objc(NMAudio)
-public class NMAudio: NMBaseContent, NMContainerContained {
- public var snippetID: UUID? { audioSnippet?.id }
- public var folderID : UUID? { audioFolder?.id }
+public class NMAudio: NMBaseContent{}
+
+extension NMAudio: NMUndoManageable{}
+
+extension NMAudio: NMFileStorageManageable{
+ public func fileManagerTaskGroup() async throws { try await fileManagerTask?.value }
+}
+
+extension NMAudio: NMContentElement{
  
+ public typealias Snippet = NMAudioSnippet
+ public typealias Folder = NMAudioFolder
+ 
+ @objc(container) public var snippet: NMAudioSnippet? { audioSnippet }
+ @objc(subcontainer) public var folder:  NMAudioFolder?  { audioFolder  }
+
+
 }
 
 

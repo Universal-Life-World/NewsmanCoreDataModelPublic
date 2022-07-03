@@ -11,14 +11,15 @@ public func zip<A, B, C>(_ a: A, _ b: B, _ c: C) -> [(A.Element, B.Element, C.El
 @available(iOS 15.0, macOS 12.0, *)
 final class NMBaseSnippetsFetchingAsyncTests: NMBaseSnippetsAsyncTests {
  
- @MainActor lazy var window: UIWindow = { () -> UIWindow in
+ @MainActor lazy var window: UIWindow! = { () -> UIWindow in
   let window = UIWindow(frame: UIScreen.main.bounds)
   window.makeKeyAndVisible()
   return window
  }()
  
  // Service method to be called on main thread setting window ROOT VC property with SUTS (snippets) table VC
- @MainActor func makeRootViewController(_ vc: UIViewController) async { window.rootViewController = vc }
+ @MainActor func makeRootViewController(_ vc: UIViewController)  { window.rootViewController = vc }
+ @MainActor func releaseRootViewController()  { window.rootViewController = nil; window = nil }
  
  /* MARK: ---- ACRONYMS USED FOR TEST CASE DESCRIPTIONS BELOW -------
     MARK: (1) Diffable Data Source Snashot (NSDiffableDataSourceSnapshot) - DDSS
@@ -58,7 +59,7 @@ final class NMBaseSnippetsFetchingAsyncTests: NMBaseSnippetsAsyncTests {
   XCTAssertTrue(snapshot.numberOfSections == 1)
  
   //CLEAN-UP...
-  try await storageRemoveHelperAsync(for: SUTS)
+  //try await storageRemoveHelperAsync(for: SUTS)
   
  }
  
@@ -105,12 +106,12 @@ final class NMBaseSnippetsFetchingAsyncTests: NMBaseSnippetsAsyncTests {
    let SUTS_TV_CELLS = ((0..<SUTS_COUNT)
     .compactMap{tv.cellForRow(at: IndexPath(row: $0, section: 0)) as? NMSnippetsTestableTableViewCell})
    
-   XCTAssertEqual(SUTS_TV_CELLS.count, SUTS_COUNT)
+   XCTAssertLessThanOrEqual(SUTS_TV_CELLS.count, SUTS_COUNT)
    
    let cellNameTags = Set(SUTS_TV_CELLS.compactMap{ $0.nameTagLabelText })
    let SUTS_NameTags = Set(SUTS.compactMap{ $0.nameTag })
    
-   XCTAssertEqual(cellNameTags, SUTS_NameTags)
+   XCTAssertTrue(cellNameTags.isSubset(of: SUTS_NameTags))
    
    return true
    
@@ -227,7 +228,9 @@ final class NMBaseSnippetsFetchingAsyncTests: NMBaseSnippetsAsyncTests {
      
      let cellIndexPath = IndexPath(row: 0, section: section)
      
-     let cell = try XCTUnwrap(tv.cellForRow(at: cellIndexPath) as? NMSnippetsTestableTableViewCell)
+     
+     guard let cell = tv.cellForRow(at: cellIndexPath) as? NMSnippetsTestableTableViewCell else { return }
+     //print (cell)
      let cellNameTag = try XCTUnwrap(cell.nameTagLabelText)
      
      XCTAssertEqual(nameTag, cellNameTag)
@@ -302,6 +305,7 @@ final class NMBaseSnippetsFetchingAsyncTests: NMBaseSnippetsAsyncTests {
  
  final func test_when_1st_DDSS_fetched_with_ALFA_sections_TV_with_DDS_has_proper_state() async throws {
   
+  
    //ARRANGE...
   let SUTS_COUNT = 6
   let PERSISTED = true // WITH PERSISTANCE!
@@ -309,6 +313,8 @@ final class NMBaseSnippetsFetchingAsyncTests: NMBaseSnippetsAsyncTests {
   let SUTS = try await createAllSnippets(persisted: PERSISTED)
   let SECTIONS_COUNT = 6
   let SUTS_NAMES = ["Audio", "Base", "Mixed", "Photo", "Text", "Video"]
+  
+  //let WEAK_SUTS = WeakContainer(sequence: SUTS)
   
   
   await modelMainContext.perform { zip(SUTS, SUTS_NAMES).forEach { pair in pair.0.nameTag = pair.1 } }
@@ -319,11 +325,13 @@ final class NMBaseSnippetsFetchingAsyncTests: NMBaseSnippetsAsyncTests {
                                                          sortDescriptors: sortDescriptors,
                                                          sectionNameKeyPath: #keyPath(NMBaseSnippet.sectionAlphaIndex))
   
+  //ASSERT FETCHER IS NOT LEAKED!
+  addTeardownBlock { [weak fetcher] in XCTAssertNil(fetcher) }
   
-   //ACTION...
-  
+ 
+  //ACTION...
   let SUTS_TVC = await NMSnippetsTestableTableViewController(context: modelMainContext, fetcher: fetcher)
-  { @MainActor ( tv, snapshot ) -> Bool in
+  { @MainActor [ unowned modelMainContext ]( tv, snapshot ) -> Bool in
    
     //ASSERT...
    XCTAssertTrue(snapshot.numberOfItems == SUTS_COUNT)
@@ -341,11 +349,16 @@ final class NMBaseSnippetsFetchingAsyncTests: NMBaseSnippetsAsyncTests {
    
    XCTAssertEqual(TV_NS, SECTIONS_COUNT, "Testable TV must \(SECTIONS_COUNT) sections in this test!")
    
-   try await modelMainContext.perform {
+   
+   try await modelMainContext.perform { 
     for SUT in SUTS {
+     
      let nameTag = try XCTUnwrap(SUT.nameTag)
      let sectionTitle = String(nameTag.prefix(1))
      let sectionName = try XCTUnwrap(snapshot.sectionIdentifier(containingItem: SUT.objectID))
+     
+     //print (SUT.sectionAlphaIndex)
+
      XCTAssertEqual(sectionName, sectionTitle)
      XCTAssertEqual(snapshot.numberOfItems(inSection: sectionName), 1)
      let SUT_ID = try XCTUnwrap(snapshot.itemIdentifiers(inSection: sectionName).first)
@@ -353,22 +366,32 @@ final class NMBaseSnippetsFetchingAsyncTests: NMBaseSnippetsAsyncTests {
      let sectionIndex =  try XCTUnwrap(snapshot.indexOfSection(sectionName))
      let nameTagIndex = try XCTUnwrap(SUTS_NAMES.firstIndex(of:nameTag))
      XCTAssertEqual(sectionIndex, nameTagIndex)
-     
+
      let tv_section_title = dds.tableView(tv, titleForHeaderInSection: sectionIndex)
      XCTAssertEqual(tv_section_title, sectionTitle)
-     
+
      let cellIndexPath = IndexPath(row: 0, section: sectionIndex)
-     
-     
-     let cell = try XCTUnwrap(tv.cellForRow(at: cellIndexPath) as? NMSnippetsTestableTableViewCell)
+
+
+     guard let cell = tv.cellForRow(at: cellIndexPath) as? NMSnippetsTestableTableViewCell else { return }
      let cellNameTag = try XCTUnwrap(cell.nameTagLabelText)
-     
+
      XCTAssertEqual(nameTag, cellNameTag)
-     
+
     }
    }
   
    return true
+  }
+  
+  //ASSERT SUTS TVC & MAIN WINDOW ARE NOT LEAKED!
+  addTeardownBlock { [weak SUTS_TVC, unowned self, weak window = await self.window ] in
+   
+   await releaseRootViewController()
+   try await Task.sleep(milliseconds: 1)
+   XCTAssertNil(window)
+   XCTAssertNil(SUTS_TVC)
+   
   }
   
    //PLACE TVC INTO UI!!!
@@ -472,7 +495,7 @@ final class NMBaseSnippetsFetchingAsyncTests: NMBaseSnippetsAsyncTests {
                     .map{ IndexPath(row: $0, section: 0) }
                     .compactMap{ tv.cellForRow(at: $0) as? NMSnippetsTestableTableViewCell }
        
-       XCTAssertEqual(cells.count, SUTS_COUNT)
+       XCTAssertLessThanOrEqual(cells.count, SUTS_COUNT, "The number of visible cells must less or equal \(SUTS_COUNT)")
        XCTAssertTrue(cells.allSatisfy{ $0.nameTagLabelText == "A" })
       
        let tv_section_title = dds.tableView(tv, titleForHeaderInSection: 0)
@@ -797,14 +820,70 @@ final class NMBaseSnippetsFetchingAsyncTests: NMBaseSnippetsAsyncTests {
  final func test_when_SORT_ORDER_TOGGLED_with_alfa_sections () async throws {
   
    //ARRANGE...
+ 
   let SUTS_COUNT = 6
   let PERSISTED = true // WITH PERSISTANCE!
   let modelMainContext = await model.mainContext // GET ASYNC MAIN MODEL CONTEXT!
-  let SUTS = try await createAllSnippets(persisted: PERSISTED)
+  let SUTS = try await createAllSnippets(persisted: PERSISTED) {
+   
+   switch $0 {
+    case let SUT as NMPhotoSnippet:
+     
+     let photo = NMPhoto(context: modelMainContext)
+     photo.tag = String(describing: NMPhoto.self)
+     SUT.addToPhotos(photo)
+     
+    case let SUT as NMTextSnippet:
+     let text = NMText(context: modelMainContext)
+     text.tag = String(describing: NMText.self)
+     SUT.addToTexts(text)
+     
+    case let SUT as NMAudioSnippet:
+     let audio = NMAudio(context: modelMainContext)
+     audio.tag = String(describing: NMAudio.self)
+     SUT.addToAudios(audio)
+     
+    case let SUT as NMVideoSnippet:
+     let video = NMVideo(context: modelMainContext)
+     video.tag = String(describing: NMVideo.self)
+     SUT.addToVideos(video)
+    
+    case let SUT as NMMixedSnippet:
+     let photo = NMPhoto(context: modelMainContext)
+     photo.tag = "Mixed"
+     SUT.addToPhotos(photo)
+     
+     let text = NMText(context: modelMainContext)
+     text.tag = "Mixed"
+     SUT.addToTexts(text)
+     
+     let audio = NMAudio(context: modelMainContext)
+     audio.tag = "Mixed"
+     SUT.addToAudios(audio)
+     
+     let video = NMVideo(context: modelMainContext)
+     video.tag = "Mixed"
+     SUT.addToVideos(video)
+    
+     
+    default: break
+   }
+  
+   
+  }
+//  
+//  let ps = SUTS.compactMap{$0 as? NMAudioSnippet }.first!
+//  let ph = try await model.create(in: ps, contained: NMAudio.self)
+//  
+  let SUTS_TV_ROW_HEIGHT: CGFloat = 200
+  
+  
 
   let SUTS_NAMES = ["Aaaa", "Abbb", "Accc", "Addd", "Aeee", "Afff"]
   
   await modelMainContext.perform { zip(SUTS, SUTS_NAMES).forEach { pair in pair.0.nameTag = pair.1 } }
+  
+
   
   let sortDescriptors = [NSSortDescriptor(key: #keyPath(NMBaseSnippet.nameTag), ascending: true)]
   
@@ -817,25 +896,28 @@ final class NMBaseSnippetsFetchingAsyncTests: NMBaseSnippetsAsyncTests {
   
   var count = 0
   
-  let SUTS_TVC = await NMSnippetsTestableTableViewController(context: modelMainContext, fetcher: fetcher)
+  let SUTS_TVC = await NMSnippetsTestableTableViewController(context: modelMainContext,
+                                                             fetcher: fetcher,
+                                                             tableViewRowHeight: SUTS_TV_ROW_HEIGHT)
   { @MainActor ( tv, snapshot ) -> Bool in
+   
    defer { count += 1 }
    
    //let TV_DDS = tv.dataSource as? NMSnippetsTestableTableViewDiffableDataSource
    
    //let dds = try XCTUnwrap(TV_DDS, "Testable TV must have diffable data source!")
    
-   return await modelMainContext.perform {
+   return try await modelMainContext.perform {
     
-    XCTAssertTrue(snapshot.numberOfItems == SUTS_COUNT)
-    XCTAssertTrue(snapshot.numberOfSections == 1)
     
     let snippetsTVCells = ((0..<SUTS_COUNT)
      .compactMap{tv.cellForRow(at: IndexPath(row: $0, section: 0)) as? NMSnippetsTestableTableViewCell})
     
-    print(snippetsTVCells.map(\.frame))
+    let visibleCount = snippetsTVCells.count
     
-    XCTAssertEqual(snippetsTVCells.count, SUTS_COUNT)
+    snippetsTVCells.map(\.frame).forEach{ print($0) }
+    
+    XCTAssertLessThanOrEqual(snippetsTVCells.count, SUTS_COUNT)
     
     let snapshotSnippets = snapshot.itemIdentifiers.compactMap{ modelMainContext.object(with: $0) as? NMBaseSnippet}
     
@@ -850,19 +932,37 @@ final class NMBaseSnippetsFetchingAsyncTests: NMBaseSnippetsAsyncTests {
     
     switch count {
       
-     case 0:
+     case 0: //MARK: Initial DDSS!
+      
+      XCTAssertTrue(snapshot.numberOfItems == SUTS_COUNT)
+      XCTAssertTrue(snapshot.numberOfSections == 1)
+      
       XCTAssertEqual(snapshotItemsTags, SUTS_NAMES)
-      XCTAssertEqual(cellNameTags, SUTS_NAMES)
-                                     
+      XCTAssertEqual(cellNameTags, Array(SUTS_NAMES[0..<visibleCount]))
+                        
+      // MARK: NEXT TASK (1)...
       Task.detached {
        try await Task.sleep(milliseconds: 100)
        await fetcher.toggleSortOrder()
       }
-      
+     
+      // MARK: (1) Test next DDSS after Toggling sort ordering.
      case 1:
-      XCTAssertEqual(snapshotItemsTags, SUTS_NAMES.reversed())
-      XCTAssertEqual(cellNameTags, SUTS_NAMES.reversed())
       
+      XCTAssertTrue(snapshot.numberOfItems == SUTS_COUNT)
+      XCTAssertTrue(snapshot.numberOfSections == 1)
+      
+      XCTAssertEqual(snapshotItemsTags,
+                     SUTS_NAMES.reversed(),
+                     "The DDSS SUTS <.nameTag> fields must be equal to the reversed ordered ones")
+      
+       //Assert using only visible cells in the current testable device!
+      XCTAssertEqual(cellNameTags,
+                     Array(SUTS_NAMES.reversed()[0..<visibleCount]),
+                     "The visible cells <nameTag> labels must be equal to the subset of the reversed ordered ones")
+     
+      
+      // MARK: NEXT TASK (2)...
       Task.detached {
        try await Task.sleep(milliseconds: 100)
        await modelMainContext.perform {
@@ -877,26 +977,215 @@ final class NMBaseSnippetsFetchingAsyncTests: NMBaseSnippetsAsyncTests {
        }
       }
      
+     // MARK: (2) Test next DDSS after assigning random values to SUTS.about fields.
+      
      case 2:
       
-      XCTAssertNotEqual(snapshotAbouts, orderedAbouts)
-      XCTAssertNotEqual(cellsAbouts, orderedAbouts)
+      XCTAssertTrue(snapshot.numberOfItems == SUTS_COUNT)
+      XCTAssertTrue(snapshot.numberOfSections == 1)
+      
+      XCTAssertNotEqual(snapshotAbouts,
+                        orderedAbouts,
+                        "The DDSS SUTS <.about> fields are random and must not be equal to ordered ones")
+      
+      //Assert using only visible cells in the current testable device!
+      XCTAssertNotEqual(cellsAbouts,
+                        Array(orderedAbouts[0..<visibleCount]),
+                        "The visible cells <about> labels are random and must not be equal to ordered ones subset")
      
+      // MARK: NEXT TASK (3)...
       Task.detached {
        try await Task.sleep(milliseconds: 100)
        await fetcher.apply(sortOrder: .descending(keyPath: \NMBaseSnippet.about))
        
       }
       
+     
+     // MARK: (3) Test next DDSS after applying descending ordering to SUTS.about fields.
+      
      case 3:
-      XCTAssertEqual(snapshotAbouts, orderedAbouts.reversed())
-      XCTAssertEqual(cellsAbouts, orderedAbouts.reversed())
+      
+      XCTAssertTrue(snapshot.numberOfItems == SUTS_COUNT)
+      XCTAssertTrue(snapshot.numberOfSections == 1)
+      
+      
+      XCTAssertEqual(snapshotAbouts,
+                     orderedAbouts.reversed(),
+                     "The DDSS SUTS <.about> fields must be equal to the resersed ordered ones")
+      
+       //Assert using only visible cells in the current testable device!
+      XCTAssertEqual(cellsAbouts,
+                     Array(orderedAbouts.reversed()[0..<visibleCount]),
+                     "The visible cells <about> labels must be equal to the subset of the reversed ordered ones")
+      
+      // MARK: NEXT TASK (4)...
+      Task.detached {
+       try await Task.sleep(milliseconds: 100)
+       await fetcher.apply(searchString: "1 2 3", keyPaths: #keyPath(NMBaseSnippet.about))
+       
+      }
+      
+     case 4:
+      
+      // MARK: (4) Test next DDSS after applying filtering predicate to <about> field.
+      
+      XCTAssertTrue(snapshot.numberOfItems == 3)
+      XCTAssertTrue(snapshot.numberOfSections == 1)
+      
+      let filteredAbouts = Array(["1", "2", "3"].reversed())
+      
+      XCTAssertEqual(snapshotAbouts, filteredAbouts,
+                     "The DDSS SUTS <.about> fields must be equal to the filtred reversed ordered ones")
+      
+       //Assert using only visible cells in the current testable device!
+      XCTAssertEqual(cellsAbouts, Array(filteredAbouts[0..<visibleCount]),
+                     "The visible cells <about> labels must be equal to the subset of the reversed ordered ones")
+     
+      
+       // MARK: NEXT TASK (5)...
+      Task.detached {
+       try await Task.sleep(milliseconds: 100)
+       await fetcher.apply(searchString: "1 2 a",
+                           keyPaths: #keyPath(NMBaseSnippet.about), #keyPath(NMBaseSnippet.nameTag))
+       
+      }
+      
+     case 5:
+      
+       // MARK: (5) Test next DDSS after applying new filtering predicate to <.about> & <.nameTag> field.
+      
+      XCTAssertTrue(snapshot.numberOfItems == SUTS_COUNT)
+      XCTAssertTrue(snapshot.numberOfSections == 1)
+      
+      let filteredAbouts = Array(orderedAbouts.reversed())
+      
+      XCTAssertEqual(snapshotAbouts, filteredAbouts,
+                     "The DDSS SUTS <.about> fields must be equal to the filtred reversed ordered ones")
+      
+       //Assert using only visible cells in the current testable device!
+      XCTAssertEqual(cellsAbouts, Array(filteredAbouts[0..<visibleCount]),
+                     "The visible cells <about> labels must be equal to the subset of the reversed ordered ones")
+      
+       // MARK: NEXT TASK (6)...
+      Task.detached {
+       try await Task.sleep(milliseconds: 100)
+       await fetcher.apply(overallSearchString: "1 2 Å")
+       
+      }
+     
+     case 6:
+      
+       // MARK: (6) Test next DDSS after applying new overall filtering predicate to normalized search fields!
+      
+      XCTAssertTrue(snapshot.numberOfItems == SUTS_COUNT)
+      XCTAssertTrue(snapshot.numberOfSections == 1)
+      
+      let filteredAbouts = Array(orderedAbouts.reversed())
+      
+      XCTAssertEqual(snapshotAbouts, filteredAbouts,
+                     "The DDSS SUTS <.about> fields must be equal to the filtred reversed ordered ones")
+      
+       //Assert using only visible cells in the current testable device!
+      XCTAssertEqual(cellsAbouts, Array(filteredAbouts[0..<visibleCount]),
+                     "The visible cells <about> labels must be equal to the subset of the reversed ordered ones")
+      
+      
+       // MARK: NEXT TASK (7)...
+      
+      Task.detached {
+       try await Task.sleep(milliseconds: 100)
+       await fetcher.apply(overallSearchString: "phòt vïdè tèx åùd Mix")
+     
+      }
+      
+     case 7:
+      
+       // MARK: (7) Test next DDSS after applying new overall filtering predicate to normalized children search fields!
+      
+      XCTAssertEqual(snapshot.numberOfItems, 5)
+      XCTAssertEqual(snapshot.numberOfSections, 1)
+      
+      for SUT in snapshotSnippets{
+       switch SUT {
+        case let SUT as NMPhotoSnippet:
+         let PHOTO = try XCTUnwrap(SUT.photos?.allObjects.first as? NMPhoto)
+         let CSS = try XCTUnwrap(SUT.value(forKey: NMPhotoSnippet.normalizedSearchChildrenKey) as? String)
+         XCTAssertEqual(PHOTO.tag, String(describing: type(of: PHOTO)))
+         XCTAssertEqual(PHOTO.photoSnippet, SUT)
+         XCTAssertEqual(CSS, PHOTO.tag?.normalizedForSearch)
+         
+          // MARK: NEXT TASK (8)...
+         
+         Task.detached {
+          try await Task.sleep(milliseconds: 100)
+           await modelMainContext.perform {
+            modelMainContext.delete(PHOTO)
+           }
+          
+         }
+         
+        case let SUT as NMTextSnippet:
+         let TEXT = try XCTUnwrap(SUT.texts?.allObjects.first as? NMText)
+         let CSS = try XCTUnwrap(SUT.value(forKey: NMTextSnippet.normalizedSearchChildrenKey) as? String)
+         XCTAssertEqual(TEXT.tag, String(describing: type(of: TEXT)))
+         XCTAssertEqual(TEXT.textSnippet, SUT)
+         XCTAssertEqual(CSS, TEXT.tag?.normalizedForSearch)
+         
+        case let SUT as NMAudioSnippet:
+         let AUDIO = try XCTUnwrap(SUT.audios?.allObjects.first as? NMAudio)
+         let CSS = try XCTUnwrap(SUT.value(forKey: NMAudioSnippet.normalizedSearchChildrenKey) as? String)
+         XCTAssertEqual(AUDIO.tag, String(describing: type(of: AUDIO)))
+         XCTAssertEqual(AUDIO.audioSnippet, SUT)
+         XCTAssertEqual(CSS, AUDIO.tag?.normalizedForSearch)
+         
+        case let SUT as NMVideoSnippet:
+         let VIDEO = try XCTUnwrap(SUT.videos?.allObjects.first as? NMVideo)
+         let CSS = try XCTUnwrap(SUT.value(forKey: NMVideoSnippet.normalizedSearchChildrenKey) as? String)
+         XCTAssertEqual(VIDEO.tag, String(describing: type(of: VIDEO)))
+         XCTAssertEqual(VIDEO.videoSnippet, SUT)
+         XCTAssertEqual(CSS, VIDEO.tag?.normalizedForSearch)
+         
+        case let SUT as NMMixedSnippet:
+         let VIDEO = try XCTUnwrap(SUT.videos?.allObjects.first as? NMVideo)
+         XCTAssertEqual(VIDEO.tag, "Mixed")
+         XCTAssertNil(VIDEO.videoSnippet)
+         XCTAssertEqual(VIDEO.mixedSnippet, SUT)
+         
+         let AUDIO = try XCTUnwrap(SUT.audios?.allObjects.first as? NMAudio)
+         XCTAssertEqual(AUDIO.tag, "Mixed")
+         XCTAssertNil(AUDIO.audioSnippet)
+         XCTAssertEqual(AUDIO.mixedSnippet, SUT)
+         
+         let TEXT =  try XCTUnwrap(SUT.texts?.allObjects.first  as? NMText)
+         XCTAssertEqual(TEXT.tag, "Mixed")
+         XCTAssertNil(TEXT.textSnippet)
+         XCTAssertEqual(TEXT.mixedSnippet, SUT)
+         
+         let PHOTO = try XCTUnwrap(SUT.photos?.allObjects.first as? NMPhoto)
+         XCTAssertEqual(PHOTO.tag, "Mixed")
+         XCTAssertNil(PHOTO.photoSnippet)
+         XCTAssertEqual(PHOTO.mixedSnippet, SUT)
+         
+         let CSS = try XCTUnwrap(SUT.value(forKey: NMMixedSnippet.normalizedSearchChildrenKey) as? String)
+         
+         XCTAssertEqual(CSS, "Mixed".normalizedForSearch)
+         
+        default: break
+       }
+      }
+     
+     case 8:
+      XCTAssertEqual(snapshot.numberOfItems, 4)
+      XCTAssertEqual(snapshot.numberOfSections, 1)
       
      default: break
       
+      
+      
+      
     }
     
-    return count == 3
+    return count == 8
    }
   }
   

@@ -1,5 +1,6 @@
 import XCTest
 import NewsmanCoreDataModel
+import CoreData
 
 @available(iOS 14.0, *)
 protocol NMSnippetsTestsStorageRemovable where Self: XCTestCase {
@@ -54,21 +55,22 @@ extension NMSnippetsTestsStorageRemovable{
 
 @available(iOS 15.0, macOS 12.0, *)
 extension NMSnippetsTestsStorageRemovable{
+ 
+ 
  func storageRemoveHelperAsync(for snippets: [NMBaseSnippet]) async throws {
   let withFileStorage = snippets.compactMap{ $0 as? NMFileStorageManageable }
-  let ids = try await withThrowingTaskGroup(of: NMFileStorageManageable.self,
-                                            returning: [UUID].self) { group in
+  let ids = try await withThrowingTaskGroup(of: UUID?.self, returning: [UUID].self) { group in
    withFileStorage.forEach{ snippet in
     group.addTask{
-     try await snippet.removeFileStorage()
-     return snippet
+     let id = await snippet.managedObjectContext?.perform { snippet.id }
+     try await snippet.removeWithFileStorage()
+     return id
     }
    }
-   return try await group.compactMap{ snippet in // make sure we get snippet id in proper MOC!!!
-    await snippet.managedObjectContext?.perform { snippet.id }
-   }.reduce(into: []) { $0.append($1)}
+   return try await group.compactMap{$0}.reduce(into: []) { $0.append($1)}
   }
   
+ 
   XCTAssertEqual(withFileStorage.count, ids.count)
   
   let docsFolder = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!

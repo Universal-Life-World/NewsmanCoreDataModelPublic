@@ -9,9 +9,36 @@
 import Foundation
 import CoreData
 
-@objc(NMVideoFolder)
-public class NMVideoFolder: NMBaseContent, NMSnippetContained {
- public var snippetID: UUID? { videoSnippet?.id }
+@objc(NMVideoFolder) public class NMVideoFolder: NMBaseContent{}
+
+@available(iOS 15.0, macOS 12.0, *)
+extension NMVideoFolder: NMFileStorageManageable{}
+
+extension NMVideoFolder: NMContentFolder{
+ 
+
+ public typealias Element = NMVideo
+ public typealias Snippet = NMVideoSnippet
+ 
+ @objc(container) public var snippet: NMVideoSnippet? { videoSnippet }
+ 
+ @objc public var folderedElements: [NMVideo] {
+  (folderedVideos?.allObjects ?? []).compactMap{ $0 as? NMVideo }
+ }
+ 
+ public func addToContainer(singleElements: [NMVideo]) {
+  let newElements: NSSet = .init(array: singleElements)
+  addToFolderedVideos(newElements)
+  videoSnippet?.addToVideos(newElements)
+  mixedSnippet?.addToVideos(newElements)
+ }
+ 
+ public func removeFromContainer(singleElements: [NMVideo]) {
+  removeFromFolderedVideos(.init(array: singleElements))
+ }
  
  
+
 }
+ 
+

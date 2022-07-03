@@ -6,16 +6,14 @@ import Network
 
 
 @available(iOS 13.0.0, *)
-public protocol NMNetworkMonitorProtocol
-{
+public protocol NMNetworkMonitorProtocol {
  init()
  var monitorPublisher: AnyPublisher<Void, Never> { get }
  func waitForNetwork() async
 }
 
 @available(iOS 13.0, *)
-public final class NMNetworkWaiter: NSObject, NMNetworkMonitorProtocol
-{
+public final class NMNetworkWaiter: NSObject, NMNetworkMonitorProtocol {
  public func waitForNetwork() async   {
   await withCheckedContinuation{ (c: CheckedContinuation<Void, Never>) -> () in
    if pathMonitor.currentPath.status == .satisfied {

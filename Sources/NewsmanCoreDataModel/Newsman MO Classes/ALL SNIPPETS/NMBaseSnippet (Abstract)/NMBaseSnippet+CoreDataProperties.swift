@@ -16,7 +16,7 @@ extension NMBaseSnippet {
     NSFetchRequest<NMBaseSnippet>(entityName: "NMBaseSnippet")
   }
 
-  @NSManaged public var about: String?
+  
   @NSManaged public var archivedTimeStamp: Date?
   @NSManaged public var ck_metadata: Data?
   @NSManaged public var contentElementsGroupingType: String?
@@ -47,18 +47,23 @@ extension NMBaseSnippet {
   @NSManaged public  var longitude: NSNumber?
   @NSManaged public  var latitude: NSNumber?
  
+  //@NSManaged public var about: String?   //get/set using primitive property!
   //@NSManaged public var nameTag: String? //get/set using primitive property!
   //@NSManaged public var priority: String?//get/set using primitive property!
+  //@NSManaged public var sectionDateIndex: String?
+  //@NSManaged public var status: String? //get/set using primitive property!
+  //@NSManaged public var type: Int16 //get/set using primitive property!
+ 
   @NSManaged public var publishedTimeStamp: Date?
   @NSManaged public var sectionAlphaIndex: String?
-  //@NSManaged public var sectionDateIndex: String?
+  
   @NSManaged public var sectionPriorityIndex: String?
   @NSManaged public var sectionTypeIndex: String?
   @NSManaged public var showsContentElementsPositions: Bool
   @NSManaged public var showsHiddenContentElements: Bool
-  //@NSManaged public var status: String? //get/set using primitive property!
+  
   @NSManaged public var trashedTimeStamp: Date?
-  //@NSManaged public var type: Int16 //get/set using primitive property!
+  
   @NSManaged public var connectedWithTopNews: NSSet?
 
 }

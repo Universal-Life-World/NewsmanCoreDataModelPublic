@@ -34,10 +34,17 @@ public enum ContextOperationTypes: String
  
  case cloudMetadataUpdate = "UPDATING CLOUD RECORD METADATA"
  
+ case createChildren = "CREATING CHILD CONTENT ELEMENT"
+ 
+ case resourceFileAccess = "ACCESSING CONTENT ELEMENT FILE RESOURCE ULR"
+ 
 }
 
-public enum ContextEntityTypes: String
-{
+public enum ContextEntityTypes: String {
+ 
+ case singleContentElement = "SINGLE CONTENT ELEMENT"
+ case folderContentElement = "FOLDER CONTENT ELEMENT"
+ 
  case snippet = "SNIPPET"
  case object = "MANAGED OBJECT"
  

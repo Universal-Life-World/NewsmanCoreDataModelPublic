@@ -15,11 +15,25 @@ public enum NMSortOrder<Root, Value> where Root: NSManagedObject {
  }
 }
 
+public enum NMPredicateSearchMode{
+ case normalized
+ case cdInsensitive
+ case cdSensitive
+ 
+ var predicateFormat: String {
+  switch self {
+   case .normalized:    return "%K CONTAINS[n] %@"
+   case .cdInsensitive: return "%K CONTAINS[cd] %@"
+   case .cdSensitive:   return "%K CONTAINS %@"
+  }
+ }
+}
+
 public enum NMPredicateOperation {
- case and
- case or
- case xor
- case not
+ case and // disjuction
+ case or  // conjuction
+ case xor // exclusive OR
+ case not // negation
  
  public func predicate(subpredicate: NSPredicate) -> NSPredicate {
   switch self {
@@ -42,10 +56,13 @@ public enum NMPredicateOperation {
  }
 }
 
+
+
+
 @available(iOS 15.0, macOS 12.0, *)
 public struct NMSnapshotFetchControllerConfiguration: Equatable {
  let fetchPredicate: NSPredicate
- let sortDescriptors: [NSSortDescriptor]
+ let sortDescriptors: [ NSSortDescriptor ]
  let sectionNameKeyPath: String?
  let cacheResults: Bool
  
@@ -64,7 +81,7 @@ public struct NMSnapshotFetchControllerConfiguration: Equatable {
                cacheResults: cacheResults)
  }
  
- public func applying(predicate: NSPredicate, operation: NMPredicateOperation = .and) -> Self {
+ public func applying(predicate: NSPredicate, operation: NMPredicateOperation = .or) -> Self {
   
   .init(fetchPredicate: operation.predicate(subpredicates: [fetchPredicate, predicate]),
         sortDescriptors: sortDescriptors,
@@ -72,7 +89,7 @@ public struct NMSnapshotFetchControllerConfiguration: Equatable {
         cacheResults: cacheResults)
  }
  
- public func applying(subpredicates: [NSPredicate], operation: NMPredicateOperation = .and) -> Self {
+ public func applying(subpredicates: [NSPredicate], operation: NMPredicateOperation = .or) -> Self {
   
   .init(fetchPredicate: operation.predicate(subpredicates: [fetchPredicate] + subpredicates),
         sortDescriptors: sortDescriptors,
@@ -87,6 +104,34 @@ public struct NMSnapshotFetchControllerConfiguration: Equatable {
         sectionNameKeyPath: sectionNameKeyPath,
         cacheResults: cacheResults)
  }
+ 
+ public func applying<Root, Value> (newSortOrder: NMSortOrder<Root, Value>) -> Self {
+  .init(fetchPredicate: fetchPredicate,
+        sortDescriptors: [newSortOrder.sortDescriptor],
+        sectionNameKeyPath: sectionNameKeyPath,
+        cacheResults: cacheResults)
+ }
+ 
+ 
+
+ 
+ 
+ public func applying(searchStrings: [String],  for keyPaths: [String],
+                      searchMode: NMPredicateSearchMode = .cdInsensitive) -> Self {
+  
+  
+  let preds = searchStrings.map{ searchString -> NSPredicate in
+   let preds = keyPaths.map{ NSPredicate(format: searchMode.predicateFormat, $0, searchString) }
+   
+   return NSCompoundPredicate(orPredicateWithSubpredicates: preds)
+  }
+  
+  return .init(fetchPredicate: fetchPredicate * NSCompoundPredicate(orPredicateWithSubpredicates: preds),
+               sortDescriptors: sortDescriptors,
+               sectionNameKeyPath: sectionNameKeyPath,
+               cacheResults: cacheResults)
+ }
+ 
 }
 
 @available(iOS 15.0, macOS 12.0, *)
@@ -100,16 +145,82 @@ public extension NMSnapshotFetchController {
   configuration = configuration.applying(sortOrder: sortOrder)
  }
  
- @MainActor func apply(predicate: NSPredicate, operation: NMPredicateOperation = .and){
-  configuration = configuration.applying(predicate: predicate)
+ @MainActor func apply<Root, Value> (newSortOrder: NMSortOrder<Root, Value>) {
+  configuration = configuration.applying(newSortOrder: newSortOrder)
  }
  
- @MainActor func apply(subpredicates: [NSPredicate], operation: NMPredicateOperation = .and){
-  configuration = configuration.applying(subpredicates: subpredicates)
+ @MainActor func apply(predicate: NSPredicate, operation: NMPredicateOperation = .or){
+  configuration = configuration.applying(predicate: predicate, operation: operation)
+ }
+ 
+ @MainActor func apply(subpredicates: [NSPredicate], operation: NMPredicateOperation = .or){
+  configuration = configuration.applying(subpredicates: subpredicates, operation: operation)
  }
  
  @MainActor func apply(newPredicate: NSPredicate) {
   configuration = configuration.applying(newPredicate: newPredicate)
+ }
+ 
+ @MainActor func apply(searchStrings: [String],
+                       keyPaths: [String],
+                       searchMode: NMPredicateSearchMode = .cdInsensitive) {
+  
+  if let preSearchConfiguration = preSearchConfiguration {
+   configuration = preSearchConfiguration.applying(searchStrings: searchStrings,
+                                                   for: keyPaths,
+                                                   searchMode: searchMode)
+  } else {
+   preSearchConfiguration = configuration
+   configuration = configuration.applying(searchStrings: searchStrings,
+                                          for: keyPaths,
+                                          searchMode: searchMode)
+  }
+ }
+ 
+ @MainActor func apply(searchString: String,
+                       separators: CharacterSet = .whitespaces,
+                       searchMode: NMPredicateSearchMode = .cdInsensitive,
+                       keyPaths: String...) {
+  
+  let strings = searchString.components(separatedBy: separators)
+ 
+  apply(searchStrings: strings, keyPaths: keyPaths, searchMode: searchMode)
+ }
+ 
+ @MainActor func apply(searchString: String,
+                       separators: CharacterSet = .whitespaces,
+                       searchMode: NMPredicateSearchMode = .cdInsensitive,
+                       keyPaths: [String]) {
+  
+  let strings = searchString.components(separatedBy: separators)
+  apply(searchStrings: strings, keyPaths: keyPaths, searchMode: searchMode)
+ }
+ 
+ @MainActor func apply(overallSearchString: String, separators: CharacterSet = .whitespaces){
+ 
+  
+  let stringKeyPaths = T.entity()
+                        .attributesByName
+                        .values
+                        .filter{ $0.type == .string && $0.name.hasPrefix(.normalizedFieldNamePrefix) }
+                        .map{ $0.name }
+  
+ 
+  guard let normalizedSearchString = overallSearchString.normalizedForSearch else {
+   apply(searchString: overallSearchString, separators: separators, keyPaths: stringKeyPaths)
+   return
+   
+  }
+  
+  apply(searchString: normalizedSearchString,
+        separators: separators,
+        searchMode: .normalized,
+        keyPaths: stringKeyPaths)
+  
+  
+  
+  
+  
  }
 }
 

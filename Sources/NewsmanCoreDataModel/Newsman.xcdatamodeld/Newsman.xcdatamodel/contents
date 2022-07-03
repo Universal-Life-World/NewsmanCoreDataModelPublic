@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="20086" systemVersion="21E230" minimumToolsVersion="Xcode 11.0" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="20086" systemVersion="21F79" minimumToolsVersion="Xcode 11.0" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="NMAudio" representedClassName="NMAudio" parentEntity="NMBaseContent" syncable="YES">
         <attribute name="defaultPreviewMode" attributeType="String" defaultValueString="Shows Static Waves"/>
         <attribute name="showsDuration" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
@@ -47,7 +47,7 @@
         <attribute name="arrowMenuScaleFactor" attributeType="Double" minValueString="0.1" maxValueString="3" defaultValueString="1" usesScalarValueType="YES"/>
         <attribute name="arrowMenuTouchPoint" optional="YES" attributeType="Transformable" valueTransformerName="NSValueDataSecureTransformer" customClassName="NSValue"/>
         <attribute name="ck_metadata" optional="YES" attributeType="Binary"/>
-        <attribute name="colorFlag" optional="YES" attributeType="Transformable" valueTransformerName="UIColorDataSecureTransformer" customClassName="UIColor"/>
+        <attribute name="colorFlag" optional="YES" attributeType="Transformable" valueTransformerName="UIColorDataSecureTransformer" customClassName=".UIColor"/>
         <attribute name="date" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="hiddenSectionsBitset" attributeType="Integer 16" minValueString="0" maxValueString="255" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="id" attributeType="UUID" usesScalarValueType="YES"/>
@@ -68,13 +68,15 @@
         <attribute name="latitude" optional="YES" attributeType="Double" usesScalarValueType="YES"/>
         <attribute name="location" optional="YES" attributeType="String"/>
         <attribute name="longitude" optional="YES" attributeType="Double" usesScalarValueType="YES"/>
+        <attribute name="normalizedSearchChildrenString" optional="YES" attributeType="String"/>
+        <attribute name="normalizedSearchTag" attributeType="String" defaultValueString=""/>
         <attribute name="positions" optional="YES" attributeType="Transformable" valueTransformerName="NSSecureUnarchiveFromDataTransformer" customClassName=".NSMutableDictionary"/>
         <attribute name="priority" attributeType="String" defaultValueString="Normal"/>
         <attribute name="publishedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="ratedCount" attributeType="Integer 64" minValueString="0" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="rating" attributeType="Double" minValueString="0" maxValueString="10" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="status" attributeType="String" defaultValueString="New"/>
-        <attribute name="tag" attributeType="String" defaultValueString=""/>
+        <attribute name="tag" attributeType="String" defaultValueString="Untagged Content Item"/>
         <attribute name="trashedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="type" attributeType="Integer 16" minValueString="0" maxValueString="5" defaultValueString="0" usesScalarValueType="YES"/>
         <relationship name="attachedToChatItems" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMChatItem" inverseName="attachments" inverseEntity="NMChatItem"/>
@@ -111,6 +113,9 @@
         <attribute name="location" optional="YES" attributeType="String"/>
         <attribute name="longitude" optional="YES" attributeType="Double" usesScalarValueType="YES"/>
         <attribute name="nameTag" attributeType="String" defaultValueString="Unnamed Snippet"/>
+        <attribute name="normalizedSearchAbout" attributeType="String" defaultValueString=""/>
+        <attribute name="normalizedSearchChildrenString" attributeType="String" defaultValueString=""/>
+        <attribute name="normalizedSearchNameTag" attributeType="String" defaultValueString="Unnamed Snippet"/>
         <attribute name="priority" attributeType="String" defaultValueString="3_Normal"/>
         <attribute name="publishedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="sectionAlphaIndex" optional="YES" attributeType="String"/>
@@ -123,6 +128,9 @@
         <attribute name="trashedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="type" attributeType="Integer 16" minValueString="0" maxValueString="5" defaultValueString="0" usesScalarValueType="YES" customClassName=".SnippetType"/>
         <relationship name="connectedWithTopNews" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMTopNews" inverseName="relatedSnippets" inverseEntity="NMTopNews"/>
+        <fetchIndex name="normalizedSearchNameTagIndex">
+            <fetchIndexElement property="normalizedSearchNameTag" type="Binary" order="ascending"/>
+        </fetchIndex>
     </entity>
     <entity name="NMBaseSubscription" representedClassName="NMBaseSubscription" isAbstract="YES" syncable="YES">
         <attribute name="ck_metadata" optional="YES" attributeType="Binary"/>
@@ -222,7 +230,7 @@
         <relationship name="folderedPhotos" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="NMPhoto" inverseName="mixedFolder" inverseEntity="NMPhoto"/>
         <relationship name="folderedTexts" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="NMText" inverseName="mixedFolder" inverseEntity="NMText"/>
         <relationship name="folderedVideos" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="NMVideo" inverseName="mixedFolder" inverseEntity="NMVideo"/>
-        <relationship name="mixedSnippet" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMMixedSnippet" inverseName="mixedFolders" inverseEntity="NMMixedSnippet"/>
+        <relationship name="mixedSnippet" maxCount="1" deletionRule="Nullify" destinationEntity="NMMixedSnippet" inverseName="mixedFolders" inverseEntity="NMMixedSnippet"/>
         <relationship name="original" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="NMMixedFolder" inverseName="copies" inverseEntity="NMMixedFolder"/>
     </entity>
     <entity name="NMMixedSnippet" representedClassName="NMMixedSnippet" parentEntity="NMBaseSnippet" syncable="YES">
@@ -639,12 +647,12 @@
     </entity>
     <fetchRequest name="Snippets" entity="NMBaseSnippet" predicateString="type == $p1"/>
     <elements>
-        <element name="NMAudio" positionX="-556.4251098632812" positionY="-800.9061431884761" width="250.7084350585938" height="178"/>
-        <element name="NMAudioFolder" positionX="-575.1803283691406" positionY="-1029.482208251954" width="215.8580627441406" height="133"/>
+        <element name="NMAudio" positionX="-556.4251098632812" positionY="-800.9061431884761" width="250.7084350585938" height="209"/>
+        <element name="NMAudioFolder" positionX="-575.1803283691406" positionY="-1029.482208251954" width="215.8580627441406" height="134"/>
         <element name="NMAudioRecordingSettings" positionX="-584.3857421875" positionY="-1453.415542602539" width="219.0896606445312" height="118"/>
-        <element name="NMAudioSnippet" positionX="-567.8550109863281" positionY="-1251.026901245116" width="236.5485534667969" height="118"/>
-        <element name="NMBaseContent" positionX="-602.8646240234375" positionY="-423.2487640380859" width="274.3505249023438" height="584"/>
-        <element name="NMBaseSnippet" positionX="-811.0332641601562" positionY="-1852.591018676758" width="263.5743408203125" height="659"/>
+        <element name="NMAudioSnippet" positionX="-567.8550109863281" positionY="-1251.026901245116" width="236.5485534667969" height="164"/>
+        <element name="NMBaseContent" positionX="-602.8646240234375" positionY="-423.2487640380859" width="274.3505249023438" height="614"/>
+        <element name="NMBaseSnippet" positionX="-811.0332641601562" positionY="-1852.591018676758" width="263.5743408203125" height="704"/>
         <element name="NMBaseSubscription" positionX="-881.7544250488281" positionY="-2628.178497314453" width="170.4893493652344" height="223"/>
         <element name="NMChatConnection" positionX="-222.8324584960938" positionY="127.8166198730468" width="150.4974365234375" height="73"/>
         <element name="NMChatItem" positionX="-116.4295654296876" positionY="-5.57501220703125" width="162.0484619140625" height="88"/>
@@ -653,12 +661,12 @@
         <element name="NMContentCreationBaseSettings" positionX="-409.1227722167969" positionY="-1648.586517333983" width="234.3523864746094" height="43"/>
         <element name="NMLocationsSubscription" positionX="-881.7061767578125" positionY="-2297.505874633789" width="179.538818359375" height="73"/>
         <element name="NMLocationSubscriptionZone" positionX="-1175.129974365234" positionY="-2282.932342529297" width="180.4647827148438" height="58"/>
-        <element name="NMMixedFolder" positionX="-1209.783020019531" positionY="-487.9481048583984" width="187.4817199707031" height="208"/>
+        <element name="NMMixedFolder" positionX="-1209.783020019531" positionY="-487.9481048583984" width="187.4817199707031" height="194"/>
         <element name="NMMixedSnippet" positionX="-1379.609802246094" positionY="-1712.742126464843" width="213.0404052734375" height="268"/>
         <element name="NMNewNewsmenSubscription" positionX="-686.3196411132812" positionY="-2107.194519042969" width="202.857177734375" height="58"/>
-        <element name="NMPhoto" positionX="-860.9178161621094" positionY="-788.3724060058601" width="210.9070434570312" height="178"/>
+        <element name="NMPhoto" positionX="-860.9178161621094" positionY="-788.3724060058601" width="210.9070434570312" height="209"/>
         <element name="NMPhotoCaptureSettings" positionX="-894.5030212402344" positionY="-1441.082229614258" width="229.4828186035156" height="118"/>
-        <element name="NMPhotoFolder" positionX="-864.8409118652344" positionY="-1021.823822021486" width="201.7075500488281" height="148"/>
+        <element name="NMPhotoFolder" positionX="-864.8409118652344" positionY="-1021.823822021486" width="201.7075500488281" height="134"/>
         <element name="NMPhotoSnippet" positionX="-870.2593994140625" positionY="-1250.49755859375" width="207.4128723144531" height="118"/>
         <element name="NMRegistrationProfile" positionX="-1186.953063964844" positionY="-1859.799163818359" width="247.4621887207031" height="43"/>
         <element name="NMReport" positionX="217.8536071777343" positionY="-426.6179199218749" width="202.2115478515625" height="118"/>
@@ -677,10 +685,10 @@
         <element name="NMTaskReportBlock" positionX="-110.1773071289063" positionY="-146.6854553222656" width="205.8396606445312" height="73"/>
         <element name="NMTaskTextBlock" positionX="-143.5359497070314" positionY="-247.9883422851563" width="198.9989013671875" height="73"/>
         <element name="NMTaskVideoBlock" positionX="-378.4102172851562" positionY="-296.0690002441406" width="186.3729248046875" height="73"/>
-        <element name="NMText" positionX="107.8533325195311" positionY="-788.0031433105464" width="255.8032836914063" height="178"/>
+        <element name="NMText" positionX="107.8533325195311" positionY="-788.0031433105464" width="255.8032836914063" height="194"/>
         <element name="NMTextContentsSubscription" positionX="-1084.743011474609" positionY="-2127.353805541992" width="128" height="118"/>
         <element name="NMTextEditingSettings" positionX="85.92593383789071" positionY="-1438.566970825196" width="220.7112731933593" height="118"/>
-        <element name="NMTextFolder" positionX="40.27728271484369" positionY="-1049.379684448243" width="242.2084350585938" height="133"/>
+        <element name="NMTextFolder" positionX="40.27728271484369" positionY="-1049.379684448243" width="242.2084350585938" height="134"/>
         <element name="NMTextSnippet" positionX="85.0157470703125" positionY="-1263.192016601562" width="239.0447998046875" height="118"/>
         <element name="NMTopNews" positionX="-17.74984741210938" positionY="-1797.152633666992" width="189.9754333496094" height="103"/>
         <element name="NMTopNewsSubscription" positionX="-855.4308471679688" positionY="-2096.797836303711" width="128" height="193"/>

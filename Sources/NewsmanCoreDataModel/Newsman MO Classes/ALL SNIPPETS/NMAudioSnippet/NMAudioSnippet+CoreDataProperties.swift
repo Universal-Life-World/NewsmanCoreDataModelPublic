@@ -13,8 +13,7 @@ import CoreData
 @available(iOS 13.0, *)
 extension NMAudioSnippet
 {
-  @nonobjc public class func fetchRequest() -> NSFetchRequest<NMAudioSnippet>
-  {
+  @nonobjc public class func fetchRequest() -> NSFetchRequest<NMAudioSnippet> {
    NSFetchRequest<NMAudioSnippet>(entityName: "NMAudioSnippet")
   }
 
