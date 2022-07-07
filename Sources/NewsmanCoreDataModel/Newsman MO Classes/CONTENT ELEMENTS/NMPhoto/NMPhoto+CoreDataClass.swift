@@ -12,21 +12,21 @@ import CoreData
 @objc(NMPhoto)
 public class NMPhoto: NMBaseContent{
  
- public override func willChangeValue(forKey key: String) {
-  super.willChangeValue(forKey: key)
-  if key == #keyPath(NMPhoto.photoSnippet) {
-   print (" FROM SNIPPET \(String(describing: photoSnippet?.id))")
-  }
- }
- 
- public override func didChangeValue(forKey key: String) {
-  super.didChangeValue(forKey: key)
-  if key == #keyPath(NMPhoto.photoSnippet) {
-   print (" TO SNIPPET \(String(describing: photoSnippet?.id))")
-   
-   
-  }
- }
+// public override func willChangeValue(forKey key: String) {
+//  super.willChangeValue(forKey: key)
+//  if key == #keyPath(NMPhoto.photoSnippet) {
+//   print (" FROM SNIPPET \(String(describing: photoSnippet?.id))")
+//  }
+// }
+//
+// public override func didChangeValue(forKey key: String) {
+//  super.didChangeValue(forKey: key)
+//  if key == #keyPath(NMPhoto.photoSnippet) {
+//   print (" TO SNIPPET \(String(describing: photoSnippet?.id))")
+//
+//
+//  }
+// }
 }
 
 

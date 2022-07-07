@@ -12,6 +12,8 @@ import CoreData
 @available(iOS 13.0, *)
 @objc(NMMixedSnippet) public class NMMixedSnippet: NMBaseSnippet {}
 
+extension NMMixedSnippet: NMUndoManageable{}
+
 @available(iOS 15.0, macOS 12.0, *)
 extension NMMixedSnippet: NMFileStorageManageable {
  public var unfolderedAsync: [Element]? {

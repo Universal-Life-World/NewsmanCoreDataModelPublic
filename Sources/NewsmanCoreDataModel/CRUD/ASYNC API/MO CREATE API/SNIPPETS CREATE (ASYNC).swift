@@ -22,6 +22,7 @@ public extension Collection where Element: NSManagedObject {
    try Task.checkCancellation()
    let validObjects = filter{ $0.managedObjectContext != nil && $0.isDeleted == false }
    do {
+    print ("UPDATED PERFORM COLLECTION", validObjects.compactMap{$0 as? NMBaseContent})
     try block(validObjects)
     return validObjects
    }
@@ -81,6 +82,8 @@ public extension Collection where Element: NSManagedObject {
 public extension NSManagedObject {
  
  func updated<T: NSManagedObject>(_ block: ( (T) throws -> () )? ) async throws -> T {
+  print (#function)
+  
   try Task.checkCancellation()
  
   guard let context = self.managedObjectContext else {

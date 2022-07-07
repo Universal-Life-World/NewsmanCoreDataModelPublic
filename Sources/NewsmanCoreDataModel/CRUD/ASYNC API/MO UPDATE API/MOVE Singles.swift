@@ -1,6 +1,7 @@
 
 import Foundation
 import XCTest
+import CoreData
 
 @available(iOS 15.0, macOS 12.0, *)
 public extension NMContentElement where Self.Snippet.Folder == Self.Folder,
@@ -14,9 +15,11 @@ public extension NMContentElement where Self.Snippet.Folder == Self.Folder,
  func move (to destination: Snippet,
             persist: Bool = true,
             with updates: ((Self) throws -> ())? = nil) async throws
-  where Self: NMFileStorageManageable & NMUndoManageable, Self.Folder: NMFileStorageManageable {
+  where Self: NMFileStorageManageable & NMUndoManageable,
+        Self.Snippet: NMUndoManageable,
+        Self.Folder: NMFileStorageManageable  {
   
-   await NMUndoSession.open()
+   await NMUndoSession.open(target: self)
    
    try await moved(to: destination, persist: persist, with: updates)
    
@@ -33,7 +36,9 @@ public extension NMContentElement where Self.Snippet.Folder == Self.Folder,
                                persist: Bool = true,
                                with updates: ((Self) throws -> ())? = nil) async throws -> Self
  
- where Self: NMFileStorageManageable & NMUndoManageable, Self.Folder: NMFileStorageManageable {
+ where Self: NMFileStorageManageable & NMUndoManageable,
+       Self.Snippet: NMUndoManageable,
+       Self.Folder: NMFileStorageManageable {
   
   try Task.checkCancellation()
   
@@ -72,48 +77,46 @@ public extension NMContentElement where Self.Snippet.Folder == Self.Folder,
     
    }
    
-    //print ("MOVE from [\(parentSnippet.nameTag)] to [\(destination.nameTag)]")
+
+   try destination.addToContainer(undoTarget: self)
+    
+    
    
-   
-   if parentSnippet != destination { destination.addToContainer(element: self) }
    
    let folder = self.folder
    folder?.removeFromContainer(element: self)
    let folderID = folder?.id
    
-   NMUndoSession.register { [unowned self, weak parentSnippet, unowned movedContext] in
-     await movedContext.perform {
-//      print ("UNDO ACTION... \(parentSnippet!.singleContentElements.count)")
-      parentSnippet?.addToContainer(element: self)
-      if let folderID = folderID,
-         let folder = parentSnippet?.folders.first(where: {$0.id == folderID}){
-       folder.addToContainer(element: self)
-      }
-      //folder?.addToContainer(element: self)
-//      XCTAssertEqual(self.snippet, parentSnippet)
-//      print ("UNDO ACTION FINISHED... \(parentSnippet!.singleContentElements.count)")
-      
-     }
-    
-    } with: { [unowned self, weak destination, weak parentSnippet, unowned movedContext ] in
-     await movedContext.perform {
-      destination?.addToContainer(element: self)
-      if let folderID = folderID,
-         let folder = parentSnippet?.folders.first(where: {$0.id == folderID}){
-       folder.removeFromContainer(element: self)
-      }
-     
-     }
-    }
-   
-   
-  
+//   NMUndoSession.register { [unowned self, weak parentSnippet, unowned movedContext] in
+//     await movedContext.perform {
+//
+//      parentSnippet?.addToContainer(element: self)
+//      if let folderID = folderID,
+//         let folder = parentSnippet?.folders.first(where: {$0.id == folderID}){
+//       folder.addToContainer(element: self)
+//      }
+//     
+//     }
+//    
+//    } with: { [unowned self, weak destination, weak parentSnippet, unowned movedContext ] in
+//     await movedContext.perform {
+//      destination?.addToContainer(element: self)
+//      if let folderID = folderID,
+//         let folder = parentSnippet?.folders.first(where: {$0.id == folderID}){
+//       folder.removeFromContainer(element: self)
+//      }
+//     
+//     }
+//    }
+//   
+//   
+//  
    
    guard let destURL = self.url else {
     throw ContextError.noURL(object: self, entity: .singleContentElement, operation: .move)
    }
    
-   try updates?(self) //MO must be updated with move opeation in one atomic await perform block!
+   try updates?(self) //MO must be updated with move operation in one atomic await perform block!
    
    let oldTask = fileManagerTask
    let sourceFolderTask = folder?.fileManagerTask
@@ -132,7 +135,13 @@ public extension NMContentElement where Self.Snippet.Folder == Self.Folder,
      //create some latency for testing...
     try await FileManager.moveItemOnDisk(from: sourceURL, to: destURL)
     
+//    await NMUndoSession.register {
+//     try await FileManager.moveItemOnDisk(from: destURL, to: sourceURL)
+//    } with: {
+//     try await FileManager.moveItemOnDisk(from: sourceURL, to: destURL)
+//    }
     
+  
     
    }
    
@@ -142,7 +151,6 @@ public extension NMContentElement where Self.Snippet.Folder == Self.Folder,
    
   }
   
-//  await undoRegTask?.value
   try await fileManagerTask?.value  //await that current file manager task has finished...
   try await folder?.autoremoveIfNeeded()
   

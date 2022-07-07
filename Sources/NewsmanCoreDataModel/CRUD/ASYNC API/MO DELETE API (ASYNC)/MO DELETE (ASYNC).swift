@@ -20,7 +20,7 @@ public extension NMFileStorageManageable {
   try await fileManagerTaskGroup()
   
   let url = try await context.perform { [ unowned self ] () throws -> URL in
-   print (self)
+//   print (self)
    
    defer { context.delete(self) }
    
@@ -29,6 +29,7 @@ public extension NMFileStorageManageable {
    }
    return url
   }
+  
   
   guard FileManager.default.fileExists(atPath: url.path) else {
    throw ContextError.dataDeleteFailure(at: url,
@@ -41,7 +42,7 @@ public extension NMFileStorageManageable {
   
   
   try await FileManager.removeItemFromDisk(at: url)
-  
+  print("DELETE DONE!", #function, objectID)
  }
  
 }

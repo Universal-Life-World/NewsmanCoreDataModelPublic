@@ -1,6 +1,8 @@
 import Foundation
 
-public actor NMUndoSession: NSObject{
+public actor NMUndoSession: NSObject {
+ 
+ unowned fileprivate let targetObject: AnyObject
  
  @MainActor public static var current: NMUndoSession? { currentSession }
  
@@ -9,7 +11,7 @@ public actor NMUndoSession: NSObject{
  //public var sessionTask: Task<Void, Error>?
  
  fileprivate var blockOperations = [UMUndoBlockOperation]()
- fileprivate lazy var redoSession = NMUndoSession()
+ fileprivate lazy var redoSession = NMUndoSession(target: targetObject)
  
  @MainActor fileprivate static var closeContinuations = [CheckedContinuation<Void, Never>]()
  
@@ -21,12 +23,16 @@ public actor NMUndoSession: NSObject{
   Task.detached { [ unowned self ] in
    try await dependency?.value
    let operations = await blockOperations
-   for op in operations { try await op.execute() }
+   for op in operations.reversed() { try await op.execute() }
   }
  }
  
- public func redoTask(dependency: Task<Void, Error>?) async -> Task<Void, Error> {
-  await redoSession.undoTask(dependency: dependency)
+ public func redoTask(dependency: Task<Void, Error>?) -> Task<Void, Error> {
+  Task.detached { [ unowned self ] in
+   try await dependency?.value
+   let operations = await redoSession.blockOperations
+   for op in operations { try await op.execute() }
+  }
  }
  
  
@@ -35,9 +41,9 @@ public actor NMUndoSession: NSObject{
   await withCheckedContinuation{ closeContinuations.append($0) }
  }
  
- @MainActor public static func open() async {
+ @MainActor public static func open(target: AnyObject) async {
   await closeWaiter()
-  currentSession = NMUndoSession()
+  currentSession = NMUndoSession(target: target)
   
  }
  
@@ -90,7 +96,8 @@ public actor NMUndoSession: NSObject{
   }
  }
  
- private override init() {
+ private init(target: AnyObject) {
+  self.targetObject = target
   super.init()
  }
 }

@@ -23,6 +23,8 @@ public enum ContextOperationTypes: String
  case unfolder = "UNFOLDERING"
  case undoUnfolder = "UNDOING UNFOLDERING"
  
+ case autoremoveFolder = "AUTOREMOVING FOLDER"
+
  case refolder = "REFOLDERING"
  case undoRefolder = "UNDOING REFOLDERING"
   

@@ -64,6 +64,7 @@ final class NMSnippetsManipulationAsyncTests: NMBaseSnippetsAsyncTests {
    XCTAssertEqual(_SUT_resourceURL.pathComponents.last, SUT.id?.uuidString)
    XCTAssertEqual(_SUT_resourceURL.pathComponents.dropLast().last, SUT_FOLDER.id?.uuidString)
    XCTAssertEqual(_SUT_resourceURL.pathComponents.dropLast(2).last, SOURCE_SNIPPET.id?.uuidString)
+  
   }
   
   //ASSERT UNDO/REDO STATE BEFORE MOVE...
@@ -122,6 +123,8 @@ final class NMSnippetsManipulationAsyncTests: NMBaseSnippetsAsyncTests {
    XCTAssertEqual(SUT_resourceURL.path, URL)
    XCTAssertEqual(SUT_resourceURL.pathComponents.last, SUT.id?.uuidString)
    XCTAssertEqual(SUT_resourceURL.pathComponents.dropLast().last, DEST_SNIPPET.id?.uuidString)
+   
+   XCTAssertFalse(FileManager.default.fileExists(atPath: SUT_FOLDER_URL!.path))
  
   }
   
@@ -158,15 +161,18 @@ final class NMSnippetsManipulationAsyncTests: NMBaseSnippetsAsyncTests {
   
   try await modelMainContext.perform {
    
+   XCTAssertFalse(SUT.isDeleted)
+   XCTAssertEqual(SUT.snippet, SOURCE_SNIPPET)
    XCTAssertEqual(SOURCE_SNIPPET.singleContentElements.count, 2)
    XCTAssertEqual(DEST_SNIPPET.singleContentElements.count, 0)
-//   let SUT_FOLDER = try XCTUnwrap(SOURCE_SNIPPET.folders.first)
+   let SUT_FOLDER = try XCTUnwrap(SOURCE_SNIPPET.folders.first)
 //   XCTAssertEqual(SUT_FOLDER.folderedElements.count, 2)
-//   XCTAssertFalse(SUT_FOLDER.isDeleted)
-//   XCTAssertNotNil(SUT_FOLDER.url)
-//   XCTAssertNotNil (SUT.managedObjectContext)
- XCTAssertFalse(SUT.isDeleted)
-//   XCTAssertEqual (SUT.snippet, SOURCE_SNIPPET)
+   XCTAssertFalse(SUT_FOLDER.isDeleted)
+   XCTAssertNotNil(SUT_FOLDER.url)
+   XCTAssertNotNil (SUT.managedObjectContext)
+   XCTAssertEqual(SUT_FOLDER.url, SUT_FOLDER_URL)
+   XCTAssertEqual (SUT.snippet, SOURCE_SNIPPET)
+   XCTAssertTrue(FileManager.default.fileExists(atPath: SUT_FOLDER_URL!.path))
 //   XCTAssertEqual (SUT.folder, SUT_FOLDER)
 //   XCTAssertEqual(SUT2.folder, SUT_FOLDER)
 //   XCTAssertEqual(SUT.tag, "MOVED SUT")
@@ -180,22 +186,30 @@ final class NMSnippetsManipulationAsyncTests: NMBaseSnippetsAsyncTests {
   
    //REDO ACTION...
   
-//  try await SUT.undoManager.redo()
-//
-//   //ASSERT AFTER REDO...
-//
-//  do {
-//   let openUndoSession = await NMUndoSession.current
-//   XCTAssertNil(openUndoSession)
-//
-//   let canUndoSession = await SUT.undoManager.canUndo
-//   XCTAssertTrue(canUndoSession)
-//
-//   let canRedoSession = await SUT.undoManager.canRedo
-//   XCTAssertFalse(canRedoSession)
-//
-//  }
+  try await SUT.undoManager.redo()
+
+   //ASSERT AFTER REDO...
+
+  do {
+   let openUndoSession = await NMUndoSession.current
+   XCTAssertNil(openUndoSession)
+
+   let canUndoSession = await SUT.undoManager.canUndo
+   XCTAssertTrue(canUndoSession)
+
+   let canRedoSession = await SUT.undoManager.canRedo
+   XCTAssertFalse(canRedoSession)
+
+  }
   
+  
+  try await modelMainContext.perform {
+   
+   XCTAssertFalse(SUT.isDeleted)
+   XCTAssertEqual(SUT.snippet, DEST_SNIPPET)
+   XCTAssertEqual(SOURCE_SNIPPET.singleContentElements.count, 1)
+   XCTAssertEqual(DEST_SNIPPET.singleContentElements.count, 1)
+  }
   
   //FINALLY - STORAGE CLEAN-UP!
   //try await storageRemoveHelperAsync(for: [SOURCE_SNIPPET, DEST_SNIPPET])

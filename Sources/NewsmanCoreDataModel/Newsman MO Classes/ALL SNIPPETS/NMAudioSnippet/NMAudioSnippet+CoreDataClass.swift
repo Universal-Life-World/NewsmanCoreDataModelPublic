@@ -13,6 +13,8 @@ import CoreData
 @objc(NMAudioSnippet)
 public class NMAudioSnippet: NMBaseSnippet {}
 
+extension NMAudioSnippet: NMUndoManageable{}
+
 @available(iOS 15.0, macOS 12.0, *)
 extension NMAudioSnippet: NMFileStorageManageable {}
 

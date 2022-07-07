@@ -13,6 +13,8 @@ import CoreData
 @objc(NMPhotoSnippet)
 public class NMPhotoSnippet: NMBaseSnippet {}
 
+extension NMPhotoSnippet: NMUndoManageable{}
+
 @available(iOS 15.0, macOS 12.0, *)
 extension NMPhotoSnippet: NMFileStorageManageable{}
 

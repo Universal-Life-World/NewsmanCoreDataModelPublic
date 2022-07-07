@@ -1,5 +1,6 @@
 
 import Foundation
+import CoreData
 
 public protocol NMContentFolder where Self: NMBaseContent {
  
@@ -29,7 +30,27 @@ extension NMContentFolder {
  public func addToContainer(element: Element){ addToContainer(singleElements: [element]) }
  public func removeFromContainer(element: Element) { removeFromContainer(singleElements: [element])}
  
+ public static func registeredFolder(with id: UUID,
+                                     in snippet: Snippet,
+                                     with context: NSManagedObjectContext) -> Self? {
+  context.registeredObjects
+   .compactMap{ $0 as? Self }
+   .first{ $0.id == id && $0.isValid && $0.snippet == snippet  }
+ }
  
+ public static func existingFolder(with id: UUID,
+                                   in snippet: Snippet,
+                                   in context: NSManagedObjectContext) -> Self? {
+  
+  if let object = registeredFolder(with: id, in: snippet, with: context) {
+   return object
+  }
+  
+  let pred = NSPredicate(format: "SELF.id == %@", id as CVarArg )
+  let fr = Self.fetchRequest()
+  fr.predicate = pred
+  return try? context.fetch(fr).compactMap{ $0 as? Self }.first{ $0.snippet == snippet } 
+ }
  
 }
 
@@ -76,15 +97,55 @@ extension NMContentFolder
   print(#function, objectID)
    
   guard let context = self.managedObjectContext else {
-   throw ContextError.noContext(object: self, entity: .folderContentElement, operation: .storageDelete )
+   throw ContextError.noContext(object: self, entity: .folderContentElement, operation: .autoremoveFolder )
   }
   
   if await context.perform({ self.isDeleted }) { return }
-  if await context.perform({ self.isEmpty }) { try await self.delete(); return }
+   
+  guard let folderID = await context.perform({ self.id }) else {
+   throw ContextError.noID(object: self, entity: .folderContentElement, operation: .autoremoveFolder)
+  }
+   
+  guard let folderSnippet = await context.perform({ self.snippet }) else {
+   throw ContextError.noSnippet(object: self, entity: .folderContentElement, operation: .autoremoveFolder)
+  }
+   
+  if await context.perform({ self.isEmpty }) {
   
-  guard await context.perform({self.isSingleElement}) else { return }
+   try await self.delete()
+   
+   await NMUndoSession.register{ [ weak folderSnippet ]  in
+    print (folderID)
+    let SUT_FOLDER = try await folderSnippet?.createFolder(persist: true){ $0.id = folderID }
+    
+    await context.perform { () -> () in
+     print(SUT_FOLDER!.id!)
+     print("URL SUR_FOLDER", SUT_FOLDER!.url!.path)
+     //XCTAssertTrue(FileManager.default.fileExists(atPath: SUT_FOLDER!.url!.path))
+    }
+    print("UNDO DONE...")
+   } with: { [ weak folderSnippet, weak context ]  in
+    let undeletedFolder = await context?.perform {
+     folderSnippet?.folders.first{$0.id == folderID}
+    }
+    do {
+     try await undeletedFolder?.delete()
+    } catch let error as ContextError {
+     await context?.perform {
+      print (error.errorLogMessage)
+     }
+    }
+    
+    print("REDO DONE...")
+   }
+   
+   return
+  }
+  
+  guard await context.perform({ self.isSingleElement }) else { return }
   
   let single = await context.perform{ self.folderedElements.first! }
+   
   try await single.unfolder()
   
  }
@@ -96,6 +157,8 @@ public extension NMFileStorageManageable where Self: NMContentFolder {
   get {
    
    guard let folderID = id?.uuidString else { return nil }
+   
+   print ("FROM URL GETTER", #function, folderID)
    guard let snippetID = (snippet ?? mixedSnippet)?.id?.uuidString else { return nil }
    
    let snippetURL = docFolder.appendingPathComponent(snippetID)

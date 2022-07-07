@@ -16,6 +16,8 @@ import CoreLocation
 @objc(NMBaseSnippet)
 public class NMBaseSnippet : NSManagedObject {
  
+ public let undoManager = NMUndoManager()
+ 
  public var fileManagerTask: Task<Void, Error>?
  
  public override var description: String {

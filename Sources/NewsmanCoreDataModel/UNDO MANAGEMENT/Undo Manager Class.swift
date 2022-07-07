@@ -1,7 +1,7 @@
 
 import Foundation
 
-public actor NMUndoManager: NSObject{
+public actor NMUndoManager: NSObject {
  
  private var undoStackPointer: Int = -1
  
@@ -19,7 +19,9 @@ public actor NMUndoManager: NSObject{
  public var canRedo: Bool { undoStackPointer < undoStack.count - 1 }
  
  public func undo() async throws {
+  
   print (#function)
+  
   guard canUndo else { return }
   let currentSession = undoStack[undoStackPointer]
   let currentTask = currentSessionTask
@@ -29,6 +31,8 @@ public actor NMUndoManager: NSObject{
  }
  
  public func redo() async throws {
+  
+  print (#function)
   
   guard canRedo else { return }
   undoStackPointer += 1

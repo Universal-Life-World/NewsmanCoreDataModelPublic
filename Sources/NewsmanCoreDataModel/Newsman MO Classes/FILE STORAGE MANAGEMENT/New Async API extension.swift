@@ -19,10 +19,15 @@ public extension NMFileStorageManageable {
    guard let url = self.url else {
     throw ContextError.noURL(object: self, entity: .object, operation: .storageCreate)
    }
+   print (#function, url.path, id!)
    return url
   }
   
-  if FileManager.default.fileExists(atPath: url.path)  { return self }
+  
+  if FileManager.default.fileExists(atPath: url.path)  {
+   return self
+   
+  }
   
   fileManagerTask = Task.detached{
    try await FileManager.createDirectoryOnDisk(at: url)

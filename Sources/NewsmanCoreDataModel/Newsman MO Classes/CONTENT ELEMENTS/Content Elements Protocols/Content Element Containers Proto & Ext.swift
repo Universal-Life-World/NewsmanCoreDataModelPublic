@@ -28,6 +28,24 @@ extension NMContentElementsContainer {
  public func removeFromContainer(element: Element) { removeFromContainer(singleElements: [element])}
  public func removeFromContainer(folder: Folder) { removeFromContainer(folders: [folder])}
  
+ 
+ public static func registeredSnippet(with id: UUID, with context: NSManagedObjectContext) -> Self? {
+  context.registeredObjects
+   .compactMap{ $0 as? Self }
+   .first{ $0.id == id && $0.isValid && $0.status != .trashed  }
+ }
+ 
+ public static func existingSnippet(with id: UUID, in context: NSManagedObjectContext) -> Self? {
+  if let object = registeredSnippet(with: id, with: context) {
+   return object
+  }
+  
+  let pred = NSPredicate(format: "SELF.id == %@", id as CVarArg )
+  let fr = Self.fetchRequest()
+  fr.predicate = pred
+  return try? context.fetch(fr).first{ $0.status != .trashed } as? Self
+ }
+ 
 }
 
 @available(iOS 15.0, macOS 12.0, *)
@@ -159,14 +177,34 @@ extension NMContentElementsContainer where Self.Element: NMContentElement,
    
  }
  
+ //MARK: METHOD FOR CREATING & INSERTING SINGLE CONTENT ELEMENT INTO CONTENT CONTAINER.
  
  @discardableResult
  public func createSingle( persist: Bool = false,
                            in snippetFolder: Folder? = nil,
                            with updates: ((Element) throws -> ())? = nil) async throws -> Element {
   
-  try await createSingles(persist: persist, in: snippetFolder).first!.updated(updates)
+  guard let parentContext = managedObjectContext else {
+   throw ContextError.noContext(object: self, entity: .object, operation: .createChildren)
+  }
+  
+  return try await parentContext.perform { [ unowned self, unowned parentContext] () -> Element in
+   try Task.checkCancellation()
+  
+   let newSingle = Element.init(context: parentContext)
+   newSingle.locationsProvider = locationsProvider
+    
+   insert(newElements: [newSingle], into: snippetFolder)
+   
+   return newSingle
+   
+  }.updated(updates)
+   .persisted(persist)
+   .withFileStorage()
  }
+ 
+ 
+ //MARK: METHOD FOR CREATING & INSERTING COLLECTION OF CONTENT ELEMENTS INTO CONTENT CONTAINER.
  
  @discardableResult
  public func createSingles(_ N: Int = 1,
@@ -198,20 +236,41 @@ extension NMContentElementsContainer where Self.Element: NMContentElement,
   
  }
  
+ //MARK: METHOD FOR CREATING & INSERTING SINGLE FOLDER INTO CONTENT CONTAINER.
+ 
  @discardableResult
  public func createFolder( persist: Bool = false,
                            with updates: ((Folder) throws -> ())? = nil) async throws -> Folder {
   
-  try await createFolders( persist: persist).first!.updated(updates)
+  guard let parentContext = self.managedObjectContext else {
+   throw ContextError.noContext(object: self, entity: .object, operation: .createChildren)
+  }
+  
+  return try await parentContext.perform { [ unowned self, unowned parentContext ] () -> Folder in
+   try Task.checkCancellation()
+   
+   let newFolder = Folder.init(context: parentContext)
+   newFolder.locationsProvider = locationsProvider
+  
+   insert(newFolders: [newFolder])
+   return newFolder
+   
+  }.updated(updates)
+   .persisted(persist)
+   .withFileStorage()
+  
+  
  }
 
+
+ //MARK: METHOD FOR CREATING & INSERTING COLLECTION OF FOLDERS INTO CONTENT CONTAINER.
  
  @discardableResult
  public func createFolders(_ N: Int = 1,
                            persist: Bool = false,
                            with updates: (([Folder]) throws -> ())? = nil) async throws -> [Folder] {
   
-  guard let parentContext = managedObjectContext else {
+  guard let parentContext = self.managedObjectContext else {
    throw ContextError.noContext(object: self, entity: .object, operation: .createChildren)
   }
   

@@ -7,9 +7,10 @@ public protocol LoggableError: Error, CustomDebugStringConvertible, CustomString
  var errorLogMessage: String { get }
 }
 
-public extension LoggableError
-{
- func log() { print(debugDescription) }
+public extension LoggableError {
+ func log() {
+  print(debugDescription)
+ }
 }
 
 

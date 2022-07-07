@@ -13,6 +13,8 @@ import CoreData
 @objc(NMTextSnippet)
 public class NMTextSnippet: NMBaseSnippet {}
 
+extension NMTextSnippet: NMUndoManageable{}
+
 @available(iOS 15.0, macOS 12.0, *)
 extension NMTextSnippet: NMFileStorageManageable{}
 

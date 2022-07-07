@@ -13,6 +13,7 @@ import CoreData
 @objc(NMVideoSnippet)
 public class NMVideoSnippet: NMBaseSnippet {}
 
+extension NMVideoSnippet: NMUndoManageable {}
 
 @available(iOS 15.0, macOS 12.0, *)
 extension NMVideoSnippet: NMFileStorageManageable {}
