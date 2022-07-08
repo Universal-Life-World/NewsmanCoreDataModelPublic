@@ -60,8 +60,8 @@ extension NMBaseContent
     @NSManaged public var publishedTimeStamp: Date?
     @NSManaged public var ratedCount: Int64
     @NSManaged public var rating: Double
-    @NSManaged public var status: String?
-    //@NSManaged public var tag: String?
+    //@NSManaged public var status: String? get/set using primitive
+    //@NSManaged public var tag: String? get/set using primitive 
     @NSManaged public var trashedTimeStamp: Date?
     @NSManaged public var type: Int16
     @NSManaged public var attachedToChatItems: NSSet?

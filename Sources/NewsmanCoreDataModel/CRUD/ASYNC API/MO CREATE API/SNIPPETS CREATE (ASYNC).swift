@@ -82,7 +82,7 @@ public extension Collection where Element: NSManagedObject {
 public extension NSManagedObject {
  
  func updated<T: NSManagedObject>(_ block: ( (T) throws -> () )? ) async throws -> T {
-  print (#function)
+  //print (#function)
   
   try Task.checkCancellation()
  

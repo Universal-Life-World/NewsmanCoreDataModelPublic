@@ -27,7 +27,7 @@ public class NMBaseContent: NSManagedObject {
  public weak var locationsProvider: NMGeoLocationsProvider?
  public var updateGeoLocationsTask: Task<NSManagedObject, Error>?
  
- //MARK: Accessors for Snippet MO <.tag> field.
+ //MARK: Accessors for Content Element <.tag> field.
  @NSManaged fileprivate var primitiveTag: String?
  public static let tagKey = "tag"
  public static let normalizedSearchTagKey = "normalizedSearchTag"
@@ -46,6 +46,29 @@ public class NMBaseContent: NSManagedObject {
    primitiveTag = newValue
    setValue(newValue?.normalizedForSearch, forKey: Self.normalizedSearchTagKey) //NORMALIZED!
    didChangeValue(forKey: Self.tagKey)
+   
+  }
+ }
+ 
+ //MARK: Accessors for Content Element <.status> field.
+ @NSManaged fileprivate var primitiveStatus: String
+ 
+ public static let statusKey = "status"
+ public fileprivate (set) var status: ContentStatus {
+  get {
+   willAccessValue(forKey: Self.statusKey)
+   guard let value = ContentStatus(rawValue: primitiveStatus) else {
+    fatalError("Invalid Content Element Status Primitive Value - [\(primitiveStatus)]")
+   }
+   didAccessValue(forKey: Self.statusKey)
+   return value
+  }
+  
+  set {
+   
+   willChangeValue(forKey: Self.statusKey)
+   primitiveStatus = newValue.rawValue
+   didChangeValue(forKey: Self.statusKey)
    
   }
  }

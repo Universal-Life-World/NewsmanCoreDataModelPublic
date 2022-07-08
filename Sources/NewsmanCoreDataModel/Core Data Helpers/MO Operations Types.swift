@@ -11,6 +11,12 @@ public enum ContextOperationTypes: String
  case move = "MOVING"
  case undoMove = "UNDOING MOVING"
  
+ case removeFromContainer = "REMOVING CONTENT ELEMENT FROM ITS CONTENT CONTAINER"
+ case addToContainer = "ADDING CONTENT ELEMENT TO CONTENT CONTAINER"
+ 
+ case removeFromContainerUndoably = "REMOVING CONTENT ELEMENT FROM ITS CONTENT CONTAINER WITH UNDO/REDO TASKS"
+ case addToContainerUndoably = "ADDING CONTENT ELEMENT TO CONTENT CONTAINER WITH UNDO/REDO TASKS"
+ 
  case moveOnDisk = "MOVING DATA FILE ON DISK"
  case undoMoveOnDisk = "UNDOING MOVING DATA FILE ON DISK"
  
@@ -48,6 +54,8 @@ public enum ContextEntityTypes: String {
  case folderContentElement = "FOLDER CONTENT ELEMENT"
  
  case snippet = "SNIPPET"
+ case contentElementContainer = "CONTENT ELEMENTS CONTAINER"
+ case contentFolder = "CONTENT ELEMENTS FOLDER"
  case object = "MANAGED OBJECT"
  
  case photo = "PHOTO"

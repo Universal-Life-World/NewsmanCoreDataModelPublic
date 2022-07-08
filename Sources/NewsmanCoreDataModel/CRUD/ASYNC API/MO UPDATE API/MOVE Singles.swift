@@ -15,6 +15,7 @@ public extension NMContentElement where Self.Snippet.Folder == Self.Folder,
  func move (to destination: Snippet,
             persist: Bool = true,
             with updates: ((Self) throws -> ())? = nil) async throws
+ 
   where Self: NMFileStorageManageable & NMUndoManageable,
         Self.Snippet: NMUndoManageable,
         Self.Folder: NMFileStorageManageable  {
