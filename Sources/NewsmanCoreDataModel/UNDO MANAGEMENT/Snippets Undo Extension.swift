@@ -1,23 +1,19 @@
 import CoreData
 
-
-
-
 @available(iOS 15.0, macOS 12.0, *)
-extension NMUndoManageable
-where Self: NMContentElementsContainer,
-      Self.Element: NMContentElement,
-      Self.Folder: NMContentFolder,
-      Self.Folder.Element == Self.Element{
+extension NMUndoManageable where Self: NMContentElementsContainer,
+                                 Self.Element: NMContentElement,
+                                 Self.Folder: NMContentFolder,
+                                 Self.Folder.Element == Self.Element  {
  
  
- //MARK: Register undo & redo tasks helper generic method for Collection of container elements (Targets). Registers undo & redo tasks with the currect open undo/redo Session.
+//MARK: Register undo & redo tasks helper generic method for Collection of container elements (Targets). Registers undo & redo tasks with the currect open undo/redo Session.
  
- public typealias TUndoRedoTask<T> =  @Sendable (_ targets: T) throws -> ()
+ public typealias TUndoRedoTask<Targets> = @Sendable (_ targets: Targets) throws -> ()
  
- fileprivate func registerUndoRedo<E: NMBaseContent> (elements: [E],
-                                                      undo: @escaping TUndoRedoTask<[E]>,
-                                                      redo: @escaping TUndoRedoTask<[E]>) {
+ fileprivate func registerUndoRedo<Target: NMBaseContent> (elements: [Target],
+                                                           undo: @escaping TUndoRedoTask<[Target]>,
+                                                           redo: @escaping TUndoRedoTask<[Target]>) {
 
   let weakElements = WeakContainer(sequence: elements)
   
@@ -41,9 +37,9 @@ where Self: NMContentElementsContainer,
 
  //MARK: Register undo & redo tasks helper generic method for single container element (Target). Registers undo & redo tasks with the currect open undo/redo Session.
  
- fileprivate func registerUndoRedo<E: NMBaseContent> (element: E,
-                                                      undo: @escaping TUndoRedoTask<E> ,
-                                                      redo: @escaping TUndoRedoTask<E> )  {
+ fileprivate func registerUndoRedo<Target: NMBaseContent> (element: Target,
+                                                           undo: @escaping TUndoRedoTask<Target> ,
+                                                           redo: @escaping TUndoRedoTask<Target> )  {
 
   NMUndoSession.register { /* UNDO TASK */ [ weak managedObjectContext, weak element ] in
    try await managedObjectContext?.perform {
@@ -86,8 +82,8 @@ where Self: NMContentElementsContainer,
 //MARK: Register undo & redo tasks after adding single content element (target) into its content container returning existing valid source container & destination container at the time of undo & redo action. The Destination & Source container might be different from those at the moment of undo & redo pair of tasks registration!
  
  
- public typealias TUndoTask<E> = @Sendable (_ source: Self, _ target: E) throws -> ()
- public typealias TRedoTask<E> = @Sendable (_ destin: Self, _ target: E) throws -> ()
+ public typealias TUndoTask<Target> = @Sendable (_ source: Self, _ target: Target) throws -> ()
+ public typealias TRedoTask<Target> = @Sendable (_ destin: Self, _ target: Target) throws -> ()
  
  public typealias TElementUndoTask = TUndoTask<Element>
  public typealias TElementRedoTask = TRedoTask<Element>
@@ -99,7 +95,7 @@ where Self: NMContentElementsContainer,
  public static var addUndo: TElementUndoTask {{ $0.addToContainer(element: $1) }}
  public static var addRedo: TElementRedoTask {{ $0.addToContainer(element: $1) }}
  
- //MARK: SINGLE ELEMENT TARGET: UNDO(SOURCE, TARGET), REDO(DESTIN, TARGET).
+//MARK: SINGLE ELEMENT TARGET: UNDO(SOURCE, TARGET), REDO(DESTIN, TARGET).
  
  public func addToContainer(undoTarget element: Element,
                             undo: @escaping TElementUndoTask = Self.addUndo ,
@@ -157,8 +153,8 @@ where Self: NMContentElementsContainer,
  
  //MARK: Register undo & redo tasks after adding multiple content elements (Targets Collection) into its Destination content container (SELF) returning corresponding existing valid Source containers & Destination container at the time of undo & redo action. The Destination & Source containers might be different from those at the moment of undo & redo pair of tasks registration!!!
  
- public typealias TUndoCollectionTask<E> = @Sendable ([( source: Self,   target:  E)]) throws -> ()
- public typealias TRedoCollectionTask<E> = @Sendable ( _ destin: Self, _ targets: [E]) throws -> ()
+ public typealias TUndoCollectionTask<Target> = @Sendable ([( source: Self,   target:   Target)]) throws -> ()
+ public typealias TRedoCollectionTask<Target> = @Sendable ( _ destin: Self, _ targets: [Target] ) throws -> ()
  
  public typealias TUndoElementsCollectionTask = TUndoCollectionTask<Element>
  public typealias TRedoElementsCollectionTask = TRedoCollectionTask<Element>
@@ -168,11 +164,12 @@ where Self: NMContentElementsContainer,
  // This is a default Undo Task closure expression static getter used as a default Undo task for collection.
  // $0 - parameter is a collection of tuples (source container, target) for Undo Task.
  public static var addUndoMany: TUndoElementsCollectionTask {
-  { $0.forEach{ $0.source.addToContainer(element: $0.target) } }
+  {
+   $0.forEach{ $0.source.addToContainer(element: $0.target) }
+  }
  }
  
- 
- 
+
  public static var addRedoMany: TRedoElementsCollectionTask {{ $0.addToContainer(singleElements: $1) }}
   // This is a default Redo Task closure expression static getter used as a default Redo task for collection.
   // $0 - parameter is a destination container for Redo Task.
@@ -181,6 +178,7 @@ where Self: NMContentElementsContainer,
 
  
  //MARK: COLLECTION OF SINGLE ELEMENTS: UNDO((SOURCE, TARGET)), REDO(DESTIN, [TARGET]).
+ 
  public func addToContainer(undoTargets singleElements: [Element],
                             with undo: @escaping TUndoElementsCollectionTask = Self.addUndoMany,
                             with redo: @escaping TRedoElementsCollectionTask = Self.addRedoMany) throws {
@@ -265,19 +263,17 @@ where Self: NMContentElementsContainer,
                                  undo: @escaping TElementUndoTask = Self.removeUndo,
                                  redo: @escaping TElementRedoTask = Self.removeRedo) throws {
   
-  guard let sourceSnippet = element.snippet else {
-   throw ContextError.noSnippet(object: element,
-                                entity: .singleContentElement,
-                                operation: .removeFromContainerUndoably)
-  }
   
-  guard let sourceID = sourceSnippet.id else {
-   throw ContextError.noID(object: sourceSnippet,
+  guard element.snippet == self else { return } //The element can be removed from the container it belongs to!
+  
+
+  guard let sourceID = self.id else {
+   throw ContextError.noID(object: self,
                            entity: .contentElementContainer,
                            operation: .removeFromContainerUndoably)
+   
   }
   
-  guard sourceSnippet == self else { return } //The element can be removed from the container it belongs to!
   
   removeFromContainer(element: element)
   
@@ -308,25 +304,18 @@ where Self: NMContentElementsContainer,
   registerUndoRedo(elements: singleElements, undo: undo, redo: redo)
  }
  
- public typealias TElementsCollectionTask = TUndoElementsCollectionTask
- public typealias TFoldersCollectionTask  = TUndoFoldersCollectionTask
+ public typealias TElementsCollectionTask = @Sendable ( _ source: Self, _ targets: [Element]) throws -> ()
  
   
  public static var removeUndoMany: TElementsCollectionTask {
-  { $0.forEach{ $0.source.addToContainer(element: $0.target) } }
+  { (src, ts) in src.addToContainer(singleElements: ts.filter{ $0.snippet == src }) }
  }
  
- public static var removeFoldersUndoMany: TFoldersCollectionTask {
-  { $0.forEach{ $0.source.addToContainer(folder: $0.target) } }
- }
  
  public static var removeRedoMany: TElementsCollectionTask {
-  { $0.forEach{ $0.source.removeFromContainer(element: $0.target) } }
+  { (src, ts) in src.removeFromContainer(singleElements: ts.filter{ $0.snippet == src }) }
  }
   
- public static var removeFoldersRedoMany: TFoldersCollectionTask {
-  { $0.forEach{ $0.source.removeFromContainer(folder: $0.target) } }
- }
  
  
  //MARK: REMOVE COLLECTION OF SINGLE ELEMENTS (TARGETS): UNDO([(SOURCE, TARGET)]) == REDO([(SOURCE, TARGET)]).
@@ -335,47 +324,40 @@ where Self: NMContentElementsContainer,
                                  with undo: @escaping TElementsCollectionTask = Self.removeUndoMany,
                                  with redo: @escaping TElementsCollectionTask = Self.removeRedoMany) throws {
   
-  if singleElements.isEmpty { return }
-  
-   //Create mapping between elemets ids & corresponding containers ids.
-  let sourceSnippetsMap = try singleElements.reduce(into: [UUID : UUID]()){ map, element in
-   guard let elementID = element.id else {
-    throw ContextError.noID(object: element,
-                            entity: .singleContentElement, operation: .removeFromContainerUndoably)
-   }
-   guard let snippet = element.snippet else {
-    throw ContextError.noSnippet(object: element,
-                                 entity: .singleContentElement, operation: .removeFromContainerUndoably)
-   }
-   guard let snippetID = snippet.id else{
-    throw ContextError.noID(object: snippet,
-                            entity: .contentElementContainer, operation: .removeFromContainerUndoably)
-   }
-   
-   map[elementID] = snippetID
+  guard let context = self.managedObjectContext else {
+   throw ContextError.noContext(object: self,
+                                entity: .contentElementContainer,
+                                operation: .removeFromContainerUndoably)
   }
   
-  removeFromContainer(singleElements: singleElements)
-  
-  let stt = { (_ elements: [Element]) -> [(Self, Element)] in
-   var sourceTargetTuples = [(Self, Element)]()
-    //Obtaining or fetching existing source content containers at the moment of UNDO task execution!
-   for element in elements {
-    guard let context = element.managedObjectContext else { break }
-    guard let ID = element.id else { break }
-    guard let sourceID = sourceSnippetsMap[ID] else { break }
-    guard let sourceSnippet = Self.existingSnippet(with: sourceID, in: context) else { break }
-    let sourceTargetTuple = (source: sourceSnippet, target: element)
-    sourceTargetTuples.append(sourceTargetTuple)
-   }
+  guard let sourceID = self.id else {
+   throw ContextError.noID(object: self,
+                           entity: .contentElementContainer,
+                           operation: .removeFromContainerUndoably)
    
-   return sourceTargetTuples
   }
-
-  registerUndoRedo(elements: singleElements) { try undo(stt($0)) } redo: { try redo(stt($0)) }
+  
+  let elements = singleElements.filter{ $0.snippet == self }
+   //The element can be removed from the container it belongs to!
+  
+  if elements.isEmpty { return } // all alients then no op!
+ 
+  removeFromContainer(singleElements: elements)
+  
+  registerUndoRedo(elements: elements) { [ weak context ] elements in
+   guard let context = context else { return }
+    //Obtaining or fetching existing source content container at the moment of UNDO task execution!
+   guard let sourceSnippet = Self.existingSnippet(with: sourceID, in: context) else { return }
+   try undo(sourceSnippet, elements)
+   
+  } redo: { [ weak context ] elements in
+   guard let context = context else { return }
+    //Obtaining or fetching existing source content container at the moment of UNDO task execution!
+   guard let sourceSnippet = Self.existingSnippet(with: sourceID, in: context) else { return }
+   try undo(sourceSnippet, elements)
+  }
   
  }
- 
  
  
  //**********************************************
@@ -393,10 +375,12 @@ where Self: NMContentElementsContainer,
   
  }
  
+
  
 //MARK: Register undo & redo tasks after adding single FOLDER (Target) into its content container returning existing valid source container & destination container at the time of undo & redo action. The Destination & Source container might be different from those at the moment of undo & redo pair of tasks registration!
 
-
+//MARK: SINGLE FOLDER TARGET: UNDO(SOURCE, TARGET) <-> REDO(DESTIN, TARGET).
+ 
  public typealias TFolderUndoTask = TUndoTask<Folder>
  public typealias TFolderRedoTask = TRedoTask<Folder>
  
@@ -417,7 +401,6 @@ where Self: NMContentElementsContainer,
   }
  }
  
- //MARK: SINGLE ELEMENT TARGET: UNDO(SOURCE, TARGET), REDO(DESTIN, TARGET).
  
  public func addToContainer(undoTarget folder: Folder,
                             undo: @escaping TFolderUndoTask = Self.addFolderUndo ,
@@ -468,9 +451,13 @@ where Self: NMContentElementsContainer,
   registerUndoRedo(elements: folders, undo: undo, redo: redo)
  }
  
+ 
+ 
+//MARK: ADD COLLECTION OF FOLDERS : UNDO((SOURCE, TARGET)) <-> REDO(DESTIN, [TARGET]).
+ 
+ 
  public typealias TUndoFoldersCollectionTask = TUndoCollectionTask<Folder>
  public typealias TRedoFoldersCollectionTask = TRedoCollectionTask<Folder>
- 
 
  public static var addFoldersUndoMany: TUndoFoldersCollectionTask {
   {
@@ -489,7 +476,8 @@ where Self: NMContentElementsContainer,
  }
  
  
-  //MARK: COLLECTION OF FOLDERS : UNDO((SOURCE, TARGET)), REDO(DESTIN, [TARGET]).
+ 
+ 
  public func addToContainer(undoTargets folders: [Folder],
                             with undo: @escaping TUndoFoldersCollectionTask = Self.addFoldersUndoMany,
                             with redo: @escaping TRedoFoldersCollectionTask = Self.addFoldersRedoMany) throws {
@@ -525,7 +513,7 @@ where Self: NMContentElementsContainer,
   addToContainer(singleElements: allFoldered)
   
   registerUndoRedo(elements: folders){ folders in
-   var sourceTargetTuples = [(Self, Folder)]()
+   var sourceTargetTuples = [(source: Self, target: Folder)]()
     //Obtaining or fetching existing source content containers at the moment of UNDO task execution!
    for folder in folders {
     guard let context = folder.managedObjectContext else { break }
@@ -561,6 +549,61 @@ where Self: NMContentElementsContainer,
  }
  
  
+ public static var removeFolderUndo: TFolderUndoTask {
+  {
+   $0.addToContainer(folder: $1)
+   $0.addToContainer(singleElements: $1.folderedElements)
+  }
+ }
+ 
+ public static var removeFolderRedo: TFolderRedoTask {
+  {
+   $0.removeFromContainer (folder: $1)
+   $0.removeFromContainer(singleElements: $1.folderedElements)
+  }
+ }
+ 
+ //MARK: REMOVE FOLDER TARGET: UNDO(SOURCE, TARGET) == REDO(SOURCE, TARGET).
+ 
+ public func removeFromContainer(undoTarget folder: Folder,
+                                 undo: @escaping TFolderUndoTask = Self.removeFolderUndo,
+                                 redo: @escaping TFolderRedoTask = Self.removeFolderRedo) throws {
+  
+  guard let sourceSnippet = folder.snippet else {
+   throw ContextError.noSnippet(object: folder,
+                                entity: .folderContentElement,
+                                operation: .removeFromContainerUndoably)
+  }
+  
+  guard let sourceID = sourceSnippet.id else {
+   throw ContextError.noID(object: sourceSnippet,
+                           entity: .contentElementContainer,
+                           operation: .removeFromContainerUndoably)
+  }
+  
+  guard sourceSnippet == self else { return } //The folder can be removed from the container it belongs to!
+  
+  removeFromContainer(folder: folder)
+  removeFromContainer(singleElements: folder.folderedElements)
+  
+  registerUndoRedo(element: folder){ folder in
+   guard let context = folder.managedObjectContext else { return }
+    //Obtaining or fetching existing source content container at the moment of UNDO task execution!
+   guard let sourceSnippet = Self.existingSnippet(with: sourceID, in: context) else { return }
+   try undo(sourceSnippet, folder)
+   
+  } redo: { folder in
+   guard let context = folder.managedObjectContext else { return }
+    //Obtaining or fetching existing source content container at the moment of REDO task execution!
+   guard let sourceSnippet = Self.existingSnippet(with: sourceID, in: context) else { return }
+   try redo(sourceSnippet, folder)
+  }
+  
+  
+ }
+ 
+ 
+ 
  public func removeFromContainer(undoTargets folders: [Folder],
                                  with undo: @escaping TUndoRedoTask<[Folder]>,
                                  with redo: @escaping TUndoRedoTask<[Folder]>) {
@@ -570,6 +613,72 @@ where Self: NMContentElementsContainer,
   removeFromContainer(singleElements: allFoldered)
   registerUndoRedo(elements: folders, undo: undo, redo: redo)
  
+  
+ }
+ 
+ 
+ 
+//MARK: REMOVE COLLECTION OF FOLDERS (TARGETS): UNDO(SOURCE, [TARGET]) == REDO(SOURCE, [TARGET]).
+ 
+ public typealias TFoldersCollectionTask  = @Sendable ( _ source: Self, _ targets: [Folder]) throws -> ()
+ 
+ public static var removeFoldersUndoMany: TFoldersCollectionTask {
+  { src, folders in
+   let folders = folders.filter{ $0.snippet == src }
+   src.addToContainer(folders: folders)
+   let allFoldered = folders.flatMap{ $0.folderedElements }
+   src.addToContainer(singleElements: allFoldered)
+  }
+ }
+ 
+ public static var removeFoldersRedoMany: TFoldersCollectionTask {
+  { src, folders in
+   let folders = folders.filter{ $0.snippet == src }
+   src.removeFromContainer(folders: folders)
+   let allFoldered = folders.flatMap{ $0.folderedElements }
+   src.removeFromContainer(singleElements: allFoldered)
+  }
+ }
+ 
+ 
+ public func removeFromContainer(undoTargets folders: [Folder],
+                                 with undo: @escaping TFoldersCollectionTask = Self.removeFoldersUndoMany,
+                                 with redo: @escaping TFoldersCollectionTask = Self.removeFoldersRedoMany) throws {
+  
+  guard let context = self.managedObjectContext else {
+   throw ContextError.noContext(object: self,
+                                entity: .contentElementContainer,
+                                operation: .removeFromContainerUndoably)
+  }
+  
+  guard let sourceID = self.id else {
+   throw ContextError.noID(object: self,
+                           entity: .contentElementContainer,
+                           operation: .removeFromContainerUndoably)
+   
+  }
+  
+  let folders = folders.filter{ $0.snippet == self }
+   //The folder can be removed from the container it belongs to!
+  
+  if folders.isEmpty { return } // all alients then no op!
+  
+  removeFromContainer(folders: folders)
+  let allFoldered = folders.flatMap{ $0.folderedElements }
+  removeFromContainer(singleElements: allFoldered)
+  
+  registerUndoRedo(elements: folders) { [ weak context ] folders in
+   guard let context = context else { return }
+    //Obtaining or fetching existing source content container at the moment of UNDO task execution!
+   guard let sourceSnippet = Self.existingSnippet(with: sourceID, in: context) else { return }
+   try undo(sourceSnippet, folders)
+   
+  } redo: { [ weak context ] folders in
+   guard let context = context else { return }
+    //Obtaining or fetching existing source content container at the moment of UNDO task execution!
+   guard let sourceSnippet = Self.existingSnippet(with: sourceID, in: context) else { return }
+   try undo(sourceSnippet, folders)
+  }
   
  }
  
