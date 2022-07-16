@@ -7,11 +7,11 @@
 import Foundation
 import CoreData
 
-@objc(NMVideo)
-public class NMVideo: NMBaseContent {}
+@objc(NMVideo) public class NMVideo: NMBaseContent {}
 
 extension NMVideo: NMUndoManageable {}
 
+@available(iOS 15.0, macOS 12.0, *)
 extension NMVideo: NMFileStorageManageable {
  public func fileManagerTaskGroup() async throws { try await fileManagerTask?.value }
 }
@@ -26,5 +26,4 @@ extension NMVideo: NMContentElement{
  
 
 }
-
 

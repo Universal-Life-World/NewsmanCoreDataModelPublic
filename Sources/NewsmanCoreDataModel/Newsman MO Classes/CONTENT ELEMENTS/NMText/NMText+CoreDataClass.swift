@@ -13,7 +13,8 @@ import CoreData
 
 extension NMText: NMUndoManageable{}
 
-extension NMText: NMFileStorageManageable{
+@available(iOS 15.0, macOS 12.0, *)
+extension NMText: NMFileStorageManageable {
  public func fileManagerTaskGroup() async throws { try await fileManagerTask?.value }
 }
 
@@ -27,4 +28,6 @@ extension NMText: NMContentElement {
  
 }
 
-
+//extension NMText {
+// public func fileManagerTaskGroup() async throws { try await fileManagerTask?.value }
+//}

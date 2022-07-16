@@ -16,7 +16,13 @@ public class NMTextSnippet: NMBaseSnippet {}
 extension NMTextSnippet: NMUndoManageable{}
 
 @available(iOS 15.0, macOS 12.0, *)
-extension NMTextSnippet: NMFileStorageManageable{}
+extension NMTextSnippet: NMFileStorageManageable {
+ public func fileManagerTaskGroup() async throws {
+  try await fileManagerTask?.value
+  try await fileManagerChildrenTaskGroup()
+ }
+}
+
 
 extension NMTextSnippet: NMContentElementsContainer {
 

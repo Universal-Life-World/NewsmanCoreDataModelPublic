@@ -16,7 +16,30 @@ public class NMMixedFolder: NMBaseContent {}
 extension NMMixedFolder: NMUndoManageable {}
 
 @available(iOS 15.0, macOS 12.0, *)
-extension NMMixedFolder: NMFileStorageManageable {}
+extension NMMixedFolder : NMFileStorageManageable  {
+
+ public var folderedElementsAsync: [NMBaseContent]? {
+  get async { await managedObjectContext?.perform { self.folderedElements } }
+ }
+
+ public func fileManagerFolderedGroup() async throws {
+  try await withThrowingTaskGroup(of: Void.self, returning: Void.self) { group in
+
+   await folderedElementsAsync?.compactMap{$0 as? NMFileStorageManageable}.forEach{ element in
+    group.addTask { try await element.fileManagerTaskGroup() }
+   }
+
+   try await group.waitForAll()
+  }
+ }
+
+ public func fileManagerTaskGroup() async throws {
+  try await fileManagerTask?.value
+  try await fileManagerFolderedGroup()
+
+ }
+
+}
 
 public typealias Element = NMBaseContent
 public typealias Snippet = NMMixedSnippet

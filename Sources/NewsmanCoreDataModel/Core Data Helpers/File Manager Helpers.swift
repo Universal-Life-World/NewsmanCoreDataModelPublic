@@ -128,6 +128,20 @@ public extension FileManager
   try Task.checkCancellation()
   try FileManager.default.moveItem(at: sourceURL, to: destinationURL)
  }
+ 
+ @available(iOS 15.0, macOS 12.0, *)
+ static func moveItemOnDisk(undoTargetURL: URL, to destinURL: URL) async throws {
+  try Task.checkCancellation()
+  
+  try await FileManager.moveItemOnDisk(from: undoTargetURL, to: destinURL)
+  
+  await NMUndoSession.register {
+   try await FileManager.moveItemOnDisk(from: destinURL, to: undoTargetURL)
+  } with: {
+   try await FileManager.moveItemOnDisk(from: undoTargetURL, to: destinURL)
+  }
+  
+ }
 
  static func removeItemFromDisk (at url: URL, completion: @escaping (Result<Void, Error>) -> ())
  {

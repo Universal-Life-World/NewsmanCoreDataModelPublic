@@ -15,7 +15,12 @@ public class NMAudioFolder: NMBaseContent {}
 extension NMAudioFolder: NMUndoManageable{}
 
 @available(iOS 15.0, macOS 12.0, *)
-extension NMAudioFolder: NMFileStorageManageable{}
+extension NMAudioFolder: NMFileStorageManageable{
+ public func fileManagerTaskGroup() async throws {
+  try await fileManagerTask?.value
+  try await fileManagerFolderedGroup()
+ }
+}
 
 extension NMAudioFolder: NMContentFolder {
  

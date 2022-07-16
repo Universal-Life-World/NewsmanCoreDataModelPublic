@@ -16,7 +16,13 @@ public class NMVideoSnippet: NMBaseSnippet {}
 extension NMVideoSnippet: NMUndoManageable {}
 
 @available(iOS 15.0, macOS 12.0, *)
-extension NMVideoSnippet: NMFileStorageManageable {}
+extension NMVideoSnippet: NMFileStorageManageable {
+ public func fileManagerTaskGroup() async throws {
+  try await fileManagerTask?.value
+  try await fileManagerChildrenTaskGroup()
+ }
+}
+
 
 extension NMVideoSnippet: NMContentElementsContainer {
  

@@ -15,7 +15,12 @@ public class NMPhotoFolder: NMBaseContent {}
 extension NMPhotoFolder: NMUndoManageable{}
 
 @available(iOS 15.0, macOS 12.0, *)
-extension NMPhotoFolder: NMFileStorageManageable{}
+extension NMPhotoFolder: NMFileStorageManageable{
+ public func fileManagerTaskGroup() async throws {
+  try await fileManagerTask?.value
+  try await fileManagerFolderedGroup()
+ }
+}
 
 extension NMPhotoFolder: NMContentFolder {
 

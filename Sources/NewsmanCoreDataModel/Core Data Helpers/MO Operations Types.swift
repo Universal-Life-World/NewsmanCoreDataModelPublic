@@ -16,6 +16,12 @@ public enum ContextOperationTypes: String
  
  case removeFromContainerUndoably = "REMOVING CONTENT ELEMENT FROM ITS CONTENT CONTAINER WITH UNDO/REDO TASKS"
  case addToContainerUndoably = "ADDING CONTENT ELEMENT TO CONTENT CONTAINER WITH UNDO/REDO TASKS"
+ case registerUndoRedo = "REGISTERING UNDO/REDO TASKS"
+ case registerUndo = "REGISTERING UNDO TASK"
+ case registerRedo = "REGISTERING REDO TASK"
+ 
+ case deleteFromContextUndoably = "DELETING MO FROM CONTEXT WITH UNDO/REDO TASKS"
+ 
  
  case moveOnDisk = "MOVING DATA FILE ON DISK"
  case undoMoveOnDisk = "UNDOING MOVING DATA FILE ON DISK"

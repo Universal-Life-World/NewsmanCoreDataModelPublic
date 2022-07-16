@@ -1,64 +1,144 @@
 import CoreData
 
+
+extension NMUndoManageable{
+ public typealias TUndoRedoTask<Targets> = @Sendable (_ targets: Targets) throws -> ()
+ 
+ public typealias TUndoTask<S, Target> = @Sendable (_ source: S, _ target: Target) throws -> ()
+ public typealias TRedoTask<D, Target> = @Sendable (_ destin: D, _ target: Target) throws -> ()
+ 
+ public typealias TDeleteUndoTask<S> = @Sendable (_ srs: S, _ targetID: UUID, _ childIDs: [UUID]) async throws -> ()
+ public typealias TDeleteRedoTask<Target> = @Sendable ( _ target: Target) async throws -> ()
+ 
+}
+
+
 @available(iOS 15.0, macOS 12.0, *)
 extension NMUndoManageable where Self: NMContentElementsContainer,
                                  Self.Element: NMContentElement,
                                  Self.Folder: NMContentFolder,
-                                 Self.Folder.Element == Self.Element  {
+                                 Self.Folder.Element == Self.Element,
+                                 Self.Element.Snippet == Self,
+                                 Self.Folder.Snippet == Self {
  
  
-//MARK: Register undo & redo tasks helper generic method for Collection of container elements (Targets). Registers undo & redo tasks with the currect open undo/redo Session.
+
  
- public typealias TUndoRedoTask<Targets> = @Sendable (_ targets: Targets) throws -> ()
  
- fileprivate func registerUndoRedo<Target: NMBaseContent> (elements: [Target],
-                                                           undo: @escaping TUndoRedoTask<[Target]>,
-                                                           redo: @escaping TUndoRedoTask<[Target]>) {
+//MARK: Register undo & redo tasks helper method for single content element (Target). Registers undo & redo tasks with the currect open undo/redo Session.
+ 
+ fileprivate func registerUndoRedo(element: Element,
+                                   undo: @escaping TUndoRedoTask<Element> ,
+                                   redo: @escaping TUndoRedoTask<Element> )  {
+  
+  NMUndoSession.register { /* UNDO TASK */ [ weak managedObjectContext, weak element ] in
+   try await managedObjectContext?.perform {
+    if let e = element, e.isValid { try undo(e) }
+   }
+   
+  } with: { /* UREDO TASK */ [ weak managedObjectContext, weak element  ] in
+   try await managedObjectContext?.perform {
+    if let e = element, e.isValid { try redo(e) }
+   }
+  }
+  
+ }
+ 
+
+//MARK: Register undo & redo tasks helper method for a Collection of Single Container Elements (Targets). Registers undo & redo tasks with the currect open undo/redo Session.
+ 
+ fileprivate func registerUndoRedo (elements: [Element],
+                                    undo: @escaping TUndoRedoTask<[Element]>,
+                                    redo: @escaping TUndoRedoTask<[Element]>) {
 
   let weakElements = WeakContainer(sequence: elements)
   
   NMUndoSession.register { /* UNDO TASK */ [ weak managedObjectContext ] in
    try await managedObjectContext?.perform {
-    let elements = weakElements.elements.filter{
-     $0.isDeleted == false && $0.managedObjectContext != nil && $0.status != .trashed
-    }
+    let elements = weakElements.elements.filter{ $0.isValid }
+    if elements.isEmpty { return }
     try undo(elements)
    }
 
   } with: { /* REDO TASK */ [ weak managedObjectContext ] in
    try await managedObjectContext?.perform {
-    let elements = weakElements.elements.filter{
-     $0.isDeleted == false && $0.managedObjectContext != nil && $0.status != .trashed
-    }
+    let elements = weakElements.elements.filter{ !$0.isValid }
+    if elements.isEmpty { return }
     try redo(elements)
    }
   }
  }
 
- //MARK: Register undo & redo tasks helper generic method for single container element (Target). Registers undo & redo tasks with the currect open undo/redo Session.
  
- fileprivate func registerUndoRedo<Target: NMBaseContent> (element: Target,
-                                                           undo: @escaping TUndoRedoTask<Target> ,
-                                                           redo: @escaping TUndoRedoTask<Target> )  {
-
-  NMUndoSession.register { /* UNDO TASK */ [ weak managedObjectContext, weak element ] in
+ //MARK: Register undo & redo tasks helper method for single folder content element (Target). Registers undo & redo tasks with the currect open undo/redo Session.
+ 
+ fileprivate func registerUndoRedo (folder: Folder,
+                                    undo: @escaping TUndoRedoTask<Folder> ,
+                                    redo: @escaping TUndoRedoTask<Folder> )  {
+  
+  /* UNDO TASK */
+  NMUndoSession.register { [ weak managedObjectContext, weak folder, folderID = folder.id ] in
    try await managedObjectContext?.perform {
-    if let e = element, e.isDeleted == false, let _ = e.managedObjectContext, e.status != .trashed {
-     try undo(e)
-    }
+    if let f = folder, f.isValid { try undo(f) }
+    else if let moc = managedObjectContext, let folderID = folderID,
+            let exf = Folder.existingFolder(with: folderID, in: moc){ try undo(exf) }
    }
-
-  } with: { /* UREDO TASK */ [ weak managedObjectContext, weak element  ] in
+   /* UREDO TASK */
+  } with: {  [ weak managedObjectContext, weak folder, folderID = folder.id ] in
    try await managedObjectContext?.perform {
-    if let e = element, e.isDeleted == false, let _ = e.managedObjectContext, e.status != .trashed {
-     try redo(e)
-    }
+    if let f = folder, f.isValid { try redo(f) }
+    else if let moc = managedObjectContext, let folderID = folderID,
+            let exf = Folder.existingFolder(with: folderID, in: moc){ try undo(exf) }
    }
   }
-
+  
  }
  
  
+ //MARK: Register undo & redo tasks helper method for a Collection of Folder Content Elements (Targets). Registers undo & redo tasks with the currect open undo/redo Session.
+ 
+
+ fileprivate func registerUndoRedo (folders: [Folder],
+                                    undo: @escaping TUndoRedoTask<[Folder]>,
+                                    redo: @escaping TUndoRedoTask<[Folder]>) {
+  
+  let weakFolders = WeakContainer(sequence: folders)
+  let beforeFoldersIDs = folders.compactMap(\.id)
+  
+ 
+  NMUndoSession.register {  /* UNDO TASK */  [ weak managedObjectContext ] in
+   try await managedObjectContext?.perform {
+    guard let moc = managedObjectContext else { return }
+    let afterFolders = weakFolders.elements.filter{ $0.isValid }
+    let afterFolderIDs = Set(afterFolders.compactMap(\.id))
+    let existingFolders = Set(beforeFoldersIDs).symmetricDifference(afterFolderIDs).compactMap{
+     Folder.existingFolder(with: $0, in: moc)
+    }
+    let folders = afterFolders + existingFolders
+    if folders.isEmpty { return }
+    try undo(folders)
+   }
+   
+  } with: { /* REDO TASK */ [ weak managedObjectContext ] in
+   try await managedObjectContext?.perform {
+    guard let moc = managedObjectContext else { return }
+    let afterFolders = weakFolders.elements.filter{ $0.isValid }
+    let afterFolderIDs = Set(afterFolders.compactMap(\.id))
+    let existingFolders = Set(beforeFoldersIDs).symmetricDifference(afterFolderIDs).compactMap{
+     Folder.existingFolder(with: $0, in: moc)
+    }
+    
+    let folders = afterFolders + existingFolders
+    if folders.isEmpty { return }
+    try redo(folders)
+   }
+  }
+ }
+ 
+ 
+
+ 
+
  
  //***********************************************************************
   //MARK: GROUP OF METHODS FOR SNIPPET SINGLE CONTENT ELEMENTS...
@@ -70,10 +150,8 @@ extension NMUndoManageable where Self: NMContentElementsContainer,
                             with undo: @escaping TUndoRedoTask<Element>,
                             with redo: @escaping TUndoRedoTask<Element>) {
   
-  
   addToContainer(element: element)
   registerUndoRedo(element: element, undo: undo, redo: redo)
-  
   
  }
  
@@ -82,11 +160,8 @@ extension NMUndoManageable where Self: NMContentElementsContainer,
 //MARK: Register undo & redo tasks after adding single content element (target) into its content container returning existing valid source container & destination container at the time of undo & redo action. The Destination & Source container might be different from those at the moment of undo & redo pair of tasks registration!
  
  
- public typealias TUndoTask<Target> = @Sendable (_ source: Self, _ target: Target) throws -> ()
- public typealias TRedoTask<Target> = @Sendable (_ destin: Self, _ target: Target) throws -> ()
- 
- public typealias TElementUndoTask = TUndoTask<Element>
- public typealias TElementRedoTask = TRedoTask<Element>
+ public typealias TElementUndoTask = TUndoTask<Self, Element>
+ public typealias TElementRedoTask = TRedoTask<Self, Element>
  
  // This is a default closure expression static getter used as a default Undo/Redo task for adding single element.
  // $0 - parameter is a source container for Undo Task and destination for Redo Task.
@@ -371,7 +446,7 @@ extension NMUndoManageable where Self: NMContentElementsContainer,
   
   addToContainer(folder: folder)
   addToContainer(singleElements: folder.folderedElements)
-  registerUndoRedo(element: folder, undo: undo, redo: redo)
+  registerUndoRedo(folder: folder, undo: undo, redo: redo)
   
  }
  
@@ -381,8 +456,8 @@ extension NMUndoManageable where Self: NMContentElementsContainer,
 
 //MARK: SINGLE FOLDER TARGET: UNDO(SOURCE, TARGET) <-> REDO(DESTIN, TARGET).
  
- public typealias TFolderUndoTask = TUndoTask<Folder>
- public typealias TFolderRedoTask = TRedoTask<Folder>
+ public typealias TFolderUndoTask = TUndoTask<Self, Folder>
+ public typealias TFolderRedoTask = TRedoTask<Self, Folder>
  
   // This is a default closure expression static getter used as a default Undo/Redo task for adding single element.
   // $0 - parameter is a source container for Undo Task and destination for Redo Task.
@@ -426,7 +501,7 @@ extension NMUndoManageable where Self: NMContentElementsContainer,
   addToContainer(folder: folder)
   addToContainer(singleElements: folder.folderedElements)
   
-  registerUndoRedo(element: folder){ folder in
+  registerUndoRedo(folder: folder){ folder in
    guard let context = folder.managedObjectContext else { return }
     //Obtaining or fetching existing source content container at the moment of UNDO task execution!
    guard let sourceSnippet = Self.existingSnippet(with: sourceID, in: context) else { return }
@@ -448,7 +523,7 @@ extension NMUndoManageable where Self: NMContentElementsContainer,
   addToContainer(folders: folders)
   let allFoldered = folders.flatMap{ $0.folderedElements }
   addToContainer(singleElements: allFoldered)
-  registerUndoRedo(elements: folders, undo: undo, redo: redo)
+  registerUndoRedo(folders: folders, undo: undo, redo: redo)
  }
  
  
@@ -512,7 +587,7 @@ extension NMUndoManageable where Self: NMContentElementsContainer,
   let allFoldered = folders.flatMap{ $0.folderedElements }
   addToContainer(singleElements: allFoldered)
   
-  registerUndoRedo(elements: folders){ folders in
+  registerUndoRedo(folders: folders){ folders in
    var sourceTargetTuples = [(source: Self, target: Folder)]()
     //Obtaining or fetching existing source content containers at the moment of UNDO task execution!
    for folder in folders {
@@ -544,7 +619,7 @@ extension NMUndoManageable where Self: NMContentElementsContainer,
   
   removeFromContainer(folder: folder)
   removeFromContainer(singleElements: folder.folderedElements)
-  registerUndoRedo(element: folder, undo: undo, redo: redo)
+  registerUndoRedo(folder: folder, undo: undo, redo: redo)
   
  }
  
@@ -586,7 +661,7 @@ extension NMUndoManageable where Self: NMContentElementsContainer,
   removeFromContainer(folder: folder)
   removeFromContainer(singleElements: folder.folderedElements)
   
-  registerUndoRedo(element: folder){ folder in
+  registerUndoRedo(folder: folder){ folder in
    guard let context = folder.managedObjectContext else { return }
     //Obtaining or fetching existing source content container at the moment of UNDO task execution!
    guard let sourceSnippet = Self.existingSnippet(with: sourceID, in: context) else { return }
@@ -611,7 +686,7 @@ extension NMUndoManageable where Self: NMContentElementsContainer,
   removeFromContainer(folders: folders)
   let allFoldered = folders.flatMap{ $0.folderedElements }
   removeFromContainer(singleElements: allFoldered)
-  registerUndoRedo(elements: folders, undo: undo, redo: redo)
+  registerUndoRedo(folders: folders, undo: undo, redo: redo)
  
   
  }
@@ -667,7 +742,7 @@ extension NMUndoManageable where Self: NMContentElementsContainer,
   let allFoldered = folders.flatMap{ $0.folderedElements }
   removeFromContainer(singleElements: allFoldered)
   
-  registerUndoRedo(elements: folders) { [ weak context ] folders in
+  registerUndoRedo(folders: folders) { [ weak context ] folders in
    guard let context = context else { return }
     //Obtaining or fetching existing source content container at the moment of UNDO task execution!
    guard let sourceSnippet = Self.existingSnippet(with: sourceID, in: context) else { return }

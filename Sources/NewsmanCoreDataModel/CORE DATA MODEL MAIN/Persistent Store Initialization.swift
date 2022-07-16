@@ -9,7 +9,8 @@ import UIKit
 @available(iOS 13.0, *)
 public extension NSManagedObjectContext{
  
- static let locationsProviderKey = "locationsProvider"
+ 
+ static let locationsProviderKey = "locationsProvider" // A key to save location provider ref in MOC userInfo dic.
  
  private typealias LocationsProviderBlock = () -> NMGeoLocationsProvider?
  
@@ -18,7 +19,6 @@ public extension NSManagedObjectContext{
    
     let block = userInfo[Self.locationsProviderKey] as? LocationsProviderBlock
     return block?() as? NMGeoLocationsProvider
-   
   }
  
   set {
@@ -33,8 +33,19 @@ public extension NSManagedObjectModel{
  static var empty: Self { .init() }
 }
 
-@available(iOS 14.0, *)
+
 public final class NMCoreDataModel {
+ 
+ public static let recoveryFolderName = UUID().uuidString
+  // A name of temporary File Manager folder to keep recoverable file storage data.
+  // The data is will be deleted when self is destroyed!
+ 
+ public static var recoveryFolderURL: URL? {
+  FileManager.default
+   .urls(for: .documentDirectory, in: .userDomainMask)
+   .first?
+   .appendingPathComponent(recoveryFolderName)
+ }
  
  public static var moms: [String: NSManagedObjectModel] = [:]
  
@@ -146,6 +157,32 @@ public final class NMCoreDataModel {
   
  }
  
+ private func createRecoveryStorage(){
+  
+  if let recoveryFolderURL = Self.recoveryFolderURL {
+   do {
+    try FileManager.default.createDirectory(at: recoveryFolderURL, withIntermediateDirectories: false)
+    print ("INIT RECOVERY STORAGE IS SUCCEEDED!")
+   } catch {
+    print ("ERROR INIT RECOVERY STORAGE!")
+   }
+   
+  }
+
+ }
+ 
+ private func removeRecoveryStorage(){
+  if let recoveryFolderURL = Self.recoveryFolderURL {
+   do {
+    try FileManager.default.removeItem(at: recoveryFolderURL)
+    print ("DELETING RECOVERY STORAGE IS SUCCEEDED!")
+   } catch {
+    print ("ERROR DELETING RECOVERY STORAGE!")
+   }
+   
+  }
+ }
+ 
  public init(name: String = "Model",
              for storeType: StoreType = .persistedSQLight,
              locationsProvider: NMGeoLocationsProvider = NMGeoLocationsProvider()) {
@@ -154,13 +191,14 @@ public final class NMCoreDataModel {
   self.storeType = storeType
   self.locationsProvider = locationsProvider
   
-  
+  createRecoveryStorage()
    
  }
  
  deinit{
   print ("NMCoreDataModel is DESTROYED!")
   
+  removeRecoveryStorage()
   //persistentContainer.viewContext.locationsProvider = nil
  }
    

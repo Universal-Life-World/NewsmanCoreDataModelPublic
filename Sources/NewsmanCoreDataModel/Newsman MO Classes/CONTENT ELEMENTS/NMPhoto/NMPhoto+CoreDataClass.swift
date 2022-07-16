@@ -9,29 +9,12 @@
 import Foundation
 import CoreData
 
-@objc(NMPhoto)
-public class NMPhoto: NMBaseContent{
- 
-// public override func willChangeValue(forKey key: String) {
-//  super.willChangeValue(forKey: key)
-//  if key == #keyPath(NMPhoto.photoSnippet) {
-//   print (" FROM SNIPPET \(String(describing: photoSnippet?.id))")
-//  }
-// }
-//
-// public override func didChangeValue(forKey key: String) {
-//  super.didChangeValue(forKey: key)
-//  if key == #keyPath(NMPhoto.photoSnippet) {
-//   print (" TO SNIPPET \(String(describing: photoSnippet?.id))")
-//
-//
-//  }
-// }
-}
-
+@objc(NMPhoto) public class NMPhoto: NMBaseContent{}
 
 extension NMPhoto: NMUndoManageable{}
 
+
+@available(iOS 15.0, macOS 12.0, *)
 extension NMPhoto: NMFileStorageManageable {
  public func fileManagerTaskGroup() async throws { try await fileManagerTask?.value }
 }
@@ -45,9 +28,8 @@ extension NMPhoto: NMContentElement{
  @objc public var folder: NMPhotoFolder?   { photoFolder  }
  
 
- 
- 
 }
+
 
 
 

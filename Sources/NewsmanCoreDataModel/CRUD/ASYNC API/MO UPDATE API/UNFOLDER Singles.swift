@@ -11,7 +11,9 @@ public extension NMContentElement where Self.Snippet.Folder == Self.Folder,
  
  func unfolder(persist: Bool = true,
                with updates: ((Self) throws -> ())? = nil) async throws
- where Self: NMFileStorageManageable, Self.Folder: NMFileStorageManageable {
+ where Self: NMUndoManageable & NMFileStorageManageable,
+       Self.Folder: NMUndoManageable & NMFileStorageManageable,
+       Self.Snippet: NMUndoManageable & NMFileStorageManageable {
   
   try await unfoldered(persist: persist, with: updates)
   
@@ -20,7 +22,9 @@ public extension NMContentElement where Self.Snippet.Folder == Self.Folder,
  @discardableResult func unfoldered(persist: Bool = true,
                                     with updates: ((Self) throws -> ())? = nil) async throws -> Self
  
- where Self: NMFileStorageManageable, Self.Folder: NMFileStorageManageable {
+ where Self: NMUndoManageable & NMFileStorageManageable,
+       Self.Folder: NMUndoManageable & NMFileStorageManageable,
+       Self.Snippet: NMUndoManageable & NMFileStorageManageable {
   
   print(#function, objectID)
   

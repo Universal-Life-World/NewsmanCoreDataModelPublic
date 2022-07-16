@@ -15,7 +15,12 @@ public class NMTextFolder: NMBaseContent {}
 extension NMTextFolder: NMUndoManageable{}
 
 @available(iOS 15.0, macOS 12.0, *)
-extension NMTextFolder: NMFileStorageManageable{}
+extension NMTextFolder: NMFileStorageManageable{
+ public func fileManagerTaskGroup() async throws {
+  try await fileManagerTask?.value
+  try await fileManagerFolderedGroup()
+ }
+}
 
 extension NMTextFolder: NMContentFolder{
  

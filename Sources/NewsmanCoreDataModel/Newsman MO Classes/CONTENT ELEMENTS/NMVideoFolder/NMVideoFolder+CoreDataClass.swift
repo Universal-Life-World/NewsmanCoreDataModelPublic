@@ -12,7 +12,12 @@ import CoreData
 @objc(NMVideoFolder) public class NMVideoFolder: NMBaseContent{}
 
 @available(iOS 15.0, macOS 12.0, *)
-extension NMVideoFolder: NMFileStorageManageable{}
+extension NMVideoFolder: NMFileStorageManageable{
+ public func fileManagerTaskGroup() async throws {
+  try await fileManagerTask?.value
+  try await fileManagerFolderedGroup()
+ }
+}
 
 extension NMVideoFolder: NMContentFolder{
  

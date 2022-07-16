@@ -1,45 +1,39 @@
 
 import Foundation
-import XCTest
 import CoreData
 
 @available(iOS 15.0, macOS 12.0, *)
-public extension NMContentElement where Self.Snippet.Folder == Self.Folder,
-                                        Self.Folder.Element == Self,
-                                        Self.Snippet.Element == Self,
-                                        Self.Snippet == Self.Folder.Snippet {
+public extension NMContentElement where Self:    NMFileStorageManageable & NMUndoManageable,
+                                        Snippet: NMFileStorageManageable & NMUndoManageable,
+                                        Folder:  NMFileStorageManageable & NMUndoManageable,
+                                        Snippet.Folder == Folder,
+                                        Folder.Element == Self,
+                                        Snippet.Element == Self,
+                                        Snippet == Folder.Snippet {
  
  
  //MARK: MOVE THIS SINGLE ELEMENT FROM SOURCE SNIPPET INTO DESTINATION ONE
  
  func move (to destination: Snippet,
             persist: Bool = true,
-            with updates: ((Self) throws -> ())? = nil) async throws
+            with updates: ((Self) throws -> ())? = nil) async throws {
  
-  where Self: NMFileStorageManageable & NMUndoManageable,
-        Self.Snippet: NMUndoManageable,
-        Self.Folder: NMFileStorageManageable  {
-  
-   await NMUndoSession.open(target: self)
+   await NMUndoSession.open(target: self)  //OPEN UNDO/REDO SESSION!
    
    try await moved(to: destination, persist: persist, with: updates)
    
    if let currentSession = await NMUndoSession.current {
     await undoManager.registerUndoSession(currentSession)
+    //attach current open session to this MO undo manager!
    }
    
-   await NMUndoSession.close()
+   await NMUndoSession.close() //CLOSE UNDO/REDO SESSION AFTER MOVE!
  }
- 
  
  
  @discardableResult func moved(to destination: Snippet,
                                persist: Bool = true,
-                               with updates: ((Self) throws -> ())? = nil) async throws -> Self
- 
- where Self: NMFileStorageManageable & NMUndoManageable,
-       Self.Snippet: NMUndoManageable,
-       Self.Folder: NMFileStorageManageable {
+                               with updates: ((Self) throws -> ())? = nil) async throws -> Self {
   
   try Task.checkCancellation()
   
@@ -47,10 +41,6 @@ public extension NMContentElement where Self.Snippet.Folder == Self.Folder,
   guard let movedContext = self.managedObjectContext else {
    throw ContextError.noContext(object: self, entity: .singleContentElement, operation: .move)
   }
-  
-//  var undoRegTask: Task<Void, Never>?
-  
-//  let folder = await movedContext.perform { self.folder }
   
   let folder = try await movedContext.perform { [ unowned self ] () throws -> Folder? in
    
@@ -72,47 +62,17 @@ public extension NMContentElement where Self.Snippet.Folder == Self.Folder,
     throw ContextError.isInvalid(object: self, entity: .singleContentElement, operation: .move)
    }
    
-   
    guard let sourceURL = self.url else {
     throw ContextError.noURL(object: self, entity: .singleContentElement, operation: .move)
     
    }
    
-
-   try destination.addToContainer(undoTarget: self)
+   try destination.addToContainer(undoTarget: self) // move self with undo/redo!
     
-    
+   let folder = self.folder //fix the strong ref to folder before element removal from it!
    
-   
-   let folder = self.folder
-   folder?.removeFromContainer(element: self)
-   let folderID = folder?.id
-   
-//   NMUndoSession.register { [unowned self, weak parentSnippet, unowned movedContext] in
-//     await movedContext.perform {
-//
-//      parentSnippet?.addToContainer(element: self)
-//      if let folderID = folderID,
-//         let folder = parentSnippet?.folders.first(where: {$0.id == folderID}){
-//       folder.addToContainer(element: self)
-//      }
-//     
-//     }
-//    
-//    } with: { [unowned self, weak destination, weak parentSnippet, unowned movedContext ] in
-//     await movedContext.perform {
-//      destination?.addToContainer(element: self)
-//      if let folderID = folderID,
-//         let folder = parentSnippet?.folders.first(where: {$0.id == folderID}){
-//       folder.removeFromContainer(element: self)
-//      }
-//     
-//     }
-//    }
-//   
-//   
-//  
-   
+   try folder?.removeFromContainer(undoTarget: self) // unfolder self with undo/redo!
+ 
    guard let destURL = self.url else {
     throw ContextError.noURL(object: self, entity: .singleContentElement, operation: .move)
    }
@@ -132,17 +92,10 @@ public extension NMContentElement where Self.Snippet.Folder == Self.Folder,
     try await sourceSnippetTask?.value  //await that current source snippet task has finished...
     try await destSnippetTask?.value    //await that current dest snippet file manager task has finished...
     
-     //try await Task.sleep(nanoseconds: .random(in: 5000...15000))
-     //create some latency for testing...
-    try await FileManager.moveItemOnDisk(from: sourceURL, to: destURL)
+     //try await Task.sleep(nanoseconds: .random(in: 5000...15000)) //create some latency for testing...
     
-//    await NMUndoSession.register {
-//     try await FileManager.moveItemOnDisk(from: destURL, to: sourceURL)
-//    } with: {
-//     try await FileManager.moveItemOnDisk(from: sourceURL, to: destURL)
-//    }
-    
-  
+    try await FileManager.moveItemOnDisk(undoTargetURL: sourceURL, to: destURL) //move with undo/redo!
+
     
    }
    
@@ -155,7 +108,6 @@ public extension NMContentElement where Self.Snippet.Folder == Self.Folder,
   try await fileManagerTask?.value  //await that current file manager task has finished...
   try await folder?.autoremoveIfNeeded()
   
- 
   return self//try await self.updated(updates)
   
  }
@@ -166,8 +118,7 @@ public extension NMContentElement where Self.Snippet.Folder == Self.Folder,
  
  func move (to destination: Folder,
             persist: Bool = true,
-            with updates: ((Self) throws -> ())? = nil) async throws
- where Self: NMFileStorageManageable, Self.Folder: NMFileStorageManageable {
+            with updates: ((Self) throws -> ())? = nil) async throws {
   
   try await moved(to: destination, persist: persist, with: updates)
   
@@ -175,9 +126,7 @@ public extension NMContentElement where Self.Snippet.Folder == Self.Folder,
  
  @discardableResult func moved(to destination: Folder,
                                persist: Bool = true,
-                               with updates: ((Self) throws -> ())? = nil) async throws -> Self
- 
- where Self: NMFileStorageManageable, Self.Folder: NMFileStorageManageable {
+                               with updates: ((Self) throws -> ())? = nil) async throws -> Self {
   
   try Task.checkCancellation()
   

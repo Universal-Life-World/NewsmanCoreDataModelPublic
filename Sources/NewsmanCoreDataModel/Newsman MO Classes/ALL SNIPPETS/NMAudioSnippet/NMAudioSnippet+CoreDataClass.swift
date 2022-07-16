@@ -16,7 +16,12 @@ public class NMAudioSnippet: NMBaseSnippet {}
 extension NMAudioSnippet: NMUndoManageable{}
 
 @available(iOS 15.0, macOS 12.0, *)
-extension NMAudioSnippet: NMFileStorageManageable {}
+extension NMAudioSnippet: NMFileStorageManageable {
+ public func fileManagerTaskGroup() async throws {
+  try await fileManagerTask?.value
+  try await fileManagerChildrenTaskGroup()
+ }
+}
 
 extension NMAudioSnippet: NMContentElementsContainer {
  
