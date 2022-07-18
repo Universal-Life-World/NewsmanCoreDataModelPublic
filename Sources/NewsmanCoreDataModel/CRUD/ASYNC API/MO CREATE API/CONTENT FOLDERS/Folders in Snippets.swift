@@ -46,13 +46,14 @@ extension NMContentElementsContainer where Self.Element: NMContentElement,
  
  @discardableResult
  public func createFolder( with ID: UUID, persist: Bool = false,
-                           with updates: ((Folder) throws -> ())? = nil) async throws -> Folder {
+                           with updates: ((Folder) throws -> ())? = nil) async throws -> Folder
+  where Self.Folder: NMUndoManageable  {
   
   guard let parentContext = self.managedObjectContext else {
    throw ContextError.noContext(object: self, entity: .object, operation: .createChildren)
   }
   
-  return try await parentContext.perform { [ unowned self, unowned parentContext ] () -> Folder in
+ return try await parentContext.perform { [ unowned self, unowned parentContext ] () -> Folder in
    try Task.checkCancellation()
    
    let newFolder = Folder.init(context: parentContext)
@@ -61,11 +62,11 @@ extension NMContentElementsContainer where Self.Element: NMContentElement,
    insert(newFolders: [newFolder])
    return newFolder
    
-  }.updated(updates)
+  }.withRegisteredUndoManager(targetID: ID)
+   .updated(updates)
    .persisted(persist)
    .withFileStorage()
-  
-  
+ 
  }
  
  @discardableResult
@@ -73,7 +74,8 @@ extension NMContentElementsContainer where Self.Element: NMContentElement,
                            from IDs: [UUID],
                            persist: Bool = false,
                            folderUpdates: ((Folder) throws -> ())? = nil,
-                           singlesUpdates: (([Element]) throws ->())? = nil) async throws -> Folder {
+                           singlesUpdates: (([Element]) throws ->())? = nil) async throws -> Folder
+ where Folder: NMUndoManageable, Element: NMUndoManageable {
   
   let folder = try await createFolder(with: ID, persist: persist, with: folderUpdates)
   try await folder.createSingles(from: IDs, persist: persist, with: singlesUpdates)

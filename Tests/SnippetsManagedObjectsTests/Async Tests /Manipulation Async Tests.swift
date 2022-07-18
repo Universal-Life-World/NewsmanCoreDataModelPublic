@@ -67,23 +67,20 @@ final class NMSnippetsManipulationAsyncTests: NMBaseSnippetsAsyncTests {
   
   }
   
-  //ASSERT UNDO/REDO STATE BEFORE MOVE...
-  
-  let openUndoSession = await NMUndoSession.current
-  XCTAssertNil(openUndoSession)
-  
-  let canUndoSession = await SUT.undoManager.canUndo
-  XCTAssertFalse(canUndoSession)
-  
-  let canRedoSession = await SUT.undoManager.canRedo
-  XCTAssertFalse(canRedoSession)
-  
-  
+  //ASSERT UNDO/REDO STATES BEFORE MOVE...
+  await XCTAssertNilAsync   (await NMUndoSession.current)        //No open session!
+  await XCTAssertTrueAsync  (await SUT.undoManager.isEmpty)      //UM has no closed session to undo/redo!
+  await XCTAssertNilAsync   (await SUT.undoManager.topUndo)      //No top undo session in UM stack
+  await XCTAssertNilAsync   (await SUT.undoManager.bottomUndo)   //No last undo session in UM stack
+  await XCTAssertNilAsync   (await SUT.undoManager.currentUndo)  //No top undo session in UM stack
+  await XCTAssertFalseAsync (await SUT.undoManager.canUndo)      //You cannot undo!
+  await XCTAssertFalseAsync (await SUT.undoManager.canRedo)      //You cannot redo!
+  await XCTAssertEqualAsync (await SUT.undoManager.sessionCount, 0) //UM Stack is empty yet!
+  await XCTAssertEqualAsync (await NMUndoManager.registeredManagers.count, 0) //No UM registered globally!
   
   //ACTION...
-  try await SUT.move(to: DEST_SNIPPET, persist: PERSISTED) { $0.tag = "MOVED SUT" }
+  try await SUT.move(to: DEST_SNIPPET, persist: PERSISTED) { $0.tag = "MOVED SUT" } 
   
- 
   //ASSERT...
   let SOURCE_resourceURL = try await SOURCE_SNIPPET.resourceSnippetURL
   //XCTAssertNotNil(SOURCE_resourceURL)
@@ -94,7 +91,7 @@ final class NMSnippetsManipulationAsyncTests: NMBaseSnippetsAsyncTests {
   XCTAssertTrue(FileManager.default.fileExists(atPath: DEST_resourceURL.path))
   
   XCTAssertFalse(FileManager.default.fileExists(atPath: SUT_FOLDER_URL!.path))
-  try await XCTAssertThrowsErrorAsync(try await SUT_FOLDER.resourceFolderURL)
+  await XCTAssertThrowsErrorAsync(try await SUT_FOLDER.resourceFolderURL)
   
 //  let FOLDER_resourceURL = try await SUT_FOLDER.resourceFolderURL
 //  XCTAssertNil(FOLDER_resourceURL)
@@ -129,17 +126,27 @@ final class NMSnippetsManipulationAsyncTests: NMBaseSnippetsAsyncTests {
   }
   
   //ASSERT UNDO/REDO STATE AFTER MOVE...
-  do {
-   let openUndoSession = await NMUndoSession.current
-   XCTAssertNil(openUndoSession)
-   
-   let canUndoSession = await SUT.undoManager.canUndo
-   XCTAssertTrue(canUndoSession)
-   
-   let canRedoSession = await SUT.undoManager.canRedo
-   XCTAssertFalse(canRedoSession)
-   
-  }
+ 
+  await XCTAssertNilAsync    (await NMUndoSession.current)
+  await XCTAssertFalseAsync  (await SUT.undoManager.isEmpty)
+  await XCTAssertNotNilAsync (await SUT.undoManager.topUndo)
+  await XCTAssertNotNilAsync (await SUT.undoManager.bottomUndo)
+  await XCTAssertNotNilAsync (await SUT.undoManager.currentUndo)
+  
+  await XCTAssertEqualAllAsync({ await SUT.undoManager.topUndo },
+                               { await SUT.undoManager.bottomUndo },
+                               { await SUT.undoManager.currentUndo })
+  
+  await XCTAssertTrueAsync  (await SUT.undoManager.canUndo)
+  await XCTAssertFalseAsync (await SUT.undoManager.canRedo)
+
+  await XCTAssertEqualAsync (await SUT.undoManager.sessionCount, 1)
+  await XCTAssertEqualAsync (await NMUndoManager.registeredManagers.count, 1)
+  await XCTAssertFalseAsync (await SUT.undoManager.currentUndo!.isEmpty)
+  await XCTAssertFalseAsync (await SUT.undoManager.currentUndo!.isExecuted)
+  await XCTAssertFalseAsync (await NMUndoSession.hasOpenSession)
+  
+ 
   
   //UNDO ACTION...
   
@@ -150,12 +157,27 @@ final class NMSnippetsManipulationAsyncTests: NMBaseSnippetsAsyncTests {
   do {
    let openUndoSession = await NMUndoSession.current
    XCTAssertNil(openUndoSession)
+//  
+//   let isOpen = await NMUndoSession.hasOpenSession
+//   XCTAssertFalse(isOpen)
    
    let canUndoSession = await SUT.undoManager.canUndo
    XCTAssertFalse(canUndoSession)
    
    let canRedoSession = await SUT.undoManager.canRedo
    XCTAssertTrue(canRedoSession)
+   
+//   let isEmpty = await SUT.undoManager.isEmpty
+//   XCTAssertFalse(isEmpty)
+//
+//   let topUndoSession = await SUT.undoManager.topUndo
+//   XCTAssertNotNil(topUndoSession)
+//
+//   let bottomUndoSession = await SUT.undoManager.bottomUndo
+//   XCTAssertNotNil(bottomUndoSession)
+//
+//   let currentUndoSession = await SUT.undoManager.currentUndo
+//   XCTAssertNil(currentUndoSession)
    
   }
   
@@ -279,7 +301,7 @@ final class NMSnippetsManipulationAsyncTests: NMBaseSnippetsAsyncTests {
   
   
   XCTAssertFalse(FileManager.default.fileExists(atPath: SUT_FOLDER_URL!.path))
-  try await XCTAssertThrowsErrorAsync(try await SUT_FOLDER.resourceFolderURL)
+  await XCTAssertThrowsErrorAsync(try await SUT_FOLDER.resourceFolderURL)
   
   let SUT_resourceURL = try await SUT.resourceContentURL
   XCTAssertTrue(FileManager.default.fileExists(atPath: SUT_resourceURL.path))
@@ -391,7 +413,7 @@ final class NMSnippetsManipulationAsyncTests: NMBaseSnippetsAsyncTests {
   XCTAssertTrue(FileManager.default.fileExists(atPath: DEST_resourceURL.path))
   
   XCTAssertFalse(FileManager.default.fileExists(atPath: SUT_FOLDER_URL!.path))
-  try await XCTAssertThrowsErrorAsync(try await SUT_FOLDER.resourceFolderURL)
+  await XCTAssertThrowsErrorAsync(try await SUT_FOLDER.resourceFolderURL)
   
    //  let FOLDER_resourceURL = try await SUT_FOLDER.resourceFolderURL
    //  XCTAssertNil(FOLDER_resourceURL)
@@ -502,7 +524,7 @@ final class NMSnippetsManipulationAsyncTests: NMBaseSnippetsAsyncTests {
   
   
   XCTAssertFalse(FileManager.default.fileExists(atPath: SUT_FOLDER_URL!.path))
-  try await XCTAssertThrowsErrorAsync(try await SUT_FOLDER.resourceFolderURL)
+  await XCTAssertThrowsErrorAsync(try await SUT_FOLDER.resourceFolderURL)
   
   
   let SUT_resourceURL = try await SUT.resourceContentURL

@@ -25,7 +25,8 @@ extension NMContentFolder where Self.Element: NMContentElement,
  
  @discardableResult
  public func createSingle( persist: Bool = false,
-                           with updates: ((Element) throws -> ())? = nil) async throws -> Element {
+                           with updates: ((Element) throws -> ())? = nil) async throws -> Element
+  {
   
   guard let parentContext = self.managedObjectContext else {
    throw ContextError.noContext(object: self, entity: .object, operation: .createChildren)
@@ -41,7 +42,8 @@ extension NMContentFolder where Self.Element: NMContentElement,
    
    return newSingle
    
-  }.updated(updates)
+  }
+   .updated(updates)
    .persisted(persist)
    .withFileStorage()
   
@@ -50,7 +52,9 @@ extension NMContentFolder where Self.Element: NMContentElement,
   // Helper method for recovery with existing UUID.
  @discardableResult
  public func createSingle( with ID: UUID, persist: Bool = false,
-                           with updates: ((Element) throws -> ())? = nil) async throws -> Element {
+                           with updates: ((Element) throws -> ())? = nil) async throws -> Element
+ 
+ where Element: NMUndoManageable {
   
   guard let parentContext = self.managedObjectContext else {
    throw ContextError.noContext(object: self, entity: .object, operation: .createChildren)
@@ -67,7 +71,8 @@ extension NMContentFolder where Self.Element: NMContentElement,
    
    return newSingle
    
-  }.updated(updates)
+  }.withRegisteredUndoManager(targetID: ID)
+   .updated(updates)
    .persisted(persist)
    .withFileStorage()
   
@@ -106,7 +111,8 @@ extension NMContentFolder where Self.Element: NMContentElement,
  // Helper method for recovery with existing UUIDs.
  @discardableResult
  public func createSingles(from IDs: [UUID], persist: Bool = false,
-                           with updates: (([Element]) throws -> ())? = nil) async throws -> [Element] {
+                           with updates: (([Element]) throws -> ())? = nil) async throws -> [Element]
+  where Element: NMUndoManageable {
   
   if IDs.isEmpty { return [] }
   
@@ -129,7 +135,8 @@ extension NMContentFolder where Self.Element: NMContentElement,
    
    return newSingles
    
-  }.updated(updates)
+  }.withRegisteredUndoManager(targetIDs: IDs)
+   .updated(updates)
    .persisted(persist)
    .withFileStorage()
  }

@@ -66,7 +66,7 @@ public extension NMContentElement where Self.Snippet.Folder == Self.Folder,
    
     //print ("MOVE from [\(parentSnippet.nameTag)] to [\(destination.nameTag)]")
   
-   folder.removeFromContainer(element: self)
+   try folder.removeFromContainer(undoTarget: self)
    
    guard let destURL = self.url else {
     throw ContextError.noURL(object: self, entity: .singleContentElement, operation: .unfolder)

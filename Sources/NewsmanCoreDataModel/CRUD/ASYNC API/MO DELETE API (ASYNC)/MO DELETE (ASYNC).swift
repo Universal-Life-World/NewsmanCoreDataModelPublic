@@ -36,7 +36,6 @@ public extension NMFileStorageManageable {
    return (url, recoveryURL)
   }
   
-  
   guard FileManager.default.fileExists(atPath: url.path) else {
    throw ContextError.dataDeleteFailure(at: url, object: self, entity: .object, operation: .storageDelete,
                                         description: "Deleteting Object File Folder Failed!")
@@ -48,7 +47,7 @@ public extension NMFileStorageManageable {
   } else {
    try await FileManager.removeItemFromDisk(at: url) // total removal unrecoverably
   }
-  //print("DELETE DONE!", #function, objectID)
+  print("DELETE DONE!", #function, objectID)
  }
  
 }

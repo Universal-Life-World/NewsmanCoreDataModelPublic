@@ -13,7 +13,8 @@ import Combine
 @objc(NMBaseContent)
 public class NMBaseContent: NSManagedObject {
  
- public let undoManager = NMUndoManager()
+ @MainActor public lazy var undoManager = NMUndoManager(targetID: id)
+ /* Spawns the undo manager instace lazily when it id used on the main global actor as the SELF.ID must be accessed from the main context thread. */
  
  public var fileManagerTask: Task<Void, Error>?
 

@@ -7,7 +7,10 @@ extension NMUndoManageable{
  public typealias TUndoTask<S, Target> = @Sendable (_ source: S, _ target: Target) throws -> ()
  public typealias TRedoTask<D, Target> = @Sendable (_ destin: D, _ target: Target) throws -> ()
  
- public typealias TDeleteUndoTask<S> = @Sendable (_ srs: S, _ targetID: UUID, _ childIDs: [UUID]) async throws -> ()
+ public typealias TDeleteUndoTask<S> = @Sendable (_ source: S,
+                                                  _ targetID: UUID,
+                                                  _ childIDs: [UUID]) async throws -> ()
+ 
  public typealias TDeleteRedoTask<Target> = @Sendable ( _ target: Target) async throws -> ()
  
 }

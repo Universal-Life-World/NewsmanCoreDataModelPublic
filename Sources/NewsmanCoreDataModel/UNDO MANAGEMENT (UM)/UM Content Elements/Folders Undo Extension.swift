@@ -2,7 +2,7 @@ import CoreData
 
 @available(iOS 15.0, macOS 12.0, *)
 extension NMUndoManageable where Self: NMContentFolder & NMFileStorageManageable,
-                                 Self.Element: NMContentElement,
+                                 Self.Element: NMContentElement & NMUndoManageable,
                                  Self.Snippet.Element == Self.Element,
                                  Self.Snippet.Folder == Self,
                                  Self.Element.Snippet == Self.Snippet,
@@ -218,9 +218,7 @@ extension NMUndoManageable where Self: NMContentFolder & NMFileStorageManageable
  
  
  public static var deleteFolderUndo: TDeleteFolderUndoTask {
-  {
-   try await $0.createFolder(with: $1).createSingles(from: $2, persist: true)
-  }
+  { try await $0.createFolder(with: $1, from: $2, persist: true) }
  }
  
  public static var deleteFolderRedo: TDeleteFolderRedoTask {{ try await $0.delete() }}

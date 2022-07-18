@@ -23,8 +23,7 @@ public extension NMContentElement where Self:    NMFileStorageManageable & NMUnd
    try await moved(to: destination, persist: persist, with: updates)
    
    if let currentSession = await NMUndoSession.current {
-    await undoManager.registerUndoSession(currentSession)
-    //attach current open session to this MO undo manager!
+    await undoManager.registerUndoSession(currentSession) //attach current open session to MO undo manager!
    }
    
    await NMUndoSession.close() //CLOSE UNDO/REDO SESSION AFTER MOVE!
@@ -106,6 +105,7 @@ public extension NMContentElement where Self:    NMFileStorageManageable & NMUnd
   }
   
   try await fileManagerTask?.value  //await that current file manager task has finished...
+  
   try await folder?.autoremoveIfNeeded()
   
   return self//try await self.updated(updates)

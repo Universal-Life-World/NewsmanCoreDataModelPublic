@@ -483,7 +483,7 @@ final class NMBaseSnippetsCreationAsyncTests: NMBaseSnippetsAsyncTests {
   SUTS_task.cancel()
   
   //ASSERT...
-  try await XCTAssertThrowsErrorAsync(try await SUTS_task.value,
+  await XCTAssertThrowsErrorAsync(try await SUTS_task.value,
                                       errorType: CancellationError.self)
  
  }
@@ -499,8 +499,7 @@ final class NMBaseSnippetsCreationAsyncTests: NMBaseSnippetsAsyncTests {
   SUTS_task.cancel() // CANCELL TOP LEVEL TASK!
   
   //ASSERT...
-  try await XCTAssertThrowsErrorAsync(try await SUTS_task.value,
-                                      errorType: CancellationError.self)
+  await XCTAssertThrowsErrorAsync(try await SUTS_task.value, errorType: CancellationError.self)
   
   
  }

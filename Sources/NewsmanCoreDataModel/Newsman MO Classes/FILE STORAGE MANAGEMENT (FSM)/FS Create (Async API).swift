@@ -1,11 +1,12 @@
 
-
 import Foundation
 
 //MARK: Fully async methods for creating storage.
 
 @available(iOS 15.0, macOS 12.0, *)
 public extension NMFileStorageManageable {
+
+ //MARK: Creates MO File Storage if not exists async at URL otherwise recover existing storage from recovery URL for undo operations.
  
  func withFileStorage() async throws -> Self {
   
@@ -16,10 +17,10 @@ public extension NMFileStorageManageable {
   }
   
   let (url, recoveryURL) = try await context.perform { [ unowned self ] () throws -> (URL, URL)  in
-   guard let url = self.url, let rurl = self.recoveryURL else {
+   guard let url = self.url, let recoveryURL = self.recoveryURL else {
     throw ContextError.noURL(object: self, entity: .object, operation: .storageCreate)
    } //   print (#function, url.path, id!)
-   return (url, rurl)
+   return (url, recoveryURL)
   }
   
   if FileManager.default.fileExists(atPath: url.path)  { return self }

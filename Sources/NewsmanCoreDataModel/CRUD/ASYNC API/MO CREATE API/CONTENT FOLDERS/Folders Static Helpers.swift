@@ -18,7 +18,8 @@ extension NMContentFolder where Self.Element: NMContentElement,
   // Helper for possible recovery with existing UUID.
  @discardableResult
  static func create(with ID: UUID, snippet: Snippet, persist: Bool = true,
-                    with updates: ((Self) throws -> ())? = nil) async throws -> Self {
+                    with updates: ((Self) throws -> ())? = nil) async throws -> Self
+  where Self: NMUndoManageable {
   
   try await snippet.createFolder(with: ID, persist: persist, with: updates)
  }

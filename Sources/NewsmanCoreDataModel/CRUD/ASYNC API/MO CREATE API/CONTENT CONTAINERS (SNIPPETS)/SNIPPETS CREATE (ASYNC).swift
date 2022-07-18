@@ -1,218 +1,6 @@
 
 import CoreData
 
-@available(iOS 15.0, macOS 12.0, *)
-public extension Collection where Element: NSManagedObject {
- func updated(_ block: ( ([Element]) throws -> () )? ) async throws -> [ Element ] {
-  try Task.checkCancellation()
-  
-  guard let block = block else { return Array(self) }
-  
-  let contexts = Array(Set(compactMap(\.managedObjectContext)))
-  
-  if contexts.isEmpty { return [] }
-  
-  guard contexts.count == 1 else {
-   throw ContextError.multipleContextsInCollection(collection: Array(self))
-  }
-  
-  let context = contexts.first!
-  
-  return try await context.perform {
-   try Task.checkCancellation()
-   let validObjects = filter{ $0.managedObjectContext != nil && $0.isDeleted == false }
-   do {
-    print ("UPDATED PERFORM COLLECTION", validObjects.compactMap{$0 as? NMBaseContent})
-    try block(validObjects)
-    return validObjects
-   }
-   catch {
-    validObjects.forEach{ context.delete($0) }
-    throw error
-   }
-  }
-  
- }
- 
- func persisted(_ persist: Bool = true ) async throws -> [ Element ] {
-  try Task.checkCancellation()
-
-  guard persist else { return Array(self) }
-  
-  let contexts = Array(Set(compactMap(\.managedObjectContext)))
-  
-  if contexts.isEmpty { return [] }
-  
-  guard contexts.count == 1 else {
-   throw ContextError.multipleContextsInCollection(collection: Array(self))
-  }
-  
-  let context = contexts.first!
-  
-  return try await context.perform {
-   try Task.checkCancellation()
-   let validObjects = filter{ $0.managedObjectContext != nil && $0.isDeleted == false }
-   guard validObjects.contains(where: \.hasChanges) else { return validObjects }
-   try context.save()
-   return validObjects
-  }
- }
- 
- func withFileStorage() async throws -> [ Element ] {
-  try Task.checkCancellation()
-  
-  return try await withThrowingTaskGroup(of: Element?.self, returning: [Element].self)
-  { group in
-   forEach { object in
-    guard let context = object.managedObjectContext else { return }
-    group.addTask {
-     try Task.checkCancellation()
-     if ( await context.perform { object.isDeleted }) { return nil }
-     return try await object.withFileStorage()
-     
-    }
-   }
-   return try await group.compactMap{ $0 }.reduce(into: []) { $0.append($1) }
-  }
- }
- 
-}
-
-@available(iOS 15.0, macOS 12.0, *)
-public extension NSManagedObject {
- 
- func updated<T: NSManagedObject>(_ block: ( (T) throws -> () )? ) async throws -> T {
-  //print (#function)
-  
-  try Task.checkCancellation()
- 
-  guard let context = self.managedObjectContext else {
-   throw ContextError.noContext(object: self, entity: .object, operation: .updateObject)
-  }
- 
-  guard let block = block else { return self as! T }
- 
-  return try await context.perform { [ unowned self ] in
-   do {
-    try Task.checkCancellation()
-    
-    guard self.isDeleted == false else {
-     throw ContextError.isDeleted(object: self, entity: .object, operation: .updateObject)
-    }
-    
-    try block(self as! T)
-    return self as! T
-   }
-   catch {
-    context.delete(self)
-    throw error
-   }
-  }
- }
- 
- 
- 
- 
- func persisted<T: NSManagedObject>(_ persist: Bool = true ) async throws -> T {
-  try Task.checkCancellation()
-  
-  guard persist else { return self as! T }
- 
-  guard let context = self.managedObjectContext else {
-   throw ContextError.noContext(object: self, entity: .object, operation: .persistObject )
-  }
-  
-  return try await context.perform { [ unowned self ] in
-   try Task.checkCancellation()
-   guard self.hasChanges else { return self as! T }
-   try context.save()
-   return self as! T
-  }
- }
- 
- func withFileStorage<T: NSManagedObject>() async throws -> T {
-  try Task.checkCancellation()
-  guard let manageStorage = self as? NMFileStorageManageable else { return self as! T  }
-  return try await manageStorage.withFileStorage() as! T
- }
- 
- 
- //MARK: ASYNC METHOD TO UPDATE GPS COORDINATES OF CONFORMED OBJECT AND THEN GEOCODE THEM INTO STRING ADDRESS.
- func withGeoLocations<G, N>(with geocoderType: G.Type,
-                             using networkMonitorType: N.Type) async throws -> NSManagedObject
-                             where G: NMGeocoderProtocol,
-                                   N: NMNetworkMonitorProtocol {
-  
-  try Task.checkCancellation()
-  guard let context = self.managedObjectContext else {
-   throw ContextError.noContext(object: self, entity: .object, operation: .updateObject)
-  }
- 
-  try await context.perform {
-   guard self.isDeleted == false else {
-    throw ContextError.isDeleted(object: self, entity: .object, operation: .updateObject)
-   }
-  }
-  
-  guard let withLocations = self as? NMGeoLocationProvidable else { return self }
-  
-  guard let locationsProvider = withLocations.locationsProvider else { return self }
-                                    
-  print (#function, "START... \(locationsProvider)")
-                                    
-  switch (await context.perform { (withLocations.geoLocation, withLocations.location) }) {
-   case (let location?, nil ):
-    try Task.checkCancellation()
-    let locationStr = try await location.getPlacemark(with: G.self, using: N.self).addressString
-    
-    try await context.perform {
-     try Task.checkCancellation()
-     guard withLocations.managedObjectContext != nil else { return }
-     withLocations.location = locationStr
-    }
-    
-   case ( nil , nil ):
-    try Task.checkCancellation()
-    print ("AWAIT FOR LOCATION FIX...")
-    let location = try await locationsProvider.locationFix
-    
-    print ("AWAIT FOR PLACEMARK...")
-    try await context.perform {
-     try Task.checkCancellation()
-     guard withLocations.managedObjectContext != nil else { return }
-    
-     withLocations.geoLocation = location
-     
-     print ("UPDATED GEO LOCATION FOR \(String(describing: Swift.type(of: self))) IN {\(String(describing: withLocations.managedObjectContext))} with VALUE: \(location)")
-    }
-    
-    try Task.checkCancellation()
-    let address = try await location.getPlacemark(with: G.self, using: N.self).addressString
-    try await context.perform {
-     try Task.checkCancellation()
-     guard withLocations.managedObjectContext != nil else { return }
-     withLocations.location = address
-     
-
-     print ("UPDATED GEOCODED ADDRESS \(String(describing: Swift.type(of: self))) IN {\(String(describing: withLocations.managedObjectContext))} with VALUE: \(address)")
-    }
-    
-   
-    // print ("PLACEMARK IS READY \(address)")
-    
-   
-   default: break
-    
-  }
-//  print (#function, "IS DONE!")
-  return self
- 
- }//func withGeoLocations<G, N>(with geocoderType: G.Type,...
- 
-}//public extension NSManagedObject...
-
-
-
 // MARK: CREATE MO operations with model context with async API
 @available(iOS 15.0, macOS 12.0, *)
 public extension NMCoreDataModel {
@@ -230,34 +18,30 @@ public extension NMCoreDataModel {
    (newObject as? NMGeoLocationProvidable)?.locationsProvider = locationsProvider
    //(newObject as? NMDateGroupStateObservable)?.dateGroupStateUpdater = dateGroupStateUpdater
    return newObject
-  }.updated(updates)   //1
+  }.updated(updates)     //1
    .persisted(persist)   //2
    .withFileStorage()    //3
  }
  
- //MARK: CREATE single type child element with parent container in main context.
-// func create<T, P> (in parent: P, persist: Bool = false,
-//                    contained: T.Type,
-//                    with updates: ((T) throws -> ())? = nil) async throws -> T
-//
-// where P: NMContentElementsContainer, P.SingleType == T {
-//  try await create(persist: persist, objectType: T.self){
-//   parent.insert(newElements: [$0])
-//   try updates?($0)
-//  }
-// }
  
-  //MARK: CREATE folder type child element with parent container in main context.
-// func create<T, P> (in parent: P, persist: Bool = false,
-//                    contained: T.Type,
-//                    with updates: ((T) throws -> ())? = nil) async throws -> T
-// 
-// where P: NMContentElementsContainer, P.FolderType == T {
-//  try await create(persist: persist, objectType: T.self){
-//   parent.insert(newElements: [$0])
-//   try updates?($0)
-//  }
-// }
+ //Helper variant for snippet recovery with existing UUID.
+ @discardableResult
+ func create<T: NMBaseSnippet>(with ID: UUID,
+                               persist: Bool = false,
+                               objectType: T.Type,
+                               with updates: ((T) throws -> ())? = nil) async throws -> T {
+  
+  let modelMainContext = await mainContext
+  return try await mainContext.perform { [ unowned self ] () -> T in
+   try Task.checkCancellation()
+   let newObject = T(context: modelMainContext)
+   newObject.id = ID
+   newObject.locationsProvider = locationsProvider
+   return newObject
+  }.updated(updates)     //1
+   .persisted(persist)   //2
+   .withFileStorage()    //3
+ }
   
  // MARK: CREATE in main context using entity description.
  @discardableResult
@@ -301,7 +85,7 @@ public extension NMCoreDataModel {
    
   }
  }
- 
+
  // MARK: CREATE a batch of homogeneous MOs in MAIN context.
  func create<T: NSManagedObject>(persist: Bool,
                                  objectType: T.Type,

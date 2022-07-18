@@ -2,11 +2,18 @@ import Foundation
 
 public actor NMUndoSession: NSObject {
  
+ public fileprivate (set) var isExecuted = false
+ 
+ public var isEmpty: Bool { blockOperations.isEmpty }
+ public var blockCount: Int { blockOperations.count }
+ 
  unowned fileprivate let targetObject: AnyObject
  
  @MainActor public private(set) var isOpen: Bool
  
  @MainActor public static var current: NMUndoSession? { currentSession }
+ 
+ public fileprivate(set) lazy var redoSession = NMUndoSession(target: targetObject)
  
  @MainActor public static var hasOpenSession: Bool {
   guard let currentSession = currentSession, currentSession.isOpen else { return false }
@@ -22,19 +29,22 @@ public actor NMUndoSession: NSObject {
  //public var sessionTask: Task<Void, Error>?
  
  fileprivate var blockOperations = [UMUndoBlockOperation]()
- fileprivate lazy var redoSession = NMUndoSession(target: targetObject)
  
  @MainActor fileprivate static var closeContinuations = [CheckedContinuation<Void, Never>]()
  
  @MainActor fileprivate static var undoRegistrationTask: Task<Void, Never>?
  @MainActor fileprivate static var redoRegistrationTask: Task<Void, Never>?
  
+ fileprivate func setExecutedState(_ state: Bool ) { isExecuted = state }
  
  public func undoTask(dependency: Task<Void, Error>?) -> Task<Void, Error> {
   Task.detached { [ unowned self ] in
    try await dependency?.value
    let operations = await blockOperations
    for op in operations.reversed() { try await op.execute() }
+   await setExecutedState(true)
+   await redoSession.setExecutedState(false)
+   
   }
  }
  
@@ -43,6 +53,8 @@ public actor NMUndoSession: NSObject {
    try await dependency?.value
    let operations = await redoSession.blockOperations
    for op in operations { try await op.execute() }
+   await redoSession.setExecutedState(true)
+   await setExecutedState(false)
   }
  }
  
@@ -81,7 +93,7 @@ public actor NMUndoSession: NSObject {
  
  // attach new undo/redo task
  fileprivate func add(_ block: @Sendable @escaping () async throws -> () ) async {
-  blockOperations.append(.init(block: block))
+  blockOperations.append(.init(block))
  }
  
  @MainActor public static func registerUndo(_ block: @Sendable @escaping () async throws -> () ) async {
