@@ -1,7 +1,10 @@
 import Foundation
 
-public enum ContextOperationTypes: String
-{
+public enum ContextOperationTypes: String {
+ 
+ case JSONEncodingObject = "ENCODING MANAGED OBJECT INDO JSON"
+ case JSONDecodingObject = "DECODING MANAGED OBJECT FROM JSON"
+ 
  case updateObject = "UPDATING MANAGED OBJECT"
  case persistObject = "PERSISTING MANAGED OBJECT"
  
@@ -59,6 +62,8 @@ public enum ContextEntityTypes: String {
  case singleContentElement = "SINGLE CONTENT ELEMENT"
  case folderContentElement = "FOLDER CONTENT ELEMENT"
  
+ case baseContent = "BASE ABSTRACT CONTENT ELEMENT"
+ case baseSnippet = "BASE ABSTRACT SNIPPET"
  case snippet = "SNIPPET"
  case contentElementContainer = "CONTENT ELEMENTS CONTAINER"
  case contentFolder = "CONTENT ELEMENTS FOLDER"

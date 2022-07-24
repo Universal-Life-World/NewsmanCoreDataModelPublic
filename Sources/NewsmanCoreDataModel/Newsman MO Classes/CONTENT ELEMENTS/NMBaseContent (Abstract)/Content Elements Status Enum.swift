@@ -2,7 +2,8 @@ import Foundation
 
 @available(iOS 13.0, *)
 public extension NMBaseContent {
- enum ContentStatus: String, CaseIterable, NMEnumCasesStringLocalizable, NMEnumOptionalCasesManageable {
+ enum ContentStatus: String, Codable, CaseIterable,
+                      NMEnumCasesStringLocalizable, NMEnumOptionalCasesManageable {
   
   public static var isolationQueue = DispatchQueue(label: "Content Element Status")
   

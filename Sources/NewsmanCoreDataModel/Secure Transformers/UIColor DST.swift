@@ -2,8 +2,7 @@
 import UIKit
 
 @available(iOS 12.0, *)
-public final class UIColorDataSecureTransformer: NSSecureUnarchiveFromDataTransformer
-{
+public final class UIColorDataSecureTransformer: NSSecureUnarchiveFromDataTransformer {
   
   public static let name = NSValueTransformerName(rawValue: String(describing: UIColorDataSecureTransformer.self))
  

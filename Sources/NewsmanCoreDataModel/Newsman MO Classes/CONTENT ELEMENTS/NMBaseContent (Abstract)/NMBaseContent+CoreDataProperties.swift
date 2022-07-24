@@ -18,8 +18,7 @@ import AppKit
 extension NMBaseContent
 {
 
-    @nonobjc public class func fetchRequest() -> NSFetchRequest<NMBaseContent>
-    {
+    @nonobjc public class func fetchRequest() -> NSFetchRequest<NMBaseContent> {
      NSFetchRequest<NMBaseContent>(entityName: "NMBaseContent")
     }
 
@@ -55,15 +54,15 @@ extension NMBaseContent
     @NSManaged public var latitude: NSNumber?
     @NSManaged public var location: String?
     @NSManaged public var longitude: NSNumber?
-    @NSManaged public var positions: NSMutableDictionary?
-    @NSManaged public var priority: String?
+    //@NSManaged public var positions: NSMutableDictionary?  get/set using primitive
+    //@NSManaged public var priority: String? get/set using primitive with enum ContentPriority
     @NSManaged public var publishedTimeStamp: Date?
     @NSManaged public var ratedCount: Int64
     @NSManaged public var rating: Double
     //@NSManaged public var status: String? get/set using primitive
     //@NSManaged public var tag: String? get/set using primitive 
     @NSManaged public var trashedTimeStamp: Date?
-    @NSManaged public var type: Int16
+    //@NSManaged public var type: Int16 get/set using primitive with enum ContentType
     @NSManaged public var attachedToChatItems: NSSet?
     @NSManaged public var connectedWithTopNews: NSSet?
 

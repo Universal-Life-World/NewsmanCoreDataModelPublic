@@ -2,14 +2,15 @@
 import Foundation
 
 @available(iOS 13.0, *)
-public extension NMBaseSnippet {
- enum SnippetPriority: String, CaseIterable, Codable,
+public extension NMBaseContent {
+ enum ContentPriority: String, CaseIterable, Codable,
                        NMEnumCasesStringLocalizable,
                        NMEnumOptionalCasesManageable, Comparable {
-  public static func < (lhs: SnippetPriority, rhs: SnippetPriority) -> Bool { lhs.section < rhs.section }
   
-  public static var isolationQueue =  DispatchQueue(label: "Snippet Priority")
- 
+  public static func < (lhs: ContentPriority, rhs: ContentPriority) -> Bool { lhs.section < rhs.section }
+  
+  public static var isolationQueue =  DispatchQueue(label: "Content Priority")
+  
   static public var enabled = Dictionary(uniqueKeysWithValues: allCases.map{($0, true)})
   
   static let prioritySectionsMap: [Self: Int] = [
@@ -25,14 +26,14 @@ public extension NMBaseSnippet {
   var section: Int { Self.prioritySectionsMap[self]!}
   
   static let strings: [String] = allCases.map{ $0.rawValue }
- 
+  
   case hottest =  "0_Hottest"
   case hot     =  "1_Hot"
   case high    =  "2_High"
   case normal  =  "3_Normal"
   case medium  =  "4_Medium"
   case low     =  "5_Low"
-
+  
  }
  
 }

@@ -108,7 +108,8 @@ public extension NMContentElement where Self:    NMFileStorageManageable & NMUnd
   
   try await folder?.autoremoveIfNeeded()
   
-  return self//try await self.updated(updates)
+  return try await self.persisted(persist)
+ 
   
  }
  

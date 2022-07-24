@@ -33,6 +33,10 @@ public enum ContextError {
                 entity: ContextEntityTypes,
                 operation: ContextOperationTypes)
  
+ case noDecodableContext(decoder: Decoder,
+                         entity: ContextEntityTypes,
+                         operation: ContextOperationTypes)
+ 
  case isInvalid(object: NSManagedObject,
                 entity: ContextEntityTypes,
                 operation: ContextOperationTypes)
@@ -109,6 +113,9 @@ extension ContextError: LoggableError {
    
    case let .noContext(object: o, entity: e, operation: op):
     return "\(op + e): <\(o.objectID)> \(e.rawValue) HAS NO ASSOCIATED CONTEXT!"
+    
+   case let .noDecodableContext(decoder: d, entity: e, operation: op):
+    return "\(op + e): using decoder <\(d)> \(e.rawValue) HAS NO ASSOCIATED CONTEXT!"
    
    case let .noURL(object: o, entity: e, operation: op):
     return "\(op + e): <\(o.objectID)> \(e.rawValue) HAS NO DATA URL!"

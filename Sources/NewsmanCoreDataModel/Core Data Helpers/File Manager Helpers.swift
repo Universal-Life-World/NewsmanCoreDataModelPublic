@@ -136,15 +136,22 @@ public extension FileManager
   try await FileManager.moveItemOnDisk(from: undoTargetURL, to: destinURL)
   
   await NMUndoSession.register {
+   
+   guard FileManager.default.fileExists(atPath: destinURL.path) else { return }
+   guard FileManager.default.fileExists(atPath: undoTargetURL.deletingLastPathComponent().path) else { return }
    try await FileManager.moveItemOnDisk(from: destinURL, to: undoTargetURL)
+   
   } with: {
+   
+   guard FileManager.default.fileExists(atPath: destinURL.deletingLastPathComponent().path) else { return }
+   guard FileManager.default.fileExists(atPath: undoTargetURL.path) else { return }
    try await FileManager.moveItemOnDisk(from: undoTargetURL, to: destinURL)
+   
   }
   
  }
 
- static func removeItemFromDisk (at url: URL, completion: @escaping (Result<Void, Error>) -> ())
- {
+ static func removeItemFromDisk (at url: URL, completion: @escaping (Result<Void, Error>) -> ()) {
   DispatchQueue.global(qos: .userInitiated).async {
    completion(Result{ try FileManager.default.removeItem(at: url) })
   }
@@ -152,8 +159,7 @@ public extension FileManager
  
  
 
- static func removeItemFromDisk (at url: URL) -> Result<Void, Error>
- {
+ static func removeItemFromDisk (at url: URL) -> Result<Void, Error> {
   Result{ try FileManager.default.removeItem(at: url) }
  }
  

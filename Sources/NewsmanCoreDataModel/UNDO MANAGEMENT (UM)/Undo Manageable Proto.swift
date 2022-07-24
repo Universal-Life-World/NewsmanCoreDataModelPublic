@@ -5,12 +5,24 @@ public protocol NMUndoManageable where Self: NSManagedObject {
 }
 
 
+@available(iOS 15.0, *)
 public extension NMUndoManageable {
  func withRegisteredUndoManager(targetID: UUID) async -> Self {
   guard let registeredUndoManager = await NMUndoManager[targetID] else { return self }
   await MainActor.run{ self.undoManager = registeredUndoManager }
   return self
  }
+ 
+ @discardableResult func undo(persist: Bool = false) async throws -> Self {
+  try await undoManager.undo()
+  return try await self.persisted(persist)
+ }
+ 
+ @discardableResult func redo(persist: Bool = false) async throws -> Self {
+  try await undoManager.redo()
+  return try await self.persisted(persist)
+ }
+ 
 }
 
 

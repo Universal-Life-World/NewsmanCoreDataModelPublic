@@ -97,9 +97,9 @@ public actor NMUndoSession: NSObject {
  }
  
  @MainActor public static func registerUndo(_ block: @Sendable @escaping () async throws -> () ) async {
-  let currentTask = self.undoRegistrationTask
+  let currentTask = undoRegistrationTask
   
-  self.undoRegistrationTask = Task {
+  undoRegistrationTask = Task {
    await currentTask?.value
    await currentSession?.add(block)
   }
@@ -108,9 +108,9 @@ public actor NMUndoSession: NSObject {
  
  
  @MainActor public static func registerRedo(_ block: @Sendable @escaping () async throws -> () ) async {
-  let currentTask = self.redoRegistrationTask
+  let currentTask = redoRegistrationTask
   
-  self.redoRegistrationTask = Task {
+  redoRegistrationTask = Task {
    await currentTask?.value
    await currentSession?.redoSession.add(block)
   }

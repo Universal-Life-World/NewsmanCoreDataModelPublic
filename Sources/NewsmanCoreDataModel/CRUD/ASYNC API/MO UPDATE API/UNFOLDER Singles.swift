@@ -87,7 +87,8 @@ public extension NMContentElement where Self.Snippet.Folder == Self.Folder,
     
      //try await Task.sleep(nanoseconds: .random(in: 5000...15000))
      //create some latency for testing...
-    try await FileManager.moveItemOnDisk(from: sourceURL, to: destURL)
+    
+    try await FileManager.moveItemOnDisk(undoTargetURL: sourceURL, to: destURL)
     
    }
    

@@ -16,6 +16,103 @@ public actor NMUndoManager: NSObject {
  
  public var sessionCount: Int { undoStack.count }
  
+ public var executedUndoSessions: [NMUndoSession] {
+  get async throws {
+   try await withThrowingTaskGroup(of: (NMUndoSession, Bool).self, returning: [NMUndoSession].self){ group in
+    undoStack.forEach { session in
+     group.addTask{ (session, await session.isExecuted) }
+    }
+    return try await group.filter{$0.1}.reduce(into: []){ $0.append($1.0)}
+     
+   }
+  }
+ }
+ 
+ public var lastExecutedUndo: NMUndoSession? {
+  get async throws { try await executedUndoSessions.first }
+ }
+ 
+ public var firstExecutedUndo: NMUndoSession? {
+  get async throws { try await executedUndoSessions.last }
+ }
+  
+ public var executedUndoCount: Int {
+  get async throws { try await executedUndoSessions.count }
+ }
+ 
+ public var executedRedoSessions: [NMUndoSession] {
+  get async throws {
+   try await withThrowingTaskGroup(of: (NMUndoSession, Bool).self, returning: [NMUndoSession].self){ group in
+    undoStack.forEach { session in
+     group.addTask{ (session, await session.redoSession.isExecuted) }
+    }
+    return try await group.filter{$0.1}.reduce(into: []){ $0.append($1.0)}
+    
+   }
+  }
+ }
+ 
+ public var lastExecutedRedo: NMUndoSession? {
+  get async throws { try await executedRedoSessions.last }
+ }
+ 
+ public var firstExecutedRedo: NMUndoSession? {
+  get async throws { try await executedRedoSessions.first }
+ }
+ 
+ public var executedRedoCount: Int {
+  get async throws { try await executedRedoSessions.count }
+ }
+ 
+ public var unexecutedUndoSessions: [NMUndoSession] {
+  get async throws {
+   try await withThrowingTaskGroup(of: (NMUndoSession, Bool).self, returning: [NMUndoSession].self){ group in
+    undoStack.forEach { session in
+     group.addTask{ (session, await session.isExecuted) }
+    }
+    return try await group.filter{!$0.1}.reduce(into: []){ $0.append($1.0)}
+    
+   }
+  }
+ }
+ 
+ public var lastUnexecutedUndo: NMUndoSession? {
+  get async throws { try await unexecutedUndoSessions.first }
+ }
+ 
+ public var firstUnexecutedUndo: NMUndoSession? {
+  get async throws { try await unexecutedUndoSessions.last }
+ }
+ 
+ public var unexecutedUndoCount: Int {
+  get async throws { try await unexecutedUndoSessions.count }
+ }
+ 
+ 
+ public var unexecutedRedoSessions: [NMUndoSession] {
+  get async throws {
+   try await withThrowingTaskGroup(of: (NMUndoSession, Bool).self, returning: [NMUndoSession].self){ group in
+    undoStack.forEach { session in
+     group.addTask{ (session, await session.redoSession.isExecuted) }
+    }
+    return try await group.filter{!$0.1}.reduce(into: []){ $0.append($1.0)}
+    
+   }
+  }
+ }
+ 
+ public var lastUnexecutedRedo: NMUndoSession? {
+  get async throws { try await unexecutedRedoSessions.last }
+ }
+ 
+ public var firstUnexecutedRedo: NMUndoSession? {
+  get async throws { try await unexecutedRedoSessions.first }
+ }
+ 
+ public var unexecutedRedoCount: Int {
+  get async throws { try await unexecutedRedoSessions.count }
+ }
+ 
  public var isEmpty: Bool { undoStack.isEmpty }
  
  public var currentUndo: NMUndoSession?{ undoStackPointer < 0 ? nil : undoStack[undoStackPointer] }
