@@ -18,7 +18,7 @@ public protocol NMGeoLocationProvidable where Self: NSManagedObject {
  //@available(iOS 15.0, macOS 12.0, *)
  //func updateGeoLocationsAfterFetch() //PROVIDED IN PROTO EXT!
  
- var updateGeoLocationsTask: Task<NSManagedObject, Error>? { get set }//NEEDED FOR FULLY ASYNC API!
+ var updateGeoLocationsTask: Task<NSManagedObject, Error>? { get set } //NEEDED FOR FULLY ASYNC API!
  
 // func updateGeoLocations<G, N> (with geocoderType: G.Type,
 //                                using networkWaiterType: N.Type)
@@ -110,6 +110,8 @@ extension NMGeoLocationProvidable {
   }
  }
  
+ 
+
  public var geoLocation: NMLocation? {
   
   get {
@@ -125,7 +127,7 @@ extension NMGeoLocationProvidable {
   }
  }
  
-}
+}// ext....
 
 //@available(iOS 14.0, *)
 @available(iOS 15.0, macOS 12.0, *)
@@ -138,7 +140,7 @@ extension NMGeoLocationProvidable {
     throw ContextError.noContext(object: self, entity: .object, operation: .updateObject)
    }
    
-   return await context.perform{ [unowned self] in geoLocation }
+   return await context.perform{ [unowned self] in self.geoLocation }
   }
  }
  

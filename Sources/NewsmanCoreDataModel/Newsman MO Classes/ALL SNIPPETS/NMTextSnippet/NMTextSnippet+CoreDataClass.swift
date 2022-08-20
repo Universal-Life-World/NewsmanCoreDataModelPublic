@@ -39,6 +39,8 @@ extension NMTextSnippet: NMContentElementsContainer {
  
  public func addToContainer(folders: [NMTextFolder]) {
   addToTextFolders(.init(array: folders))
+  addToContainer(singleElements: folders.flatMap{ $0.folderedElements } )
+   //add all folders' children to this snippet container as well!
  }
  
  public func removeFromContainer(folders: [NMTextFolder]) {

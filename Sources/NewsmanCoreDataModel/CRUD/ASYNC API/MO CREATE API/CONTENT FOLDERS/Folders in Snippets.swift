@@ -9,8 +9,6 @@ extension NMContentElementsContainer where Self.Element: NMContentElement,
                                            Self.Folder.Snippet == Self {
  
  
- 
- 
  fileprivate func insert(newFolders: [Folder]) {
   let new = newFolders.filter { $0.isValid }
   if new.isEmpty { return }

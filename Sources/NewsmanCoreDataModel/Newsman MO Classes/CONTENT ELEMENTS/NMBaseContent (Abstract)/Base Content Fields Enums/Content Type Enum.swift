@@ -1,4 +1,5 @@
 import Foundation
+import CoreData
 
 @available(iOS 13.0, *)
 public extension NMBaseContent {
@@ -21,8 +22,23 @@ public extension NMBaseContent {
      
     default: self = .baseContent
    }
+   
+   
   }
   
+  public var entity: NSEntityDescription { Self.entityDescriptionsMap[self]! }
+  
+  private static let entityDescriptionsMap : [Self : NSEntityDescription ] = [
+   .photo         :   NMPhoto.entity(),
+   .photoFolder   :   NMPhotoFolder.entity(),
+   .audio         :   NMAudio.entity(),
+   .audioFolder   :   NMAudioFolder.entity(),
+   .video         :   NMVideo.entity(),
+   .videoFolder   :   NMVideoFolder.entity(),
+   .text          :   NMText.entity(),
+   .textFolder    :   NMTextFolder.entity(),
+   .mixedFolder   :   NMMixedFolder.entity()
+  ]
   
   case baseContent  = 0 // the case for abstract
   

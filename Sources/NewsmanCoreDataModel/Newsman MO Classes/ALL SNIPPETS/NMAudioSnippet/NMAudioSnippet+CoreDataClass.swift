@@ -38,6 +38,9 @@ extension NMAudioSnippet: NMContentElementsContainer {
  
  public func addToContainer(folders: [NMAudioFolder]) {
   addToAudioFolders(.init(array: folders))
+  addToContainer(singleElements: folders.flatMap{ $0.folderedElements } )
+   //add all folders' children to this snippet container as well!
+  
  }
  
  public func removeFromContainer(folders: [NMAudioFolder]) {
@@ -46,6 +49,7 @@ extension NMAudioSnippet: NMContentElementsContainer {
 
  public var folders: [NMAudioFolder] {
   (audioFolders?.allObjects ?? []).compactMap{$0 as? NMAudioFolder }
+  
  }
  
  public var singleContentElements: [NMAudio] {

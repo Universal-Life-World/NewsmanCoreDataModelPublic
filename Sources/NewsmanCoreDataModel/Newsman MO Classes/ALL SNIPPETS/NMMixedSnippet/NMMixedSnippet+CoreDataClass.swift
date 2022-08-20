@@ -104,12 +104,11 @@ extension NMMixedSnippet: NMContentElementsContainer  {
  }
  
  public func addToContainer(singleElements: [NMBaseContent]) {
-  addToTexts (.init(array: singleElements.compactMap{$0 as? NMText}))
-  addToAudios(.init(array: singleElements.compactMap{$0 as? NMAudio}))
-  addToVideos(.init(array: singleElements.compactMap{$0 as? NMVideo}))
-  addToPhotos(.init(array: singleElements.compactMap{$0 as? NMPhoto}))
+  addToTexts (.init(array: singleElements.compactMap{$0 as? NMText }.modified{$0.textSnippet  = nil } ))
+  addToAudios(.init(array: singleElements.compactMap{$0 as? NMAudio}.modified{$0.audioSnippet = nil } ))
+  addToVideos(.init(array: singleElements.compactMap{$0 as? NMVideo}.modified{$0.videoSnippet = nil } ))
+  addToPhotos(.init(array: singleElements.compactMap{$0 as? NMPhoto}.modified{$0.photoSnippet = nil } ))
  }
- 
  
  
  public func removeFromContainer(singleElements: [NMBaseContent]) {
@@ -119,20 +118,63 @@ extension NMMixedSnippet: NMContentElementsContainer  {
   removeFromPhotos(.init(array: singleElements.compactMap{$0 as? NMPhoto}))
  }
  
+ 
  public func addToContainer(folders: [NMBaseContent]) {
-  addToMixedFolders(.init(array: folders.compactMap{$0 as? NMMixedFolder}))
-  addToTextFolders (.init(array: folders.compactMap{$0 as? NMTextFolder}))
-  addToAudioFolders(.init(array: folders.compactMap{$0 as? NMAudioFolder}))
-  addToVideoFolders(.init(array: folders.compactMap{$0 as? NMVideoFolder}))
-  addToPhotoFolders(.init(array: folders.compactMap{$0 as? NMPhotoFolder}))
+  
+  let photoFolders = folders.compactMap{ $0 as? NMPhotoFolder }
+  addToPhotoFolders(.init(array: photoFolders))
+  let allPhotoFoldered = photoFolders.flatMap{ $0.folderedElements }
+  addToContainer(singleElements: allPhotoFoldered)
+  
+  let textFolders = folders.compactMap{ $0 as? NMTextFolder}
+  addToTextFolders (.init(array: textFolders ))
+  let allTextFoldered = textFolders.flatMap{ $0.folderedElements }
+  addToContainer(singleElements: allTextFoldered)
+  
+  let audioFolders = folders.compactMap{ $0 as? NMAudioFolder }
+  addToAudioFolders(.init(array: audioFolders))
+  let allAudioFoldered = audioFolders.flatMap{ $0.folderedElements }
+  addToContainer(singleElements: allAudioFoldered)
+  
+  let videoFolders = folders.compactMap{ $0 as? NMVideoFolder }
+  addToVideoFolders(.init(array: videoFolders))
+  let allVideoFoldered = videoFolders.flatMap{ $0.folderedElements }
+  addToContainer(singleElements: allVideoFoldered)
+  
+  let mixedFolders = folders.compactMap{ $0 as? NMMixedFolder }
+  addToMixedFolders(.init(array: mixedFolders))
+  let allMixedFoldered = mixedFolders.flatMap{ $0.folderedElements }
+  addToContainer(singleElements: allMixedFoldered)
+  
  }
  
  public func removeFromContainer(folders: [NMBaseContent]) {
-  removeFromMixedFolders(.init(array: folders.compactMap{$0 as? NMMixedFolder}))
-  removeFromTextFolders (.init(array: folders.compactMap{$0 as? NMTextFolder}))
-  removeFromAudioFolders(.init(array: folders.compactMap{$0 as? NMAudioFolder}))
-  removeFromVideoFolders(.init(array: folders.compactMap{$0 as? NMVideoFolder}))
-  removeFromPhotoFolders(.init(array: folders.compactMap{$0 as? NMPhotoFolder}))
+  
+  let photoFolders = folders.compactMap{ $0 as? NMPhotoFolder }
+  removeFromPhotoFolders(.init(array: photoFolders))
+  let allPhotoFoldered = photoFolders.flatMap{ $0.folderedElements }
+  removeFromContainer(singleElements: allPhotoFoldered)
+  
+  let textFolders = folders.compactMap{ $0 as? NMTextFolder }
+  removeFromTextFolders (.init(array: textFolders ))
+  let allTextFoldered = textFolders.flatMap{ $0.folderedElements }
+  removeFromContainer(singleElements: allTextFoldered)
+  
+  let audioFolders = folders.compactMap{ $0 as? NMAudioFolder }
+  removeFromAudioFolders(.init(array: audioFolders))
+  let allAudioFoldered = audioFolders.flatMap{ $0.folderedElements }
+  removeFromContainer(singleElements: allAudioFoldered)
+  
+  let videoFolders = folders.compactMap{ $0 as? NMVideoFolder }
+  removeFromVideoFolders(.init(array: videoFolders))
+  let allVideoFoldered = videoFolders.flatMap{ $0.folderedElements }
+  removeFromContainer(singleElements: allVideoFoldered)
+ 
+  let mixedFolders = folders.compactMap{ $0 as? NMMixedFolder }
+  removeFromMixedFolders(.init(array: mixedFolders))
+  let allMixedFoldered = mixedFolders.flatMap{ $0.folderedElements }
+  removeFromContainer(singleElements: allMixedFoldered)
+  
  }
  
 

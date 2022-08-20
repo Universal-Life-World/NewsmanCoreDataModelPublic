@@ -1,5 +1,20 @@
 import Foundation
 
+
+public func withOpenUndoSession(of target: NMUndoManageable, action: () async throws -> () ) async rethrows {
+ await NMUndoSession.open(target: target)  //OPEN UNDO/REDO SESSION!
+ try await action()
+ await NMUndoSession.close() //CLOSE UNDO/REDO SESSION AFTER MOVE!
+
+}
+
+public func withGlobalUndoSession( action: () async throws -> () ) async rethrows {
+ let globalTarget = NMGlobalUndoManager.shared
+ await NMUndoSession.open(target: globalTarget)  //OPEN UNDO/REDO SESSION!
+ try await action()
+ await NMUndoSession.close() //CLOSE UNDO/REDO SESSION AFTER MOVE
+}
+
 public actor NMUndoSession: NSObject {
  
  public fileprivate (set) var isExecuted = false
@@ -7,7 +22,7 @@ public actor NMUndoSession: NSObject {
  public var isEmpty: Bool { blockOperations.isEmpty }
  public var blockCount: Int { blockOperations.count }
  
- unowned fileprivate let targetObject: AnyObject
+ unowned fileprivate let targetObject: NMUndoManageable
  
  @MainActor public private(set) var isOpen: Bool
  
@@ -62,9 +77,11 @@ public actor NMUndoSession: NSObject {
  // opens new undo/redo session with target object without blocking.
  // if current session is open all undo/redo tasks are registered with this open current session.
  // if you try to open new session the session will not be opened until you close current one
- @MainActor public static func open(target: AnyObject) async {
+ @MainActor public static func open(target: NMUndoManageable) async {
   guard currentSession == nil else { return }
-  currentSession = NMUndoSession(target: target)
+  let newSession = NMUndoSession(target: target)
+  Self.currentSession = newSession
+  await target.undoManager.registerUndoSession(newSession)
  }
  
  @MainActor fileprivate static func closeWaiter() async  {
@@ -75,9 +92,11 @@ public actor NMUndoSession: NSObject {
  // opens new undo/redo session with target object with blocking.
  // if current session is open all undo/redo tasks are registered with this open current session.
  // you can try open other sessions but opening will wait for closing the current one.
- @MainActor public static func waitAndOpen(target: AnyObject) async {
+ @MainActor public static func waitAndOpen(target: NMUndoManageable) async {
   await closeWaiter()
-  currentSession = NMUndoSession(target: target)
+  let newSession = NMUndoSession(target: target)
+  Self.currentSession = newSession
+  await target.undoManager.registerUndoSession(newSession)
  }
  
  
@@ -85,9 +104,11 @@ public actor NMUndoSession: NSObject {
  @MainActor public static func close() async {
   
   if closeContinuations.count != 0 { closeContinuations.remove(at: 0).resume() }
-  currentSession = nil
+  
   await undoRegistrationTask?.value
   await redoRegistrationTask?.value
+  
+  currentSession = nil
  }
  
  
@@ -134,7 +155,7 @@ public actor NMUndoSession: NSObject {
   }
  }
  
- private init(target: AnyObject) {
+ private init(target: NMUndoManageable) {
   self.targetObject = target
   self.isOpen = true
   super.init()

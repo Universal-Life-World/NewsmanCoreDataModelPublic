@@ -23,9 +23,9 @@ extension NMBaseContent
     }
 
     @NSManaged public var archivedTimeStamp: Date?
-    @NSManaged public var arrowMenuPosition: NSValue?
+    //@NSManaged public var arrowMenuPosition: NSValue? get/set using primitive
     @NSManaged public var arrowMenuScaleFactor: Double
-    @NSManaged public var arrowMenuTouchPoint: NSValue?
+    //@NSManaged public var arrowMenuTouchPoint: NSValue? get/set using primitive
     @NSManaged public var ck_metadata: Data?
  
     #if !os(macOS)

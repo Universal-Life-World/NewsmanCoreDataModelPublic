@@ -31,6 +31,8 @@ public extension NMBaseContent {
   
  }
  
+
+ 
  subscript<Root: NMBaseContent, Value>(groupType: ContentGroupType<Root, Value>) -> Int? {
   get {
    if case .none = groupType { return nil }
@@ -39,7 +41,7 @@ public extension NMBaseContent {
   
   set {
    if case .none = groupType { return }
-   guard var positions = self.positions else { return }
+   var positions = (self.positions == nil) ? TContentPositions() : self.positions!
    positions[groupType.positionKey] = newValue
    self.positions = positions
   }
@@ -79,8 +81,7 @@ public extension NMBaseContent {
   }
   
   private enum SortOrder: String, Codable {
-   case ascending,
-        descending
+   case ascending, descending
   }
   
 

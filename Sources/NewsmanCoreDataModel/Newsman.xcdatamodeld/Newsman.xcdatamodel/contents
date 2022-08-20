@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="20086" systemVersion="21F79" minimumToolsVersion="Xcode 11.0" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="20086" systemVersion="21G69" minimumToolsVersion="Xcode 11.0" sourceLanguage="Swift" userDefinedModelVersionIdentifier="">
     <entity name="NMAudio" representedClassName="NMAudio" parentEntity="NMBaseContent" syncable="YES">
         <attribute name="defaultPreviewMode" attributeType="String" defaultValueString="Shows Static Waves"/>
         <attribute name="showsDuration" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
@@ -71,14 +71,14 @@
         <attribute name="normalizedSearchChildrenString" optional="YES" attributeType="String"/>
         <attribute name="normalizedSearchTag" attributeType="String" defaultValueString=""/>
         <attribute name="positions" optional="YES" attributeType="Transformable" valueTransformerName="NSSecureUnarchiveFromDataTransformer" customClassName=".NSMutableDictionary"/>
-        <attribute name="priority" attributeType="String" defaultValueString="Normal"/>
+        <attribute name="priority" attributeType="String" defaultValueString="3_Normal"/>
         <attribute name="publishedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="ratedCount" attributeType="Integer 64" minValueString="0" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="rating" attributeType="Double" minValueString="0" maxValueString="10" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="status" attributeType="String" defaultValueString="New"/>
         <attribute name="tag" attributeType="String" defaultValueString="Untagged Content Item"/>
         <attribute name="trashedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
-        <attribute name="type" attributeType="Integer 16" minValueString="0" maxValueString="5" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="type" attributeType="Integer 16" minValueString="0" maxValueString="9" defaultValueString="0" usesScalarValueType="YES"/>
         <relationship name="attachedToChatItems" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMChatItem" inverseName="attachments" inverseEntity="NMChatItem"/>
         <relationship name="connectedWithTopNews" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="NMTopNews" inverseName="relatedContentItems" inverseEntity="NMTopNews"/>
     </entity>

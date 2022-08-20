@@ -3,7 +3,7 @@ import CoreData
 @available(iOS 15.0, macOS 12.0, *)
 public extension NSManagedObject {
  
- func updated<T: NSManagedObject>(_ block: ( (T) throws -> () )? ) async throws -> T {
+ @discardableResult func updated<T: NSManagedObject>(_ block: ( (T) throws -> () )? ) async throws -> T {
   
   try Task.checkCancellation()
   
@@ -32,7 +32,7 @@ public extension NSManagedObject {
  }
  
  
- func persisted<T: NSManagedObject>(_ persist: Bool = true ) async throws -> T {
+ @discardableResult func persisted<T: NSManagedObject>(_ persist: Bool = true ) async throws -> T {
   try Task.checkCancellation()
   
   guard persist else { return self as! T }
@@ -49,7 +49,7 @@ public extension NSManagedObject {
   }
  }
  
- func withFileStorage<T: NSManagedObject>() async throws -> T {
+ @discardableResult func withFileStorage<T: NSManagedObject>() async throws -> T {
   try Task.checkCancellation()
   guard let manageStorage = self as? NMFileStorageManageable else { return self as! T  }
   return try await manageStorage.withFileStorage() as! T

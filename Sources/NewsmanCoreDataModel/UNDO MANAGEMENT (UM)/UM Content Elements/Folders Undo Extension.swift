@@ -215,79 +215,82 @@ extension NMUndoManageable where Self: NMContentFolder & NMFileStorageManageable
 
  public typealias TDeleteFolderUndoTask = TDeleteUndoTask<Self.Snippet>
  public typealias TDeleteFolderRedoTask = TDeleteRedoTask<Self>
+ public typealias TDeleteFolderUndoFromDataTask = TDeleteUndoFromDataTask<Self>
  
  
  public static var deleteFolderUndo: TDeleteFolderUndoTask {
-  { try await $0.createFolder(with: $1, from: $2, persist: true) }
+  { try await $0.createFolder(with: $1, from: $2, persist: $3) }
  }
  
- public static var deleteFolderRedo: TDeleteFolderRedoTask {{ try await $0.delete() }}
+ public static var deleteFolderRedo: TDeleteFolderRedoTask {
+  { try await $0.delete(withFileStorageRecovery: true, persisted: $1) }
+ }
  
  
-//MARK: Deletes folder MO from context & removes its underlying file storage directory from disk recoverably by moving it into temporary recovery directory& This method also registers child MOs (Content elements) for recovery as well.
+//MARK: Deletes folder MO from context & removes its underlying file storage directory from disk recoverably by moving it into temporary recovery directory. This method also registers child MOs (Content elements) for recovery as well.
  
  public func deleteFromContext(undo: @escaping TDeleteFolderUndoTask = Self.deleteFolderUndo ,
-                               redo: @escaping TDeleteFolderRedoTask = Self.deleteFolderRedo) async throws {
+                               redo: @escaping TDeleteFolderRedoTask = Self.deleteFolderRedo,
+                               persist: Bool = false) async throws {
    
-  
-  
-  guard let deletedFolderID = (await managedObjectContext?.perform { self.id }) else {
-   throw ContextError.noID(object: self,
-                           entity: .folderContentElement,
-                           operation: .deleteFromContextUndoably)
+  guard let context = self.managedObjectContext else {
+   throw ContextError.noContext(object: self, entity: .folderContentElement, operation: .delete)
   }
   
+  let folderID         = try await folderID
+  let folderedIDs      = try await folderedElementsIDsAsync
+  let sourceSnippet    = try await snippetAsync
+  let sourceSnippetID  = try await snippetID
   
-  guard let sourceSnippet = (await managedObjectContext?.perform { self.snippet }) else {
-   throw ContextError.noSnippet(object: self,
-                                entity: .folderContentElement,
-                                operation: .deleteFromContextUndoably)
-  }
-
-  guard let sourceSnippetID = (await managedObjectContext?.perform { sourceSnippet.id }) else {
-   throw ContextError.noID(object: sourceSnippet,
-                           entity: .contentElementContainer,
-                           operation: .deleteFromContextUndoably)
-  }
+  try await self.delete(withFileStorageRecovery: true, persisted: persist) //deletes from context with recovery!
   
-  let childElementsIDs = await managedObjectContext?.perform{ self.folderedElements.compactMap(\.id)} ?? []
-  
-  try await self.delete(withFileStorageRecovery: true) //deletes from context with recovery!
-  
-  await NMUndoSession.register { [ weak sourceSnippet, weak managedObjectContext ] in
-   
-   let sourceSnippet = await managedObjectContext?.perform { () -> Self.Snippet? in
+  await NMUndoSession.register { [ weak sourceSnippet ] in
+   let sourceSnippet = await context.perform { () -> Snippet? in
     if let sourceSnippet = sourceSnippet, sourceSnippet.isValid { return sourceSnippet }
-    guard let context = managedObjectContext else { return nil }
-    return Self.Snippet.existingSnippet(with: sourceSnippetID, in: context)
+    return Snippet.existingSnippet(with: sourceSnippetID, in: context)
    }
    
    guard let sourceSnippet = sourceSnippet else { return }
+   try await undo(sourceSnippet, folderID, folderedIDs, persist)
    
-   try await undo(sourceSnippet, deletedFolderID, childElementsIDs)
-   
-  } with: { [ weak sourceSnippet, weak managedObjectContext ] in
-   
-   let undeletedFolder = await managedObjectContext?.perform { () -> Self? in
-    if let sourceSnippet = sourceSnippet, sourceSnippet.isValid {
-     return sourceSnippet.folders.first{ $0.id == deletedFolderID }
-    }
-    guard let context = managedObjectContext else { return nil }
-    return Self.Snippet.existingSnippet(with: sourceSnippetID, in: context)?
-                       .folders.first{ $0.id == deletedFolderID }
-   }
-   
-   guard let undeletedFolder = undeletedFolder else { return }
-   
-   try await redo(undeletedFolder)
+  } with: {
+ 
+   guard let undeletedFolder = try? await Self.existingFolder(with: folderID, in: context) else { return }
+   try await redo(undeletedFolder, persist)
+  }
+ }
+ 
+ 
+ public static var deleteFolderUndoFromData: TDeleteFolderUndoFromDataTask {
+  { try await $0.jsonDecoded(from: $1, persist: $3, using: $2) }
+ }
+ 
+ //MARK: Deletes folder MO with children from context & removes its underlying file storage directory from disk recoverably by moving it into temporary recovery directory. This method fully deserialises the the folder tree from JSON encoded data buffer. Results are not persisted in MOC by default.
+ 
+ public func deleteWithRecovery(undo: @escaping TDeleteFolderUndoFromDataTask = Self.deleteFolderUndoFromData ,
+                                redo: @escaping TDeleteFolderRedoTask = Self.deleteFolderRedo,
+                                persist: Bool = false ) async throws
+ 
+ {
+
+  guard let context = self.managedObjectContext else {
+   throw ContextError.noContext(object: self, entity: .folderContentElement, operation: .deleteWithRecovery)
   }
   
+  let folderID = try await self.folderID     //fix FOLDER ID  before delete!
+  let folderData = try await self.jsonEncodedData //fix JSON data of folder before delete!
+  
+  try await self.delete(withFileStorageRecovery: true, persisted: persist) //deletes from context with recovery!
+  
+  await NMUndoSession.register { try await undo(Self.self, folderData, context, persist) } with: {
+   
+   guard let undeletedFolder = try? await Self.existingFolder(with: folderID, in: context) else { return }
+   
+   try await redo(undeletedFolder, persist)
+  }
   
  
-  
-
-  
   
  }
  
-}
+}//ext scope

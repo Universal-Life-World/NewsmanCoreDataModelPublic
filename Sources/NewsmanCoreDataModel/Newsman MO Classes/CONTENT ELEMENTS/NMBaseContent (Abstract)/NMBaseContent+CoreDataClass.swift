@@ -1,37 +1,74 @@
-//
+
 //  NMBaseContent+CoreDataClass.swift
 //  NewsmanCoreDataModel
-//
 //  Created by Anton2016 on 06.01.2022.
-//
-//
 
 import Foundation
 import CoreData
 import Combine
 
+
 @objc(NMBaseContent)
 public class NMBaseContent: NSManagedObject, Codable {
  
+ public var fileManagerTask: Task<Void, Error>?
+ 
+ @MainActor public lazy var undoManager = NMUndoManager(targetID: id)
+ /* Spawns the undo manager instace lazily when it is used on the main global actor as the SELF.ID must be accessed from the main context thread. */
+ 
+ //JSON Decoding conveniance required initialized to recreate content element MO from archive.
+ fileprivate var container: KeyedDecodingContainer<CodingKeys>?
+ //Decoding container as a flag to prompt how to mame initial set up of MO fields.
  public required convenience init(from decoder: Decoder) throws {
   guard let context = decoder.userInfo[.managedObjectContext] as? NSManagedObjectContext else {
    throw ContextError.noDecodableContext(decoder: decoder, entity: .baseContent, operation: .JSONDecodingObject)
   }
   
-  self.init(context: context)
-  try decode(using: decoder)
+  let container = try decoder.container(keyedBy: CodingKeys.self)
+  let type = try container.decode(ContentType.self, forKey: .type) //fix MO type.
+  
+  //print("\(#function) INIT DECODED! \(type.rawValue)")
+  
+  self.init(entity: type.entity, insertInto: nil) //init MO without inserting it into MOC!
+  self.container = container //fix container as a flag to prompt how to mame initial set up of MO fields!
+  self.type = type // init MO type as it is alredy decoded here.
+  context.insert(self) //insert to call awakeFromInsert(_) with fixed container as a flag.
+  
+  try decode(from: container, into: context)
  }
  
- 
- @MainActor public lazy var undoManager = NMUndoManager(targetID: id)
- /* Spawns the undo manager instace lazily when it id used on the main global actor as the SELF.ID must be accessed from the main context thread. */
- 
- public var fileManagerTask: Task<Void, Error>?
-
- @NSManaged internal var primitiveId: UUID?
+ @NSManaged fileprivate var primitiveId: UUID?
  @NSManaged fileprivate var primitiveDate: Date?
  @NSManaged fileprivate var primitiveLastModifiedTimeStamp: Date?
  @NSManaged fileprivate var primitiveLastAccessedTimeStamp: Date?
+ @NSManaged fileprivate var primitiveType: NSNumber
+ 
+ public override func awakeFromInsert() {
+  super.awakeFromInsert()
+  
+  //if container is NOT NIL we recover object from JSON archive so no initial set-up needed here.
+  guard container == nil else {
+   //print("\(#function) DECODING FROM CONTAINER \(self)")
+   return
+   
+  }
+  
+  //if container IS NIL we create new object and inserted into context and perform initial set-up.
+  primitiveId = UUID()
+  let now = Date()
+  primitiveDate = now
+  primitiveLastAccessedTimeStamp = now
+  primitiveLastModifiedTimeStamp = now
+  let typeIndex = ContentType(contentElement: self).rawValue
+  primitiveType = NSNumber(value: typeIndex)
+  
+  //print("\(#function) CREATING NEW! \(self)")
+  
+  (self as? NMNormalizedSearchParentRepresentable)?.updateParentSearchChildrenString()
+ }
+ 
+ 
+ 
  
  //GLS NEEDED PROPERTIES...
  public var geoLocationSubscription: AnyCancellable?
@@ -39,11 +76,9 @@ public class NMBaseContent: NSManagedObject, Codable {
  public var updateGeoLocationsTask: Task<NSManagedObject, Error>?
  
  
- 
  //MARK: Accessors for Content Element Type
- @NSManaged fileprivate var primitiveType: NSNumber
  public static let typeKey = "type"
- @objc public fileprivate (set) var type: ContentType {
+ @objc public internal (set) var type: ContentType {
   get {
    willAccessValue(forKey: Self.typeKey)
    guard let enumValue = ContentType(rawValue: primitiveType.int16Value) else {
@@ -61,117 +96,16 @@ public class NMBaseContent: NSManagedObject, Codable {
   }
  }
  
- //MARK: Accessors for Content Element <.tag> field.
- @NSManaged fileprivate var primitiveTag: String?
- public static let tagKey = "tag"
- public static let normalizedSearchTagKey = "normalizedSearchTag"
-  //the publicly exposed key for updating ASCII normalised variant of nameTag string for optimized predicate fetching using formats ... CONTAINS[n]... BEGINWITH[n]... etc.
- 
- @objc public var tag: String? {
-  get {
-   willAccessValue(forKey: Self.tagKey)
-   let value = primitiveTag
-   didAccessValue(forKey: Self.tagKey)
-   return value
+ //MARK: Silent Accessors for Content Element Type
+  public var silentType: ContentType {
+   get {
+    guard let enumValue = ContentType(rawValue: primitiveType.int16Value) else {
+     fatalError("Invalid Content Type Primitive Value - [\(primitiveType.debugDescription)]")
+    }
+   return enumValue
   }
   
-  set {
-   willChangeValue(forKey: Self.tagKey)
-   primitiveTag = newValue
-   setValue(newValue?.normalizedForSearch, forKey: Self.normalizedSearchTagKey) //NORMALIZED!
-   didChangeValue(forKey: Self.tagKey)
-   
-  }
- }
- 
- //MARK: Accessors for Content Element <.status> field.
- @NSManaged fileprivate var primitiveStatus: String
- 
- public static let statusKey = "status"
- public fileprivate (set) var status: ContentStatus {
-  get {
-   willAccessValue(forKey: Self.statusKey)
-   guard let value = ContentStatus(rawValue: primitiveStatus) else {
-    fatalError("Invalid Content Element Status Primitive Value - [\(primitiveStatus)]")
-   }
-   didAccessValue(forKey: Self.statusKey)
-   return value
-  }
-  
-  set {
-   
-   willChangeValue(forKey: Self.statusKey)
-   primitiveStatus = newValue.rawValue
-   didChangeValue(forKey: Self.statusKey)
-   
-  }
- }
- 
- //MARK: Accessors for Content Element MO <.priority> field.
- @NSManaged fileprivate var primitivePriority: String
- public static let priorityKey = "priority"
- public var priority: ContentPriority {
-  get {
-   willAccessValue(forKey: Self.priorityKey)
-   guard let value = ContentPriority(rawValue: primitivePriority) else {
-    fatalError("Invalid Content Element Priority Primitive Property Value - [\(primitivePriority)]")
-   }
-   didAccessValue(forKey: Self.priorityKey)
-   return value
-  }
-  
-  set {
-   willChangeValue(forKey: Self.priorityKey)
-   primitivePriority = newValue.rawValue
-   didChangeValue(forKey: Self.priorityKey)
-   
-  }
- }
- 
- 
- //MARK: Accessors for Content Element Positions field.
- @NSManaged fileprivate var primitivePositions: NSMutableDictionary?
- public static let positionsKey = "positions"
- 
- public typealias TContentPositions = [ TPositionKey : Int ]
- public var positions: TContentPositions? {
-  
-  get {
-   willAccessValue(forKey: Self.positionsKey)
-   guard let rawPos = primitivePositions as? [String: Int] else { return nil }
-   let positions = rawPos.map{ (TPositionKey(raw: $0.key), $0.value) }
-   didAccessValue(forKey: Self.positionsKey)
-   return Dictionary(uniqueKeysWithValues: positions)
-  }
-  
-  set {
-   willChangeValue(forKey: Self.positionsKey)
-   guard let positions = newValue else  {
-    primitivePositions = nil
-    return
-   }
-   
-   let rawPos = positions.map { (key: $0.key.rawString, value: $0.value) }
-   
-   primitivePositions = NSMutableDictionary(dictionary: Dictionary(uniqueKeysWithValues: rawPos))
-   didChangeValue(forKey: Self.positionsKey)
-   
-  }
- }
- 
- 
- public override func awakeFromInsert() {
-  super.awakeFromInsert()
-  
-  primitiveId = UUID()
-  let now = Date()
-  primitiveDate = now
-  primitiveLastAccessedTimeStamp = now
-  primitiveLastModifiedTimeStamp = now
-  let typeIndex = ContentType(contentElement: self).rawValue
-  primitiveType = NSNumber(value: typeIndex)
-  
-  (self as? NMNormalizedSearchParentRepresentable)?.updateParentSearchChildrenString()
+  set { primitiveType = NSNumber(value: newValue.rawValue) }
  }
  
  
@@ -183,6 +117,7 @@ public class NMBaseContent: NSManagedObject, Codable {
  
  public override func willSave() {
   super.willSave()
+  silentStatus = .privy
   primitiveLastModifiedTimeStamp = Date()
  }
  

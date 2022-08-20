@@ -16,7 +16,6 @@ extension NMBaseSnippet {
     NSFetchRequest<NMBaseSnippet>(entityName: "NMBaseSnippet")
   }
 
-  
   @NSManaged public var archivedTimeStamp: Date?
   @NSManaged public var ck_metadata: Data?
   @NSManaged public var contentElementsGroupingType: String?

@@ -17,9 +17,11 @@ public extension NMFileStorageManageable {
   }
   
   let (url, recoveryURL) = try await context.perform { [ unowned self ] () throws -> (URL, URL)  in
+   //print (#function, self.url?.path, self.id)
    guard let url = self.url, let recoveryURL = self.recoveryURL else {
     throw ContextError.noURL(object: self, entity: .object, operation: .storageCreate)
-   } //   print (#function, url.path, id!)
+   }
+   
    return (url, recoveryURL)
   }
   

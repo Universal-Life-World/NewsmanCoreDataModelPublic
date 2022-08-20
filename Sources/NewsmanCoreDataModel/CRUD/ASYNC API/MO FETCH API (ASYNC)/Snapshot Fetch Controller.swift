@@ -140,7 +140,7 @@ public class NMSnapshotFetchController<T: NSManagedObject>: NSObject,
    }.eraseToAnyPublisher()
  }
  
-  var newDayPublisher: AnyPublisher<Date, Never> {
+ var newDayPublisher: AnyPublisher<Date, Never> {
   let date = Date()
   let startDay = Calendar.current.dateInterval(of: .day, for: date)!.end
   let delay = RunLoop.SchedulerTimeType.Stride(date.distance(to: startDay))

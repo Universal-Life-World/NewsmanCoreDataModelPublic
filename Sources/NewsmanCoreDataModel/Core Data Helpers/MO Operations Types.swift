@@ -11,6 +11,20 @@ public enum ContextOperationTypes: String {
  case storageCreate = "CREATING STORAGE"
  case storageDelete = "DELETING STORAGE"
  
+ case gettingObjectID = "GETTING MO ID"
+ case gettingSnippetID = "GETTING SNIPPET ID OF THIS CONTENT ELEMENT"
+ case gettingFolderID = "GETTING FOLDER ID OF THIS CONTENT ELEMENT"
+ 
+ case gettingSnippet = "GETTING SNIPPET OF THIS CONTENT ELEMENT"
+ case gettingFolder = "GETTING FOLDER OF THIS CONTENT ELEMENT"
+ 
+ case gettingSnippetElements = "GETTING SNIPPET CONTENT ELEMENTS"
+ case gettingSnippetElementsIDs = "GETTING SNIPPET CONTENT ELEMENTS UUIDs"
+ 
+ case gettingFolderElements = "GETTING FOLDER CONTENT ELEMENTS"
+ case gettingFolderElementsIDs = "GETTING FOLDER CONTENT ELEMENTS UUIDs"
+ 
+ 
  case move = "MOVING"
  case undoMove = "UNDOING MOVING"
  
@@ -47,6 +61,7 @@ public enum ContextOperationTypes: String {
  case undoMergeWith = "UNDOING MERGING WITH"
  
  case delete = "DELETING"
+ case deleteWithRecovery = "DELETING OBJECT FROM MOC WITH RECOVERY"
  case undoDelete = "UNDOING DELETING"
  
  case cloudMetadataUpdate = "UPDATING CLOUD RECORD METADATA"

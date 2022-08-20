@@ -9,7 +9,6 @@ import UIKit
 @available(iOS 13.0, *)
 public extension NSManagedObjectContext{
  
- 
  static let locationsProviderKey = "locationsProvider" // A key to save location provider ref in MOC userInfo dic.
  
  private typealias LocationsProviderBlock = () -> NMGeoLocationsProvider?
@@ -34,8 +33,12 @@ public extension NSManagedObjectModel{
 }
 
 
-public final class NMCoreDataModel {
+public final class NMCoreDataModel: NMUndoManageable {
  
+ public let id = UUID()
+ 
+ @MainActor public lazy var undoManager = NMUndoManager(targetID: id)
+
  public static let recoveryFolderName = UUID().uuidString
   // A name of temporary File Manager folder to keep recoverable file storage data.
   // The data is will be deleted when self is destroyed!

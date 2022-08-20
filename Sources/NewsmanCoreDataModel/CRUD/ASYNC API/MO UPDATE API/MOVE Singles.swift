@@ -18,15 +18,20 @@ public extension NMContentElement where Self:    NMFileStorageManageable & NMUnd
             persist: Bool = true,
             with updates: ((Self) throws -> ())? = nil) async throws {
  
-   await NMUndoSession.open(target: self)  //OPEN UNDO/REDO SESSION!
-   
+  
+  try await withOpenUndoSession(of: self){
    try await moved(to: destination, persist: persist, with: updates)
-   
-   if let currentSession = await NMUndoSession.current {
-    await undoManager.registerUndoSession(currentSession) //attach current open session to MO undo manager!
-   }
-   
-   await NMUndoSession.close() //CLOSE UNDO/REDO SESSION AFTER MOVE!
+  }
+  
+//   await NMUndoSession.open(target: self)  //OPEN UNDO/REDO SESSION!
+//
+//   try await moved(to: destination, persist: persist, with: updates)
+//
+// if let currentSession = await NMUndoSession.current {
+//  await undoManager.registerUndoSession(currentSession) //attach current open session to MO undo manager!
+// }
+//
+//   await NMUndoSession.close() //CLOSE UNDO/REDO SESSION AFTER MOVE!
  }
  
  

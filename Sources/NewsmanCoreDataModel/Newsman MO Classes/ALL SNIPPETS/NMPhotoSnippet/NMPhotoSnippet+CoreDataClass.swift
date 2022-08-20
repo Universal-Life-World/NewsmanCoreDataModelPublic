@@ -10,8 +10,7 @@ import Foundation
 import CoreData
 
 @available(iOS 13.0, *)
-@objc(NMPhotoSnippet)
-public class NMPhotoSnippet: NMBaseSnippet {}
+@objc(NMPhotoSnippet) public class NMPhotoSnippet: NMBaseSnippet {}
 
 extension NMPhotoSnippet: NMUndoManageable{}
 
@@ -40,6 +39,8 @@ extension NMPhotoSnippet: NMContentElementsContainer {
  
  public func addToContainer(folders: [NMPhotoFolder]) {
   addToPhotoFolders(.init(array: folders))
+  addToContainer(singleElements: folders.flatMap{ $0.folderedElements } )
+   //add all folders' children to this snippet container as well!
  }
  
  public func removeFromContainer(folders: [NMPhotoFolder]) {

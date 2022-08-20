@@ -1,9 +1,9 @@
 
-import Foundation
+import CoreData
 
 @available(iOS 13.0, *)
 public extension NMBaseSnippet {
-@objc enum SnippetType: Int16, CaseIterable, Hashable {
+@objc enum SnippetType: Int16, CaseIterable, Hashable, Codable {
   init(snippet: NMBaseSnippet) {
    switch snippet {
     case is NMPhotoSnippet: self = .photo
@@ -15,6 +15,17 @@ public extension NMBaseSnippet {
    }
   }
   
+ public var entity: NSEntityDescription { Self.entityDescriptionsMap[self]! }
+ 
+ private static let entityDescriptionsMap : [Self : NSEntityDescription ] = [
+  .base          :   NMBaseSnippet.entity(),
+  .photo         :   NMPhotoSnippet.entity(),
+  .audio         :   NMAudioSnippet.entity(),
+  .video         :   NMVideoSnippet.entity(),
+  .text          :   NMTextSnippet.entity(),
+  .mixed         :   NMMixedSnippet.entity()
+ ]
+ 
 
   case base  = 0 // the case for abstract entity NMBaseSnippet type
   case photo = 1 // the case for derived entity  NMPhotoSnippet type

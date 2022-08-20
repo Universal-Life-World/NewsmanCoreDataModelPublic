@@ -1,7 +1,17 @@
 import CoreData
 
-public protocol NMUndoManageable where Self: NSManagedObject {
+public protocol NMUndoManageable: AnyObject  {
  @MainActor var undoManager: NMUndoManager { get set }
+}
+
+@MainActor public class NMGlobalUndoManager: NMUndoManageable{
+ public lazy var undoManager = NMUndoManager(targetID: nil)
+ public static let shared = NMGlobalUndoManager()
+ private init (){}
+ 
+ public static func undo() async throws  { try await shared.undoManager.undo() }
+ public static func redo() async throws  { try await shared.undoManager.redo() }
+ 
 }
 
 
@@ -13,12 +23,12 @@ public extension NMUndoManageable {
   return self
  }
  
- @discardableResult func undo(persist: Bool = false) async throws -> Self {
+ @discardableResult func undo(persist: Bool = false) async throws -> Self where Self: NSManagedObject {
   try await undoManager.undo()
   return try await self.persisted(persist)
  }
  
- @discardableResult func redo(persist: Bool = false) async throws -> Self {
+ @discardableResult func redo(persist: Bool = false) async throws -> Self where Self: NSManagedObject {
   try await undoManager.redo()
   return try await self.persisted(persist)
  }

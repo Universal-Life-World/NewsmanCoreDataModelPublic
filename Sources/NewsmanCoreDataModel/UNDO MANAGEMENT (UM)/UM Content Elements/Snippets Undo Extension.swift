@@ -9,9 +9,16 @@ extension NMUndoManageable{
  
  public typealias TDeleteUndoTask<S> = @Sendable (_ source: S,
                                                   _ targetID: UUID,
-                                                  _ childIDs: [UUID]) async throws -> ()
+                                                  _ childIDs: [UUID],
+                                                  _ persist: Bool) async throws -> ()
  
- public typealias TDeleteRedoTask<Target> = @Sendable ( _ target: Target) async throws -> ()
+ public typealias TDeleteRedoTask<Target> = @Sendable ( _ target: Target,
+                                                        _ persist: Bool) async throws -> ()
+ 
+ public typealias TDeleteUndoFromDataTask<T> = @Sendable (_ targetType: T.Type,
+                                                          _ data: Data,
+                                                          _ context: NSManagedObjectContext,
+                                                          _ persist: Bool) async throws -> ()
  
 }
 

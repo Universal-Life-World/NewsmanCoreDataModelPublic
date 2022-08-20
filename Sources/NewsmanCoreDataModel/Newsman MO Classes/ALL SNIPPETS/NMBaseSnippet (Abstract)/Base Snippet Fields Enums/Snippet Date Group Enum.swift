@@ -2,47 +2,12 @@ import Foundation
 import Combine
 import CoreData
 
-
 protocol NMDateGroupStateObservable where Self: NSManagedObject {
-// var currentTimerCancellable: AnyCancellable?   { get set }
-// var dateGroupStateUpdater: PassthroughSubject<() -> (), Never>? { get set }
  var sectionDateIndexGroup: NMBaseSnippet.DateGroup { get set }
  var date: Date? { get }
 }
 
 extension NMBaseSnippet: NMDateGroupStateObservable {}
-
-//extension NMBaseSnippet: NMDateGroupStateObservable {
-//
-// func sheduleDateGroupTimerAfterFetch() {}
-//
-// func sheduleDateGroupTimer(from date: Date){
-//
-//  let startTime = Calendar.current.dateInterval(of: Self.fireDateCalendarComponent, for: date)!.end
-//  let startDay = Calendar.current.dateInterval(of: .day, for: date)!.end
-//  let delay = RunLoop.SchedulerTimeType.Stride(date.distance(to: startTime))
-//  var dayCount = 0
-//
-//  currentTimerCancellable = Just(Self.currentTimerInterval)
-//   .delay(for: delay, scheduler: RunLoop.main)
-//   .flatMap{ Timer.publish(every: $0, tolerance: 0.001, on: .main, in: .common).autoconnect() }
-//   .map {_ in startDay + TimeInterval(dayCount) * .oneDay}
-//   .sink{ [ unowned self ] now in
-//     dayCount += 1
-//     managedObjectContext?.perform { [ weak self ] in
-//      guard let self = self else { return }
-//      let newGroup = self.sectionDateIndexGroup.nextInterval(date: date, now: now)
-//      guard newGroup != self.sectionDateIndexGroup else { return }
-//
-//      let updateBlock = {[ weak self ] () -> () in self?.sectionDateIndexGroup = newGroup }
-//
-//      self.dateGroupStateUpdater?.send(updateBlock)
-//     }
-//
-//    }
-//
-// }
-//}
 
 public extension TimeInterval {
  static let oneMillisecond = 1e-3
@@ -61,7 +26,7 @@ public extension TimeInterval {
 
 @available(iOS 13.0, *)
 public extension NMBaseSnippet {
- enum DateGroup: String, CaseIterable, NMEnumCasesStringLocalizable, Comparable {
+ enum DateGroup: String, CaseIterable, NMEnumCasesStringLocalizable, Comparable, Codable {
   
   public static func current(of date: Date, at today: Date) -> Self {
     //check for .today

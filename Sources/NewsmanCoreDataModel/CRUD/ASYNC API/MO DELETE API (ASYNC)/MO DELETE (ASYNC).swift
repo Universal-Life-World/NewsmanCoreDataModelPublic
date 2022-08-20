@@ -6,16 +6,16 @@ public extension NMFileStorageManageable {
  
  // Deletes MO from context and removes its file storage folder from disk if withFileStorageRecovery == false (default) otherwise moves this folder entirely into the temporary recovery directory at recovery URL path.
  
- func delete( withFileStorageRecovery: Bool = false ) async throws {
+ func delete( withFileStorageRecovery: Bool = false, persisted: Bool = false ) async throws {
   
   print(#function, objectID)
   
-  try await removeWithFileStorage(withFileStorageRecovery)
+  try await removeWithFileStorage(withFileStorageRecovery, persisted)
  }
  
  
  // helper async remover from context with file storage.
- func removeWithFileStorage(_ withFileStorageRecovery: Bool = false) async throws {
+ func removeWithFileStorage(_ withFileStorageRecovery: Bool = false, _ persisted: Bool = false) async throws {
   
   print(#function, objectID)
   
@@ -47,6 +47,9 @@ public extension NMFileStorageManageable {
   } else {
    try await FileManager.removeItemFromDisk(at: url) // total removal unrecoverably
   }
+  
+  try await self.persisted(persisted)
+  
   print("DELETE DONE!", #function, objectID)
  }
  

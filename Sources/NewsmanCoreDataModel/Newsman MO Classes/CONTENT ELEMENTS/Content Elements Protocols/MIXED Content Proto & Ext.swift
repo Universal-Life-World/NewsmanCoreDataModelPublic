@@ -1,6 +1,4 @@
 
-import Foundation
-
 @available(iOS 15.0, macOS 12.0, *)
 extension NMContentElementsContainer where Self: NMMixedSnippet {
 
@@ -100,6 +98,36 @@ extension NMContentElementsContainer where Self: NMMixedSnippet {
  }
  
  @discardableResult
+ public func createSingle<E: NMContentElement, F> (of contentType: E.Type,
+                                                   in snippetFolder: F? = nil,
+                                                   persist: Bool = false,
+                                                   with updates: ((E) throws -> ())? = nil) async throws -> E
+ where E.Folder == F {
+  
+  guard let parentContext = managedObjectContext else {
+   throw ContextError.noContext(object: self, entity: .object, operation: .createChildren)
+  }
+  
+  return try await parentContext.perform { [ unowned self, unowned parentContext] () -> E in
+   try Task.checkCancellation()
+
+   let newSingle = contentType.init(context: parentContext)
+   newSingle.locationsProvider = locationsProvider
+
+   
+ 
+   insert(mixedElements: [newSingle], into: snippetFolder)
+   
+   
+   return newSingle
+   
+  }.updated(updates)
+   .persisted(persist)
+   .withFileStorage()
+  
+ }
+ 
+ @discardableResult
  public func createSingles (_ N: Int = 1, of contentType: Element.Type,
                                   into mixedFolder: NMMixedFolder?,
                                   persist: Bool = false,
@@ -132,6 +160,59 @@ extension NMContentElementsContainer where Self: NMMixedSnippet {
  }
  
  @discardableResult
+ public func createSingle <E: NMContentElement> (of contentType: E.Type,
+                            into mixedFolder: NMMixedFolder? = nil ,
+                            persist: Bool = false,
+                            with updates: ((E) throws -> ())? = nil) async throws -> E {
+  
+  
+  guard let parentContext = managedObjectContext else {
+   throw ContextError.noContext(object: self, entity: .object, operation: .createChildren)
+  }
+  
+  return try await parentContext.perform { [ unowned self, unowned parentContext] () -> E in
+   try Task.checkCancellation()
+   let newSingle = E.init(context: parentContext)
+   newSingle.locationsProvider = locationsProvider
+  
+   insert(mixedElements: [newSingle], into: mixedFolder)
+   
+   
+   return newSingle
+   
+  }.updated(updates)
+   .persisted(persist)
+   .withFileStorage()
+  
+ }
+ 
+ 
+ @discardableResult
+ public func createFolder<F: NMContentFolder>(of folderType: F.Type,
+                          persist: Bool = false,
+                          with updates: ((F) throws -> ())? = nil) async throws -> F {
+  
+  guard let parentContext = managedObjectContext else {
+   throw ContextError.noContext(object: self, entity: .object, operation: .createChildren)
+  }
+  
+  return try await parentContext.perform { [  unowned self, unowned parentContext ] () -> F in
+   try Task.checkCancellation()
+   
+   let newFolder = F.init(context: parentContext)
+   newFolder.locationsProvider = locationsProvider
+   
+   insert(newFolders: [newFolder])
+   return newFolder
+   
+  }.updated(updates)
+   .persisted(persist)
+   .withFileStorage()
+  
+  
+ }
+ 
+ @discardableResult
  public func createFolders(_ N: Int = 1, of folderType: Folder.Type,
                            persist: Bool = false,
                            with updates: (([Folder]) throws -> ())? = nil) async throws -> [Folder] {
@@ -159,6 +240,9 @@ extension NMContentElementsContainer where Self: NMMixedSnippet {
  }
  
 }
+
+
+
 
 
 @available(iOS 15.0, macOS 12.0, *)

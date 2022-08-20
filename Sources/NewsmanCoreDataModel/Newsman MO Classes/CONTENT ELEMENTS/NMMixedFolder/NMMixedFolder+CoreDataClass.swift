@@ -62,19 +62,23 @@ extension NMMixedFolder: NMContentFolder {
  
  public func addToContainer(singleElements: [NMBaseContent]) {
   
-  let texts = NSSet(array: singleElements.compactMap{$0 as? NMText})
+  let texts = NSSet(array: singleElements.compactMap{$0 as? NMText}
+                                         .modified{$0.textSnippet = nil; $0.textFolder = nil })
   addToFolderedTexts(texts)
   mixedSnippet?.addToTexts(texts)
   
-  let audios = NSSet(array: singleElements.compactMap{$0 as? NMAudio})
+  let audios = NSSet(array: singleElements.compactMap{$0 as? NMAudio}
+                                          .modified{$0.audioSnippet = nil; $0.audioFolder = nil })
   addToFolderedAudios(audios)
   mixedSnippet?.addToAudios(audios)
   
-  let videos = NSSet(array: singleElements.compactMap{$0 as? NMVideo})
+  let videos = NSSet(array: singleElements.compactMap{$0 as? NMVideo}
+                                          .modified{$0.videoSnippet = nil; $0.videoFolder = nil })
   addToFolderedVideos(videos)
   mixedSnippet?.addToVideos(videos)
   
-  let photos = NSSet(array: singleElements.compactMap{$0 as? NMPhoto})
+  let photos = NSSet(array: singleElements.compactMap{$0 as? NMPhoto}
+                                          .modified{$0.photoSnippet = nil; $0.photoFolder = nil })
   addToFolderedPhotos(photos)
   mixedSnippet?.addToPhotos(photos)
   

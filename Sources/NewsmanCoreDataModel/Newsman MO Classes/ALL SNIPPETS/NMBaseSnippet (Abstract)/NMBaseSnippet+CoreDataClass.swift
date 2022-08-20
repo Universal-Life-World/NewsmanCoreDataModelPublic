@@ -14,128 +14,59 @@ import CoreLocation
 
 @available(iOS 13.0, *)
 @objc(NMBaseSnippet)
-public class NMBaseSnippet : NSManagedObject {
+public class NMBaseSnippet : NSManagedObject, Codable {
  
  @MainActor public lazy var undoManager = NMUndoManager(targetID: id)
  /* Spawns the undo manager instace lazily when it id used on the main global actor as the SELF.ID must be accessed from the main context thread. */
  
  public var fileManagerTask: Task<Void, Error>?
- 
- public override var description: String {
-  var description = String(describing: Swift.type(of: self))
-  description.removeFirst(2)
-  let ind = description.firstIndex(of: "S")!
-  description.insert(" ", at: ind)
-  return description
- }
- 
- // Declared primitive properties for mutating this object silently without KVO & MOCDC notifications.
- // MOCDC = .NSManagedObjectContextDidChange notification posted to the default local NotificationCenter.
- 
- @NSManaged fileprivate var primitiveId: UUID?
- @NSManaged fileprivate var primitiveDate: Date?
- @NSManaged fileprivate var primitiveLastModifiedTimeStamp: Date?
- @NSManaged fileprivate var primitiveLastAccessedTimeStamp: Date?
- 
-
- //public static var geocoderType: NMGeocoderTypeProtocol.Type?
+ public var updateGeoLocationsTask: Task<NSManagedObject, Error>?
  
  //GLS NEEDED PROPERTIES...
  public var geoLocationSubscription: AnyCancellable?
  public weak var locationsProvider: NMGeoLocationsProvider?
+ 
+ 
+ public required convenience init(from decoder: Decoder) throws {
+  
+  guard let context = decoder.userInfo[.managedObjectContext] as? NSManagedObjectContext else {
+   throw ContextError.noDecodableContext(decoder: decoder, entity: .baseContent, operation: .JSONDecodingObject)
+  }
 
- //MARK: Accessors for Snippet MO <.nameTag> field.
- @NSManaged fileprivate var primitiveNameTag: String?
- public static let nameTagKey = "nameTag"
- public static let normalizedSearchNameTagKey = "normalizedSearchNameTag"
- //the publicly exposed key for updating ASCII normalised variant of nameTag string for optimized predicate fetching using formats ... CONTAINS[n]... BEGINWITH[n]... etc.
- 
- @objc public var nameTag: String? {
-  get {
-   willAccessValue(forKey: Self.nameTagKey)
-   let value = primitiveNameTag
-   didAccessValue(forKey: Self.nameTagKey)
-   return value
-  }
+  let container = try decoder.container(keyedBy: CodingKeys.self)
   
-  set {
-   willChangeValue(forKey: Self.nameTagKey)
-   primitiveNameTag = newValue
-   sectionAlphaIndex = String(nameTag?.prefix(1) ?? "")
-   setValue(newValue?.normalizedForSearch, forKey: Self.normalizedSearchNameTagKey) //NORMALIZED!
-   didChangeValue(forKey: Self.nameTagKey)
-   
-  }
+  let type = try container.decode(SnippetType.self, forKey: .type)
+  self.init(entity: type.entity, insertInto: context)
+  self.type = type
+  try decode(from: container, into: context)
+  
  }
  
-  //MARK: Accessors for Snippet MO <.about> field.
- @NSManaged fileprivate var primitiveAbout: String?
- public static let aboutKey = "about"
- public static let normalizedSearchAboutKey = "normalizedSearchAbout"
-  //the publicly exposed key for updating ASCII normalised variant of nameTag string for optimized predicate fetching using formats ... CONTAINS[n]... BEGINWITH[n]... etc.
+ // Declared primitive properties for mutating this object silently without KVO & MOCDC notifications.
+ // MOCDC = .NSManagedObjectContextDidChange notification posted to the default local NotificationCenter.
+ @NSManaged fileprivate var primitiveId: UUID?
+ @NSManaged fileprivate var primitiveDate: Date?
+ @NSManaged fileprivate var primitiveLastModifiedTimeStamp: Date?
+ @NSManaged fileprivate var primitiveLastAccessedTimeStamp: Date?
+ @NSManaged fileprivate var primitiveType: NSNumber
  
- @objc public var about: String? {
-  get {
-   willAccessValue(forKey: Self.aboutKey)
-   let value = primitiveAbout
-   didAccessValue(forKey: Self.aboutKey)
-   return value
-  }
+
+ // initial silent set-up of snippets service properties.
+ public override func awakeFromInsert() {
+  super.awakeFromInsert()
+
+  primitiveId = UUID()
+  let now = Date()
+  primitiveDate = now
+  primitiveLastAccessedTimeStamp = now
+  primitiveLastModifiedTimeStamp = now
+  let typeIndex = SnippetType(snippet: self).rawValue
+  primitiveType = NSNumber(value: typeIndex)
+  sectionTypeIndex = "\(typeIndex)_" + String(describing: self) + "s"
   
-  set {
-   willChangeValue(forKey: Self.aboutKey)
-   primitiveAbout = newValue
-   setValue(newValue?.normalizedForSearch, forKey: Self.normalizedSearchAboutKey) //NORMALIZED!
-   didChangeValue(forKey: Self.aboutKey)
-   
-  }
- }
- 
- 
- //MARK: Accessors for Snippet MO <.status> field.
- @NSManaged fileprivate var primitiveStatus: String
- public static let statusKey = "status"
- public fileprivate (set) var status: SnippetStatus {
-  get {
-   willAccessValue(forKey: Self.statusKey)
-   guard let value = SnippetStatus(rawValue: primitiveStatus) else {
-    fatalError("Invalid Snippet Status Primitive Value - [\(primitiveStatus)]")
-   }
-   didAccessValue(forKey: Self.statusKey)
-   return value
-  }
-  
-  set {
-   willChangeValue(forKey: Self.statusKey)
-   primitiveStatus = newValue.rawValue
-   didChangeValue(forKey: Self.statusKey)
-   
-  }
- }
- 
- //MARK: Accessors for Snippet MO <.priority> field.
- @NSManaged fileprivate var primitivePriority: String
- public static let priorityKey = "priority"
- public var priority: SnippetPriority {
-  get {
-   willAccessValue(forKey: Self.priorityKey)
-   guard let value = SnippetPriority(rawValue: primitivePriority) else {
-    fatalError("Invalid Snippet Priority Primitive Property Value - [\(primitivePriority)]")
-   }
-   didAccessValue(forKey: Self.priorityKey)
-   return value
-  }
-  
-  set {
-   willChangeValue(forKey: Self.priorityKey)
-   primitivePriority = newValue.rawValue
-   didChangeValue(forKey: Self.priorityKey)
-   
-  }
  }
  
  //MARK: Accessors for Snippet Type
- @NSManaged fileprivate var primitiveType: NSNumber
  public static let typeKey = "type"
  @objc public fileprivate (set) var type: SnippetType {
   get {
@@ -146,7 +77,7 @@ public class NMBaseSnippet : NSManagedObject {
    didAccessValue(forKey: Self.typeKey)
    return enumValue
   }
- 
+  
   set {
    willChangeValue(forKey: Self.typeKey)
    primitiveType = NSNumber(value: newValue.rawValue)
@@ -154,54 +85,17 @@ public class NMBaseSnippet : NSManagedObject {
    
   }
  }
- 
 
- 
-// var currentTimerCancellable: AnyCancellable?
-// var dateGroupStateUpdater: PassthroughSubject<() -> (), Never>?
-//
-
-// public static var currentTimerInterval: TimeInterval = .oneDay
-// public static var fireDateCalendarComponent: Calendar.Component = .day
-// 
- //MARK: Accessors for Snippet Date Group Index
- 
- 
- @NSManaged fileprivate var primitiveSectionDateIndex: String
- public static let sectionDateIndexKey = "sectionDateIndex"
- public internal (set) var sectionDateIndexGroup: DateGroup {
-  get {
-   willAccessValue(forKey: Self.sectionDateIndexKey)
-   guard let enumValue = DateGroup(rawValue: primitiveSectionDateIndex) else {
-    fatalError("Invalid Snippet Creation Date Group Primitive value - [\(primitiveSectionDateIndex)]")
-   }
-   didAccessValue(forKey: Self.sectionDateIndexKey)
-   return enumValue
-  }
-  
-  set {
-//   guard newValue.rawValue != primitiveSectionDateIndex else { return }
-   willChangeValue(forKey: Self.sectionDateIndexKey)
-   //if ( newValue == .later ) { currentTimerCancellable?.cancel() }
-   primitiveSectionDateIndex = newValue.rawValue
-   didChangeValue(forKey: Self.sectionDateIndexKey)
-   
-  }
+ public override var description: String {
+  var description = String(describing: Swift.type(of: self))
+  description.removeFirst(2)
+  let ind = description.firstIndex(of: "S")!
+  description.insert(" ", at: ind)
+  return description
  }
  
  
- public var updateGeoLocationsTask: Task<NSManagedObject, Error>?
- 
- private func updateDateGroupAfterFetch(){
-  
-  guard let dateCreated = date else { fatalError("Snippet Creation Date MUST NOT BE NIL!") }
-  
-  let fetchDate = Date()
-  let newSectionDateIndex = DateGroup.current(of: dateCreated, at: fetchDate).rawValue
-  if primitiveSectionDateIndex != newSectionDateIndex {
-   primitiveSectionDateIndex = newSectionDateIndex
-  }
- }
+
  
  public override func awakeFromFetch(){
   super.awakeFromFetch()
@@ -217,30 +111,9 @@ public class NMBaseSnippet : NSManagedObject {
  }
  
 
- 
-
- // initial silent set-up of snippets service properties.
- public override func awakeFromInsert() {
-  super.awakeFromInsert()
-  primitiveId = UUID()
- 
-  let now = Date()
-  primitiveDate = now
-  //sheduleDateGroupTimer(from: now)
-  primitiveLastAccessedTimeStamp = now
-  primitiveLastModifiedTimeStamp = now
-  let typeIndex = SnippetType(snippet: self).rawValue
-  primitiveType = NSNumber(value: typeIndex)
-  sectionTypeIndex = "\(typeIndex)_" + String(describing: self) + "s"
-  
-//  subscribeToLocationUpdate()
- 
- }
- 
-
  public override func willSave() {
   super.willSave()
-  primitiveStatus = Self.SnippetStatus.privy.rawValue
+  silentStatus = .privy
   primitiveLastModifiedTimeStamp = Date()
  }
  
