@@ -11,9 +11,11 @@ extension NMBaseContent {
   setPrimitiveValue(try container.decode(T.self, forKey: codingKey), forKey: codingKey.rawValue)
  }
  
+ 
  func decode(from container: KeyedDecodingContainer<CodingKeys>, into context: NSManagedObjectContext) throws {
   
   try decodeValueSilently(UUID?.self,  from: container, forKey: .id                       )
+
   try decodeValueSilently(Date?.self,  from: container, forKey: .date                     )
   try decodeValueSilently(Date?.self,  from: container, forKey: .lastAccessedTimeStamp    )
   try decodeValueSilently(Date?.self,  from: container, forKey: .lastModifiedTimeStamp    )

@@ -1,9 +1,9 @@
 
-
 extension NMBaseContent {
  
  enum CodingKeys: String, CodingKey {
-  case  id, tag, date, latitude, location, longitude, positions, priority, type, status, geoLocation2D,
+  case  id, tag, date, location, geoLocation2D, /*latitude,  longitude,*/
+        positions, priority, type, status,
         folderedPhotos, folderedAudios, folderedVideos, folderedTexts,
         snippet, folder, folderedElements,
         photoSnippet, audioSnippet, videoSnippet, textSnippet, mixedSnippet,
@@ -14,7 +14,7 @@ extension NMBaseContent {
         isDragAnimating, isDraggable, isFolderable, isHiddenFromSection,
         isRateable, isSelectable, isSelected, isTrashable,
         lastAccessedTimeStamp, lastModifiedTimeStamp, lastRatedTimeStamp,
-        publishedTimeStamp, ratedCount, rating, trashedTimeStamp//,
+        publishedTimeStamp, ratedCount, rating, trashedTimeStamp
         //attachedToChatItems, connectedWithTopNews
  }
  

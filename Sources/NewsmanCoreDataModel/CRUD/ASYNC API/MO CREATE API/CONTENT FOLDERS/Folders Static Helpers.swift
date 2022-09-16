@@ -19,7 +19,7 @@ extension NMContentFolder where Self.Element: NMContentElement,
  @discardableResult
  static func create(with ID: UUID, snippet: Snippet, persist: Bool = true,
                     with updates: ((Self) throws -> ())? = nil) async throws -> Self
-  where Self: NMUndoManageable {
+  where Self: NMUndoManageable & NMFileStorageManageable{
   
   try await snippet.createFolder(with: ID, persist: persist, with: updates)
  }

@@ -54,7 +54,7 @@ extension NMContentFolder where Self.Element: NMContentElement,
  public func createSingle( with ID: UUID, persist: Bool = false,
                            with updates: ((Element) throws -> ())? = nil) async throws -> Element
  
- where Element: NMUndoManageable {
+ where Element: NMUndoManageable & NMFileStorageManageable {
   
   guard let parentContext = self.managedObjectContext else {
    throw ContextError.noContext(object: self, entity: .object, operation: .createChildren)

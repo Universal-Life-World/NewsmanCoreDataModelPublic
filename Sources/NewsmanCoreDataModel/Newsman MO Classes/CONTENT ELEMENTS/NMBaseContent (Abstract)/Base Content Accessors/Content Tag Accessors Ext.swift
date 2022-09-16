@@ -26,8 +26,11 @@ extension NMBaseContent {
   set {
    willChangeValue(forKey: Self.tagKey)
    primitiveTag = newValue
-   primitiveNormalizedSearchTag = newValue?.normalizedForSearch
    didChangeValue(forKey: Self.tagKey)
+   
+   willChangeValue(forKey: Self.normalizedSearchTagKey)
+   primitiveNormalizedSearchTag = newValue?.normalizedForSearch
+   didChangeValue(forKey: Self.normalizedSearchTagKey)
    
   }
  }

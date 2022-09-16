@@ -9,10 +9,9 @@
 import Foundation
 import CoreData
 
-@available(iOS 13.0, *)
-@objc(NMAudioSnippet)
-public class NMAudioSnippet: NMBaseSnippet {}
+@objc(NMAudioSnippet) public class NMAudioSnippet: NMBaseSnippet {}
 
+@available(iOS 15.0, macOS 12.0, *)
 extension NMAudioSnippet: NMUndoManageable{}
 
 @available(iOS 15.0, macOS 12.0, *)

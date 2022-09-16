@@ -11,13 +11,21 @@ import Combine
 import CoreLocation
 
 
-
-@available(iOS 13.0, *)
-@objc(NMBaseSnippet)
-public class NMBaseSnippet : NSManagedObject, Codable {
+@objc(NMBaseSnippet) public class NMBaseSnippet : NSManagedObject, Codable {
  
- @MainActor public lazy var undoManager = NMUndoManager(targetID: id)
- /* Spawns the undo manager instace lazily when it id used on the main global actor as the SELF.ID must be accessed from the main context thread. */
+ /* Spawns the undo manager instace lazily when it id used
+  the SELF.ID must be accessed from the context thread. */
+ 
+ @objc public lazy var undoManager = { () -> NMUndoManager in
+  var targetID: UUID?
+  managedObjectContext?.performAndWait{ targetID = self.id }
+  return NMUndoManager(targetID: targetID)
+ }()
+ 
+ 
+ @objc dynamic weak var coreDataModel: NMCoreDataModel?
+ 
+ public var undoTargetOwner: NMUndoManageable? { coreDataModel }
  
  public var fileManagerTask: Task<Void, Error>?
  public var updateGeoLocationsTask: Task<NSManagedObject, Error>?
@@ -27,6 +35,10 @@ public class NMBaseSnippet : NSManagedObject, Codable {
  public weak var locationsProvider: NMGeoLocationsProvider?
  
  
+ 
+ fileprivate var container: KeyedDecodingContainer<CodingKeys>?
+ 
+ //JSON Decoding conveniance required initialized to recreate content element MO from archive.
  public required convenience init(from decoder: Decoder) throws {
   
   guard let context = decoder.userInfo[.managedObjectContext] as? NSManagedObjectContext else {
@@ -34,27 +46,39 @@ public class NMBaseSnippet : NSManagedObject, Codable {
   }
 
   let container = try decoder.container(keyedBy: CodingKeys.self)
+  let type = try container.decode(SnippetType.self, forKey: .type) //decode & fix MO type.
   
-  let type = try container.decode(SnippetType.self, forKey: .type)
-  self.init(entity: type.entity, insertInto: context)
-  self.type = type
+   //print("\(#function) INIT DECODED! \(type.rawValue)")
+  
+  self.init(entity: type.entity, insertInto: nil) // init MO without inserting it into MOC!
+  self.container = container                      // fix container as a flag to prompt how to init MO...
+  self.type = type                                // init MO type as it is alredy decoded above!!!
+  let typeIndex = SnippetType(snippet: self).rawValue
+  self.sectionTypeIndex = "\(typeIndex)_" + String(describing: self) + "s"
+  context.insert(self)                            // call awakeFromInsert() with fixed container as a flag.
   try decode(from: container, into: context)
   
  }
  
  // Declared primitive properties for mutating this object silently without KVO & MOCDC notifications.
  // MOCDC = .NSManagedObjectContextDidChange notification posted to the default local NotificationCenter.
+ 
  @NSManaged fileprivate var primitiveId: UUID?
  @NSManaged fileprivate var primitiveDate: Date?
  @NSManaged fileprivate var primitiveLastModifiedTimeStamp: Date?
  @NSManaged fileprivate var primitiveLastAccessedTimeStamp: Date?
  @NSManaged fileprivate var primitiveType: NSNumber
+ @NSManaged fileprivate var primitiveSectionTypeIndex: String
  
 
  // initial silent set-up of snippets service properties.
  public override func awakeFromInsert() {
   super.awakeFromInsert()
-
+  
+  //if container is NOT NIL we recover object from JSON archive so no initial set-up needed here.
+  guard container == nil else { return }
+  
+  //if container IS NIL we create new object inserted into context and perform initial set-up.
   primitiveId = UUID()
   let now = Date()
   primitiveDate = now
@@ -62,7 +86,7 @@ public class NMBaseSnippet : NSManagedObject, Codable {
   primitiveLastModifiedTimeStamp = now
   let typeIndex = SnippetType(snippet: self).rawValue
   primitiveType = NSNumber(value: typeIndex)
-  sectionTypeIndex = "\(typeIndex)_" + String(describing: self) + "s"
+  primitiveSectionTypeIndex = "\(typeIndex)_" + String(describing: self) + "s"
   
  }
  

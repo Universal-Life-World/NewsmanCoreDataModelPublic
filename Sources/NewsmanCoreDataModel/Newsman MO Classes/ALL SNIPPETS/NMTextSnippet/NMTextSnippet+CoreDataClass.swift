@@ -9,10 +9,9 @@
 import Foundation
 import CoreData
 
-@available(iOS 13.0, *)
-@objc(NMTextSnippet)
-public class NMTextSnippet: NMBaseSnippet {}
+@objc(NMTextSnippet) public class NMTextSnippet: NMBaseSnippet {}
 
+@available(iOS 15.0, macOS 12.0, *)
 extension NMTextSnippet: NMUndoManageable{}
 
 @available(iOS 15.0, macOS 12.0, *)

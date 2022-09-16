@@ -43,6 +43,7 @@ extension NMContentFolder {
  public var isEmpty         : Bool           { folderedElements.isEmpty }
  public var elementsCount   : Int            { folderedElements.count }
  public var isSingleElement : Bool           { elementsCount == 1 }
+
  
  
  public func modified(with block: (Self) throws -> () ) rethrows -> Self {
@@ -111,6 +112,18 @@ extension NMContentFolder {
   }
  }//public static func existingFolder...async
  
+ 
+ @available(iOS 15.0, macOS 12.0, *)
+ public subscript<Value>(keyPath: KeyPath<Self, Value>) -> Value {
+  get async throws {
+   guard let context = self.managedObjectContext else {
+    throw ContextError.noContext(object: self,
+                                 entity: .contentFolder,
+                                 operation: .gettingObjectKeyPath)}
+   return await context.perform { self[keyPath: keyPath] }
+  }
+ }
+ 
  @available(iOS 15.0, macOS 12.0, *)
  public var snippetID: UUID {
   get async throws {
@@ -137,7 +150,25 @@ extension NMContentFolder {
    }
    
    return try await context.perform {
-    guard let snippet = self.snippet else {
+    guard let snippet = self.snippet  else {
+     throw ContextError.noSnippet(object: self, entity: .contentFolder, operation: .gettingSnippet)
+    }
+    return snippet
+   } //try await context.perform...
+  } //get async throws...
+ } //snippet...
+ 
+ 
+ @available(iOS 15.0, macOS 12.0, *)
+ public var mixedSnippetAsync: NMMixedSnippet {
+  get async throws {
+   
+   guard let context = self.managedObjectContext else {
+    throw ContextError.noContext(object: self, entity: .contentFolder, operation: .gettingSnippet)
+   }
+   
+   return try await context.perform {
+    guard let snippet = self.mixedSnippet  else {
      throw ContextError.noSnippet(object: self, entity: .contentFolder, operation: .gettingSnippet)
     }
     return snippet

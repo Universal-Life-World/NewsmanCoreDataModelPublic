@@ -1,14 +1,16 @@
 
 import Foundation
 
+//MARK: Deletes generic file storage manageable MO recoverably (or not by default) from its MO context & removes its underlying file storage directory from disk recoverably by moving it into temporary recovery directory. Results are not persisted in MOC by default.
+
 @available(iOS 15.0, macOS 12.0, *)
-public extension NMFileStorageManageable {
+public extension NMFileStorageManageable  {
  
- // Deletes MO from context and removes its file storage folder from disk if withFileStorageRecovery == false (default) otherwise moves this folder entirely into the temporary recovery directory at recovery URL path.
+// Deletes MO from context and removes its file storage folder from disk if withFileStorageRecovery == false (default) otherwise moves this folder entirely into the temporary recovery directory at recovery URL path.
  
- func delete( withFileStorageRecovery: Bool = false, persisted: Bool = false ) async throws {
+ func delete(withFileStorageRecovery: Bool = false,  persisted: Bool = false ) async throws {
   
-  print(#function, objectID)
+  print(#function, objectID, address)
   
   try await removeWithFileStorage(withFileStorageRecovery, persisted)
  }
@@ -17,7 +19,7 @@ public extension NMFileStorageManageable {
  // helper async remover from context with file storage.
  func removeWithFileStorage(_ withFileStorageRecovery: Bool = false, _ persisted: Bool = false) async throws {
   
-  print(#function, objectID)
+  //print(#function, objectID)
   
   guard let context = self.managedObjectContext else {
    throw ContextError.noContext(object: self, entity: .object, operation: .storageDelete )
@@ -50,7 +52,7 @@ public extension NMFileStorageManageable {
   
   try await self.persisted(persisted)
   
-  print("DELETE DONE!", #function, objectID)
+ // print("DELETE DONE!", #function, objectID)
  }
  
 }

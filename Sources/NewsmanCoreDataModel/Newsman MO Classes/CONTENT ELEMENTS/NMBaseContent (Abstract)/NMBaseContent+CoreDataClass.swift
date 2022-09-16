@@ -13,27 +13,35 @@ public class NMBaseContent: NSManagedObject, Codable {
  
  public var fileManagerTask: Task<Void, Error>?
  
- @MainActor public lazy var undoManager = NMUndoManager(targetID: id)
- /* Spawns the undo manager instace lazily when it is used on the main global actor as the SELF.ID must be accessed from the main context thread. */
+ 
+ /* Spawns the undo manager instace lazily when it is used
+  the SELF.ID must be accessed from the context thread. */
+ @objc public lazy var undoManager = { () -> NMUndoManager in
+  var targetID: UUID?
+  managedObjectContext?.performAndWait{ targetID = self.id }
+  return NMUndoManager(targetID: targetID)
+ }()
+ 
+ 
  
  //JSON Decoding conveniance required initialized to recreate content element MO from archive.
  fileprivate var container: KeyedDecodingContainer<CodingKeys>?
  //Decoding container as a flag to prompt how to mame initial set up of MO fields.
+ 
  public required convenience init(from decoder: Decoder) throws {
   guard let context = decoder.userInfo[.managedObjectContext] as? NSManagedObjectContext else {
    throw ContextError.noDecodableContext(decoder: decoder, entity: .baseContent, operation: .JSONDecodingObject)
   }
   
   let container = try decoder.container(keyedBy: CodingKeys.self)
-  let type = try container.decode(ContentType.self, forKey: .type) //fix MO type.
+  let type = try container.decode(ContentType.self, forKey: .type) //decode & fix MO type.
   
   //print("\(#function) INIT DECODED! \(type.rawValue)")
   
-  self.init(entity: type.entity, insertInto: nil) //init MO without inserting it into MOC!
-  self.container = container //fix container as a flag to prompt how to mame initial set up of MO fields!
-  self.type = type // init MO type as it is alredy decoded here.
-  context.insert(self) //insert to call awakeFromInsert(_) with fixed container as a flag.
-  
+  self.init(entity: type.entity, insertInto: nil) // init MO without inserting it into MOC!
+  self.container = container                      // fix container as a flag to prompt how to init MO!
+  self.type = type                                // init MO type as it is alredy decoded above.
+  context.insert(self)                            // call awakeFromInsert() with fixed container as a flag.
   try decode(from: container, into: context)
  }
  
@@ -47,13 +55,9 @@ public class NMBaseContent: NSManagedObject, Codable {
   super.awakeFromInsert()
   
   //if container is NOT NIL we recover object from JSON archive so no initial set-up needed here.
-  guard container == nil else {
-   //print("\(#function) DECODING FROM CONTAINER \(self)")
-   return
-   
-  }
+  guard container == nil else { return }
   
-  //if container IS NIL we create new object and inserted into context and perform initial set-up.
+  //if container IS NIL we create new object inserted into context and perform initial set-up.
   primitiveId = UUID()
   let now = Date()
   primitiveDate = now
@@ -66,8 +70,6 @@ public class NMBaseContent: NSManagedObject, Codable {
   
   (self as? NMNormalizedSearchParentRepresentable)?.updateParentSearchChildrenString()
  }
- 
- 
  
  
  //GLS NEEDED PROPERTIES...

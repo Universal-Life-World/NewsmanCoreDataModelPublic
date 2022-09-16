@@ -1,21 +1,29 @@
 
-public protocol BuilderTreeNodeRepresentable {}
+public protocol BuilderTreeNodeRepresentable {
+ var childNodeCount: Int { get }
+}
 
 public struct FolderBuilderNode<F: NMContentFolder>: BuilderTreeNodeRepresentable{
  public let parent: F
  public let childNodes: [BuilderTreeNodeRepresentable]
+ public var childNodeCount: Int { childNodes.count }
 }
 
 public struct ElementBuilderNode<E: NMContentElement>: BuilderTreeNodeRepresentable {
+ public let childNodeCount = 0
  public let parent: E
 }
 
 public struct SnippetBuilderNode<S: NMContentElementsContainer>: BuilderTreeNodeRepresentable {
+ public var childNodeCount: Int { childNodes.count + childNodes.reduce(0) {$0 + $1.childNodeCount}}
  let parent: S
  let childNodes: [BuilderTreeNodeRepresentable]
 }
 
 public struct SnippetsBuilderTree {
+ 
+ public var count: Int { nodes.count + nodes.reduce(0) {$0 + $1.childNodeCount} }
+ 
  let nodes: [BuilderTreeNodeRepresentable]
  
  public var photoSnippets: [NMPhotoSnippet] {
@@ -43,6 +51,8 @@ public struct SnippetsBuilderTree {
   audioSnippets as [NMBaseSnippet] + videoSnippets as [NMBaseSnippet] +
   mixedSnippets as [NMBaseSnippet]
  }
+ 
+ 
  
  public subscript<S: NMContentElementsContainer> (si: Int) -> S?{
   guard si >= 0 && si < nodes.count else { return nil }

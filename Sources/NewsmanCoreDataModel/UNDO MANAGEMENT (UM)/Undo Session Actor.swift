@@ -1,6 +1,8 @@
 import Foundation
+import Combine
+import CoreData
 
-
+@available(iOS 15.0, macOS 12.0, *)
 public func withOpenUndoSession(of target: NMUndoManageable, action: () async throws -> () ) async rethrows {
  await NMUndoSession.open(target: target)  //OPEN UNDO/REDO SESSION!
  try await action()
@@ -8,6 +10,7 @@ public func withOpenUndoSession(of target: NMUndoManageable, action: () async th
 
 }
 
+@available(iOS 15.0, macOS 12.0, *)
 public func withGlobalUndoSession( action: () async throws -> () ) async rethrows {
  let globalTarget = NMGlobalUndoManager.shared
  await NMUndoSession.open(target: globalTarget)  //OPEN UNDO/REDO SESSION!
@@ -15,14 +18,26 @@ public func withGlobalUndoSession( action: () async throws -> () ) async rethrow
  await NMUndoSession.close() //CLOSE UNDO/REDO SESSION AFTER MOVE
 }
 
+
 public actor NMUndoSession: NSObject {
  
+ //if this flag is set the session is undone somehow and must be skipped in UM stack.
  public fileprivate (set) var isExecuted = false
+ fileprivate func setExecutedState(_ state: Bool ) { isExecuted = state }
+ 
+ //if this flag is set the session target MO was deleted from MOC and must be skipped in UM stack.
+ public fileprivate (set) var hasDeletedTarget = false
+ fileprivate func setTargetDeletedState(_ state: Bool ) { hasDeletedTarget = state }
+ 
+ public var isSkipped: Bool { isExecuted || hasDeletedTarget }
  
  public var isEmpty: Bool { blockOperations.isEmpty }
  public var blockCount: Int { blockOperations.count }
  
- unowned fileprivate let targetObject: NMUndoManageable
+ weak fileprivate (set) var targetObject: NMUndoManageable?
+ public func updateTarget(_ newTarget: NMUndoManageable ) { targetObject = newTarget }
+ 
+ //weak fileprivate (set) var targetOwner:  NMUndoManageable?
  
  @MainActor public private(set) var isOpen: Bool
  
@@ -50,9 +65,9 @@ public actor NMUndoSession: NSObject {
  @MainActor fileprivate static var undoRegistrationTask: Task<Void, Never>?
  @MainActor fileprivate static var redoRegistrationTask: Task<Void, Never>?
  
- fileprivate func setExecutedState(_ state: Bool ) { isExecuted = state }
+
  
- public func undoTask(dependency: Task<Void, Error>?) -> Task<Void, Error> {
+ public final func undoTask(dependency: Task<Void, Error>?) -> Task<Void, Error> {
   Task.detached { [ unowned self ] in
    try await dependency?.value
    let operations = await blockOperations
@@ -63,7 +78,7 @@ public actor NMUndoSession: NSObject {
   }
  }
  
- public func redoTask(dependency: Task<Void, Error>?) -> Task<Void, Error> {
+ public final func redoTask(dependency: Task<Void, Error>?) -> Task<Void, Error> {
   Task.detached { [ unowned self ] in
    try await dependency?.value
    let operations = await redoSession.blockOperations
@@ -73,16 +88,72 @@ public actor NMUndoSession: NSObject {
   }
  }
  
+ private var undoTargetOwnerSubscription: AnyCancellable?
  
- // opens new undo/redo session with target object without blocking.
- // if current session is open all undo/redo tasks are registered with this open current session.
- // if you try to open new session the session will not be opened until you close current one
+ // Create subscriprion to listen to target owner keypath changes.
+ @available(iOS 15.0, macOS 12.0, *)
+ fileprivate final func subscribeUndoTargetOwner() async  {
+  guard let target = self.targetObject else { return }
+  undoTargetOwnerSubscription = await target.subscribeTargetOwner { [ unowned self ] in
+   await Self.register(session: self, with: target)
+  }
+ }
+ 
+ private var undoTargetDeletedSubscription: AnyCancellable?
+ 
+ // Create subscriprion to listen to target MO isDeleted state changes.
+ @available(iOS 15.0, macOS 12.0, *)
+ fileprivate final func subscribeUndoTargetDeleted() async  {
+  guard let target = self.targetObject else { return }
+  undoTargetOwnerSubscription = await target.subscribeTargetDeleted { [ unowned self ] isDeleted in
+   hasDeletedTarget = isDeleted
+  }
+ }
+ 
+ 
+ // Opens new undo & corresponding redo session lazily with target object without blocking.
+ // if current undo session is open all undo & redo tasks are registered with this open current session.
+ // if you try to open new session the session will not be opened until you close current one.
+ 
+ @available(iOS 15.0, macOS 12.0, *)
  @MainActor public static func open(target: NMUndoManageable) async {
   guard currentSession == nil else { return }
   let newSession = NMUndoSession(target: target)
+//  await newSession.setTargetOwner(target.undoTargetOwner)
   Self.currentSession = newSession
-  await target.undoManager.registerUndoSession(newSession)
+  await target.undoManager.registerUndoSession(newSession) // register this new undo session with its target UM.
+  await register(session: newSession, with: target)        // register new session recursively with target owners UMs.
+  await newSession.subscribeUndoTargetOwner()   // listen to target owner changes and reregister session with UMs.
+  await newSession.subscribeUndoTargetDeleted() // listen to target MO isDeleted property state.
  }
+ 
+// fileprivate func setTargetOwner(_ newOwner: NMUndoManageable?){
+//  targetOwner = newOwner
+// }
+ 
+
+ //Registers undo session with target recurcively with its owner UMs.
+ // * Single elements sessions with their respective direct owner UM - folders UMs or snippets UMs.
+ // * Folders sessions with their snippets UMs as direct owners.
+ // * Snippets with Core Data Model UM asa direct owner.
+ 
+ @MainActor fileprivate static func register(session: NMUndoSession, with target: NMUndoManageable?) async  {
+ 
+  guard let nextOwner = await target?.undoTargetOwner else { return }
+  await nextOwner.undoManager.registerUndoSession(session)
+  await register(session: session, with: nextOwner)
+  
+ }
+ 
+// @MainActor fileprivate static func reregisterUndoSession() async  {
+//  guard let session = currentSession else { return }
+//  let target = await session.targetObject
+//  let prevOwner = await session.targetOwner
+//  let currOwner = target?.undoTargetOwner
+//  guard prevOwner !== currOwner else { return }
+//  await register(session: session, with: target)
+//
+// }
  
  @MainActor fileprivate static func closeWaiter() async  {
   guard currentSession != nil else { return }
@@ -96,7 +167,7 @@ public actor NMUndoSession: NSObject {
   await closeWaiter()
   let newSession = NMUndoSession(target: target)
   Self.currentSession = newSession
-  await target.undoManager.registerUndoSession(newSession)
+//  await target.undoManager.registerUndoSession(newSession)
  }
  
  
@@ -107,7 +178,7 @@ public actor NMUndoSession: NSObject {
   
   await undoRegistrationTask?.value
   await redoRegistrationTask?.value
-  
+  //await reregisterUndoSession()
   currentSession = nil
  }
  
@@ -155,10 +226,11 @@ public actor NMUndoSession: NSObject {
   }
  }
  
- private init(target: NMUndoManageable) {
+ private init(target: NMUndoManageable?) {
   self.targetObject = target
   self.isOpen = true
   super.init()
+
  }
 }
 

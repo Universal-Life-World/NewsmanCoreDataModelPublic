@@ -8,12 +8,21 @@
 
 import Foundation
 import CoreData
+import Combine
 
 @objc(NMMixedFolder)
 public class NMMixedFolder: NMBaseContent {}
 
-
-extension NMMixedFolder: NMUndoManageable {}
+@available(iOS 15.0, macOS 12.0, *)
+extension NMMixedFolder: NMUndoManageable {
+ public var undoTargetOwnerPublisher: AnyPublisher<NMUndoManageable, Never> {
+  publisher(for: \.mixedSnippet, options: [.new]).compactMap{ $0 }.eraseToAnyPublisher()
+ }
+ 
+ public var undoTargetOwner: NMUndoManageable? {
+  get async { await managedObjectContext?.perform { [ unowned self ] in mixedSnippet } }
+ }
+}
 
 @available(iOS 15.0, macOS 12.0, *)
 extension NMMixedFolder : NMFileStorageManageable  {

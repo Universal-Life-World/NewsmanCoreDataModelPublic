@@ -45,7 +45,7 @@ extension NMContentElementsContainer where Self.Element: NMContentElement,
  @discardableResult
  public func createFolder( with ID: UUID, persist: Bool = false,
                            with updates: ((Folder) throws -> ())? = nil) async throws -> Folder
-  where Self.Folder: NMUndoManageable  {
+  where Self.Folder: NMUndoManageable & NMFileStorageManageable  {
   
   guard let parentContext = self.managedObjectContext else {
    throw ContextError.noContext(object: self, entity: .object, operation: .createChildren)
@@ -73,7 +73,7 @@ extension NMContentElementsContainer where Self.Element: NMContentElement,
                            persist: Bool = false,
                            folderUpdates: ((Folder) throws -> ())? = nil,
                            singlesUpdates: (([Element]) throws ->())? = nil) async throws -> Folder
- where Folder: NMUndoManageable, Element: NMUndoManageable {
+ where Folder: NMUndoManageable & NMFileStorageManageable, Element: NMUndoManageable {
   
   let folder = try await createFolder(with: ID, persist: persist, with: folderUpdates)
   try await folder.createSingles(from: IDs, persist: persist, with: singlesUpdates)

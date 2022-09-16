@@ -9,9 +9,9 @@
 import Foundation
 import CoreData
 
-@available(iOS 13.0, *)
 @objc(NMMixedSnippet) public class NMMixedSnippet: NMBaseSnippet {}
 
+@available(iOS 15.0, macOS 12.0, *)
 extension NMMixedSnippet: NMUndoManageable{}
 
 @available(iOS 15.0, macOS 12.0, *)

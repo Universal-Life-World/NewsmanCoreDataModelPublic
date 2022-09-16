@@ -4,6 +4,8 @@ import Foundation
 extension NMBaseSnippet {
  
  @NSManaged fileprivate var primitivePriority: String
+ @NSManaged fileprivate var primitiveSectionPriorityIndex: String
+ 
  public static let priorityKey = "priority"
   
  //MARK: Accessors for Snippet MO <.priority> field.
@@ -20,6 +22,7 @@ extension NMBaseSnippet {
   set {
    willChangeValue(forKey: Self.priorityKey)
    primitivePriority = newValue.rawValue
+   primitiveSectionPriorityIndex = String(newValue.rawValue.prefix(1))
    didChangeValue(forKey: Self.priorityKey)
    
   }
@@ -34,7 +37,10 @@ extension NMBaseSnippet {
    return value
   }
   
-  set { primitivePriority = newValue.rawValue }
+  set {
+   primitivePriority = newValue.rawValue
+   primitiveSectionPriorityIndex = String(newValue.rawValue.prefix(1))
+  }
  }
  
 }

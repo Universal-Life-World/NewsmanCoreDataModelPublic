@@ -8,10 +8,11 @@
 
 import Foundation
 import CoreData
+import Combine
 
-@available(iOS 13.0, *)
 @objc(NMPhotoSnippet) public class NMPhotoSnippet: NMBaseSnippet {}
 
+@available(iOS 15.0, macOS 12.0, *)
 extension NMPhotoSnippet: NMUndoManageable{}
 
 @available(iOS 15.0, macOS 12.0, *)

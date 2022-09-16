@@ -15,7 +15,7 @@ extension Encodable where Self: NSManagedObject {
 
 
 @available(iOS 15.0, macOS 12.0, *)
-extension Decodable where Self: NSManagedObject {
+extension Decodable where Self: NMUndoManageable & NMFileStorageManageable {
  @discardableResult
  public static func jsonDecoded(from data: Data,
                                 persist: Bool = false,
@@ -23,9 +23,9 @@ extension Decodable where Self: NSManagedObject {
   
   try await context.perform { () throws -> Self in
    try JSONManagedObjectContextDecoder(context: context).decode(Self.self, from: data)
-  }
-  .withFileStorage()
-  .persisted(persist)
+  }.withRecoveredUndoManager()
+   .withFileStorage()
+   .persisted(persist)
   
  }
 }

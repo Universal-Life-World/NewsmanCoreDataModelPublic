@@ -9,10 +9,10 @@
 import Foundation
 import CoreData
 
-@available(iOS 13.0, *)
-@objc(NMVideoSnippet)
-public class NMVideoSnippet: NMBaseSnippet {}
 
+@objc(NMVideoSnippet) public class NMVideoSnippet: NMBaseSnippet {}
+
+@available(iOS 15.0, macOS 12.0, *)
 extension NMVideoSnippet: NMUndoManageable {}
 
 @available(iOS 15.0, macOS 12.0, *)

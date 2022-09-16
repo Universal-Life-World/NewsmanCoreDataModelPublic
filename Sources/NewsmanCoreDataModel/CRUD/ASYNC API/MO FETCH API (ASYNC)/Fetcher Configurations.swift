@@ -1,7 +1,7 @@
 import Foundation
 import CoreData
 
-public enum NMSortOrder<Root, Value> where Root: NSManagedObject {
+public enum NMSortOrder<Root, Value>: Equatable where Root: NSManagedObject {
  public typealias SortKeyPath = KeyPath<Root, Value>
  case ascending(keyPath: SortKeyPath)
  case descending(keyPath: SortKeyPath)

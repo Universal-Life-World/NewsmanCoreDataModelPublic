@@ -65,6 +65,16 @@ extension NMContentElement {
   return self
  }
 
+ @available(iOS 15.0, macOS 12.0, *)
+ public subscript<Value>(keyPath: KeyPath<Self, Value>) -> Value {
+  get async throws {
+   guard let context = self.managedObjectContext else {
+    throw ContextError.noContext(object: self,
+                                 entity: .singleContentElement,
+                                 operation: .gettingObjectKeyPath)}
+   return await context.perform { self[keyPath: keyPath] }
+  }
+ }
  
  @available(iOS 15.0, macOS 12.0, *)
  public var snippetAsync: Snippet {
@@ -76,6 +86,23 @@ extension NMContentElement {
    
    return try await context.perform {
     guard let snippet = self.snippet else {
+     throw ContextError.noSnippet(object: self, entity: .singleContentElement, operation: .gettingSnippet)
+    }
+    return snippet
+   } //try await context.perform...
+  } //get async throws...
+ } //snippetID...
+ 
+ @available(iOS 15.0, macOS 12.0, *)
+ public var mixedSnippetAsync: NMMixedSnippet {
+  get async throws {
+   
+   guard let context = self.managedObjectContext else {
+    throw ContextError.noContext(object: self, entity: .singleContentElement, operation: .gettingSnippet)
+   }
+   
+   return try await context.perform {
+    guard let snippet = self.mixedSnippet else {
      throw ContextError.noSnippet(object: self, entity: .singleContentElement, operation: .gettingSnippet)
     }
     return snippet

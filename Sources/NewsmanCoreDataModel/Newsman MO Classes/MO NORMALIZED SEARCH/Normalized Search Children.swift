@@ -44,7 +44,7 @@ public extension NMNormalizedSearchParentRepresentable {
  
  var normalizedSearchString: String {
   
-  let s = Set(normarizedSearchFieldNames.compactMap{ value(forKey:$0) as? String })
+  let s = Set(normarizedSearchFieldNames.compactMap{ value(forKey: $0) as? String })
   
   return s.reduce(into: s){ s1, el in
    if s1.contains(where: {$0 != el && $0.contains(el)}) { s1.remove(el) }

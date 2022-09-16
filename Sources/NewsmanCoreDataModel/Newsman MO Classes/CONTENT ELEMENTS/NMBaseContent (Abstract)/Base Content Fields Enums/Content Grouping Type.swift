@@ -47,13 +47,9 @@ public extension NMBaseContent {
   }
  }
  
- 
- 
- enum ContentGroupType<Root: NMBaseContent, Value>: Codable//,
-//                        NMEnumCasesStringLocalizable,
-// NMEnumOptionalCasesManageable
 
- {
+ 
+ enum ContentGroupType<Root: NMBaseContent, Value>: Codable, Equatable {
   
   private enum ContentGroupTypeCodingKeys: String, CodingKey {
    case groupType, sortKeyPath, sortOrder
@@ -238,10 +234,40 @@ public extension NMBaseContent {
    }
   }
   
+  private static func keyPath(from rawString: String) -> TKeyPath? {
+   let components = rawString.components(separatedBy: TPositionKey.separator).dropFirst(2)
+   guard let rawKeyPath = components.first else { return nil }
+   guard let keyPath = SortKeyPath(rawValue: rawKeyPath) else { return nil }
+   
+   switch keyPath {
+    case .byNameTag     :  return \Root.tag       as? KeyPath<Root, Value>
+    case .byDate        :  return \Root.date      as? KeyPath<Root, Value>
+    case .byPriority    :  return \Root.priority  as? KeyPath<Root, Value>
+    case .byColorFlag   :  return \Root.colorFlag as? KeyPath<Root, Value>
+    case .byPosition    :  return \Root.positions as? KeyPath<Root, Value>
+    case .byContentType :  return \Root.type      as? KeyPath<Root, Value>
+     
+   }
+  }
+  
   private static func decodedSortOrder(from container: TDecodingContainer) -> TSortOrder? {
    
    guard let keyPath = Self.decodedKeyPath(from: container) else { return nil }
    guard let sortOrder = try? container.decode(SortOrder.self, forKey: .sortOrder) else { return nil }
+   
+   switch sortOrder {
+    case .ascending   :  return .ascending  (keyPath: keyPath)
+    case .descending  :  return .descending (keyPath: keyPath)
+   }
+   
+  }
+  
+  private static func sortOrder(from rawString: String) -> TSortOrder? {
+   
+   let components = rawString.components(separatedBy: TPositionKey.separator).dropFirst()
+   guard let rawSortOrder = components.first else { return nil }
+   guard let keyPath = keyPath(from: rawString) else { return nil }
+   guard let sortOrder = SortOrder(rawValue: rawSortOrder) else { return nil }
    
    switch sortOrder {
     case .ascending   :  return .ascending  (keyPath: keyPath)
@@ -267,6 +293,29 @@ public extension NMBaseContent {
    
   }
   
+  
+  public init (from rawString: String){ self = Self.groupType(from: rawString) }
+  
+  private static func groupType(from rawString: String) -> Self {
+   
+   let componets = rawString.components(separatedBy: TPositionKey.separator)
+   guard let rawGroupType = componets.first else { return .none }
+   let sortOrder = sortOrder(from: rawString)
+   let groupType = GroupType(rawValue: rawGroupType)
+   
+   switch (groupType, sortOrder) {
+    case let (.plain?,         sortOrder?): return .plain         (sortedBy: sortOrder)
+    case let (.byPriority?,    sortOrder?): return .byPriority    (sortedBy: sortOrder)
+    case let (.byColorFlag?,   sortOrder?): return .byColorFlag   (sortedBy: sortOrder)
+    case let (.dateGroups?,    sortOrder?): return .dateGroups    (sortedBy: sortOrder)
+    case let (.alphaGroups?,   sortOrder?): return .alphaGroups   (sortedBy: sortOrder)
+    case let (.byContentType?, sortOrder?): return .byContentType (sortedBy: sortOrder)
+    default: return .none
+   }
+   
+  }
+  
+  
   public func encode(to encoder: Encoder) throws {
    var container = encoder.container(keyedBy: ContentGroupTypeCodingKeys.self)
    try encode(groupType: self, to: &container)
@@ -277,14 +326,7 @@ public extension NMBaseContent {
    self = try Self.decodedGroupType(from: container)
   
   }
-  
-  //public static var isolationQueue =  DispatchQueue(label: "Content Group Type Priority")
-  
-  //static public var enabled = Dictionary(uniqueKeysWithValues: allCases.map{($0, true)})
-  
-  
-  //static let strings: [String] = allCases.map{ $0.rawValue }
-  
+ 
   case none
   case plain         (sortedBy: NMSortOrder<Root, Value>)
   case byPriority    (sortedBy: NMSortOrder<Root, Value>)

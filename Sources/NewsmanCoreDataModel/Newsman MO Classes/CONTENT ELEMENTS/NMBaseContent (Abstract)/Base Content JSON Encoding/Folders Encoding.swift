@@ -10,6 +10,7 @@ extension NMContentFolder {
   try container.encode(mixedSnippet?.id, forKey: .mixedSnippet)
  }
  
+ 
  func decodeIntoExisitingSnippet(from container: KeyedDecodingContainer<CodingKeys>,
                                  into context: NSManagedObjectContext) throws
  where Snippet.Element == Element, Snippet.Folder == Self {

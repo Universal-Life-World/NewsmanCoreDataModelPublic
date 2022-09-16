@@ -7,14 +7,6 @@ public extension NSPredicate {
  
 }
 
-@available(iOS 15.0, macOS 12.0, *)
-public extension AsyncSequence {
- var first: Self.Element?  {
-  get async throws { try await first{_ in true } }
- }
-}
-
-
 public extension NSCompoundPredicate{
  convenience init(xorPredicateWithSubpredicates subpredicates: [NSPredicate]){
   if subpredicates.count == 1 {

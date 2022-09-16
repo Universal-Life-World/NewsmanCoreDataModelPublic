@@ -16,7 +16,7 @@ public extension NMCoreDataModel {
    try Task.checkCancellation()
    let newObject = T(context: modelMainContext)
    (newObject as? NMGeoLocationProvidable)?.locationsProvider = locationsProvider
-   //(newObject as? NMDateGroupStateObservable)?.dateGroupStateUpdater = dateGroupStateUpdater
+   (newObject as? NMBaseSnippet)?.coreDataModel = self
    return newObject
   }.updated(updates)     //1
    .persisted(persist)   //2
@@ -37,6 +37,7 @@ public extension NMCoreDataModel {
    let newObject = T(context: modelMainContext)
    newObject.id = ID
    newObject.locationsProvider = locationsProvider
+   newObject.coreDataModel = self
    return newObject
   }.updated(updates)     //1
    .persisted(persist)   //2
@@ -56,6 +57,7 @@ public extension NMCoreDataModel {
    try Task.checkCancellation()
    let newObject = NSManagedObject(entity: entityType.entity(), insertInto: modelMainContext)
    (newObject as? NMGeoLocationProvidable)?.locationsProvider = locationsProvider
+   (newObject as? NMBaseSnippet)?.coreDataModel = self
 //   try updates?(newObject)
    return newObject
   }.updated(updates)   //1
@@ -73,6 +75,7 @@ public extension NMCoreDataModel {
    try Task.checkCancellation()
    let newObject = T(context: bgContext)
    (newObject as? NMGeoLocationProvidable)?.locationsProvider = locationsProvider
+   (newObject as? NMBaseSnippet)?.coreDataModel = self
    return newObject
   }.updated(updates)   //1
    .persisted(persist) //2
@@ -99,6 +102,7 @@ public extension NMCoreDataModel {
    for _ in 1...objectCount {
     let newObject = T(context: modelMainContext)
     (newObject as? NMGeoLocationProvidable)?.locationsProvider = locationsProvider
+    (newObject as? NMBaseSnippet)?.coreDataModel = self
     newObjects.append(newObject)
    }
    return newObjects
@@ -121,6 +125,7 @@ public extension NMCoreDataModel {
    for _ in 1...objectCount {
     let newObject = T(context: bgContext)
     (newObject as? NMGeoLocationProvidable)?.locationsProvider = locationsProvider
+    (newObject as? NMBaseSnippet)?.coreDataModel = self
     newObjects.append(newObject)
    }
    return newObjects
@@ -149,6 +154,7 @@ public extension NMCoreDataModel {
    for entityDescription in entityDescriptions {
     let newObject = NSManagedObject(entity: entityDescription, insertInto: modelMainContext)
     (newObject as? NMGeoLocationProvidable)?.locationsProvider = locationsProvider
+    (newObject as? NMBaseSnippet)?.coreDataModel = self
     newObjects.append(newObject)
    }
    return newObjects
@@ -172,6 +178,7 @@ public extension NMCoreDataModel {
    for entityDescription in entityDescriptions {
     let newObject = NSManagedObject(entity: entityDescription, insertInto: bgContext)
     (newObject as? NMGeoLocationProvidable)?.locationsProvider = locationsProvider
+    (newObject as? NMBaseSnippet)?.coreDataModel = self
     newObjects.append(newObject)
    }
    return newObjects

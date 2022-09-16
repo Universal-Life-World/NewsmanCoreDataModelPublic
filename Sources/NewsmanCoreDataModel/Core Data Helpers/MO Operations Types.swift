@@ -11,7 +11,10 @@ public enum ContextOperationTypes: String {
  case storageCreate = "CREATING STORAGE"
  case storageDelete = "DELETING STORAGE"
  
+ case gettingObjectKeyPath = "GETTING MO FIELD USING KEYPATH EXPRESSION"
+ 
  case gettingObjectID = "GETTING MO ID"
+ case gettingObjectDTO = "GETTING MO DTO"
  case gettingSnippetID = "GETTING SNIPPET ID OF THIS CONTENT ELEMENT"
  case gettingFolderID = "GETTING FOLDER ID OF THIS CONTENT ELEMENT"
  
@@ -80,8 +83,10 @@ public enum ContextEntityTypes: String {
  case baseContent = "BASE ABSTRACT CONTENT ELEMENT"
  case baseSnippet = "BASE ABSTRACT SNIPPET"
  case snippet = "SNIPPET"
- case contentElementContainer = "CONTENT ELEMENTS CONTAINER"
+ case contentElementContainer = "CONTENT ELEMENTS CONTAINER (AKA SNIPPET)"
+ case mixedElementsContainer = "MIXED ELEMENTS CONTENT ELEMENTS CONTAINER"
  case contentFolder = "CONTENT ELEMENTS FOLDER"
+ case mixedContentFolder = "MIXED CONTENT ELEMENTS FOLDER"
  case object = "MANAGED OBJECT"
  
  case photo = "PHOTO"

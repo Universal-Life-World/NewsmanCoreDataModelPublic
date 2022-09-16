@@ -4,7 +4,18 @@ import Foundation
 public actor NMUndoManager: NSObject {
  
  @MainActor private static var undoManagersMap = [UUID: NMUndoManager]()
- /* The static undo/redo sessions map used to cache all such sessions globally for the life time of the app and possibly used when object is recreated (undone deleted) after deletion from the object MO context with file storage recovery. The UUID Key in this map corresponds to ID (UUID) field of the Target MO. All static properties including this map are isolated on the main global actor! */
+ /* The static UM map used to cache all UM globally for the life time of the app and possibly used when object is recreated (undone deleted) after deletion from the object MO context with file storage recovery. The UUID Key in this map corresponds to ID (UUID) field of the Target MO. All static properties including this map are isolated on the main global actor! */
+ 
+// public func undateAllSessions(with target: NMUndoManageable) async {
+//  withTaskGroup(of: Void.self){ group in
+//   undoStack.forEach { session in
+//    group.addTask{
+//     session.
+//    }
+//   }
+//   group.waitForAll()
+//  }
+// }
  
  public fileprivate(set) var targetID: UUID? //the UUID of target MO using this undo/redo session.
  
@@ -125,27 +136,32 @@ public actor NMUndoManager: NSObject {
  
  fileprivate var undoStack = [NMUndoSession]()
  
+ 
  public func registerUndoSession(_ session: NMUndoSession) async {
   
-  /* Registers this Undo Session with global sessions map when the first block is actually registered with this session. Empty sessions are not attached to this map! The process is isolated to the main global actor. */
+  /* Registers this Undo Manager instance with global UM map when the first session is actually registered with this UM. The process is isolated to the main global actor. */
   
   if isEmpty, let targetID = targetID {
    await MainActor.run { Self.undoManagersMap[targetID] = self }
   }
   
+  if (undoStack.contains{ $0 === session }) { return }
+  
   undoStack.insert(session, at: 0)
   undoStackPointer += 1
  }
+ 
  
  fileprivate var currentSessionTask: Task<Void, Error>?
  
  public var canUndo: Bool { undoStackPointer >= 0 }
  public var canRedo: Bool { undoStackPointer < undoStack.count - 1 }
  
- 
+ //all executed UNDO sessions  must be skipped in UM stack.
+ //all deleted target MO UNDO sessions must be skipped in UM stack.
  fileprivate func skipUndo() async  {
   while undoStackPointer >= 0 {
-   if await undoStack[undoStackPointer].isExecuted {
+   if await undoStack[undoStackPointer].isSkipped {
     undoStackPointer -= 1
    } else {
     break
@@ -155,7 +171,7 @@ public actor NMUndoManager: NSObject {
  
  fileprivate func skipRedo() async  {
   while undoStackPointer < undoStack.count - 1 {
-   if await undoStack[undoStackPointer + 1].redoSession.isExecuted {
+   if await undoStack[undoStackPointer + 1].redoSession.isSkipped {
     undoStackPointer += 1
    } else {
     break

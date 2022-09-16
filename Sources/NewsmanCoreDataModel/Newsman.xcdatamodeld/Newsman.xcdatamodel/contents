@@ -86,7 +86,7 @@
         <attribute name="about" attributeType="String" defaultValueString=""/>
         <attribute name="archivedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="ck_metadata" optional="YES" attributeType="Binary"/>
-        <attribute name="contentElementsGroupingType" attributeType="String" defaultValueString="Manually"/>
+        <attribute name="contentElementsGroupingType" attributeType="String" defaultValueString="none"/>
         <attribute name="contentElementsInRow" attributeType="Integer 16" minValueString="1" maxValueString="10" defaultValueString="3" usesScalarValueType="YES"/>
         <attribute name="contentElementsSortingType" optional="YES" attributeType="String"/>
         <attribute name="contentElementsSortOrder" optional="YES" attributeType="String"/>
@@ -120,7 +120,7 @@
         <attribute name="publishedTimeStamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="sectionAlphaIndex" optional="YES" attributeType="String"/>
         <attribute name="sectionDateIndex" attributeType="String" defaultValueString="0_Today"/>
-        <attribute name="sectionPriorityIndex" optional="YES" attributeType="String"/>
+        <attribute name="sectionPriorityIndex" attributeType="String" defaultValueString="3"/>
         <attribute name="sectionTypeIndex" optional="YES" attributeType="String"/>
         <attribute name="showsContentElementsPositions" attributeType="Boolean" defaultValueString="YES" usesScalarValueType="YES"/>
         <attribute name="showsHiddenContentElements" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>

@@ -83,6 +83,19 @@ extension NMContentElementsContainer {
   }
  }
  
+ 
+ @available(iOS 15.0, macOS 12.0, *)
+ public subscript<Value>(keyPath: KeyPath<Self, Value>) -> Value {
+  get async throws {
+   guard let context = self.managedObjectContext else {
+    throw ContextError.noContext(object: self,
+                                 entity: .contentElementContainer,
+                                 operation: .gettingObjectKeyPath) }
+   
+   return await context.perform { self[keyPath: keyPath] }
+  }
+ }
+ 
  @available(iOS 15.0, macOS 12.0, *)
  public var snippetID: UUID {
   get async throws {

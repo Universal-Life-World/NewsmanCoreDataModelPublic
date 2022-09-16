@@ -4,9 +4,7 @@ import Foundation
 
 
 fileprivate final class ZipLatestWithSubscription<S: Subscriber, P1: Publisher, P2: Publisher>: Subscription
-where S.Input == (P1.Output, P2.Output), P1.Failure == P2.Failure, S.Failure == P1.Failure
-{
- 
+where S.Input == (P1.Output, P2.Output), P1.Failure == P2.Failure, S.Failure == P1.Failure {
  
  private var subscriber: S?
  

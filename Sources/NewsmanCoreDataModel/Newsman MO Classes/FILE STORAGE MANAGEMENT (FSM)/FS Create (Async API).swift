@@ -17,8 +17,14 @@ public extension NMFileStorageManageable {
   }
   
   let (url, recoveryURL) = try await context.perform { [ unowned self ] () throws -> (URL, URL)  in
-   //print (#function, self.url?.path, self.id)
    guard let url = self.url, let recoveryURL = self.recoveryURL else {
+    
+    print ("""
+           NO URL <<<CONTEXT ERROR>>> THROWN HERE IN \(#function),
+           MO URL: [\(String(describing: self.url))],
+           MO RECOVERY URL: [\(String(describing: self.recoveryURL))]
+           """)
+    
     throw ContextError.noURL(object: self, entity: .object, operation: .storageCreate)
    }
    

@@ -33,11 +33,21 @@ public extension NSManagedObjectModel{
 }
 
 
-public final class NMCoreDataModel: NMUndoManageable {
+public final class NMCoreDataModel: NSObject, NMUndoManageable {
+ public var undoTargetDeletedPublisher: AnyPublisher<Bool, Never> { Empty().eraseToAnyPublisher() }
+ 
+ public func subscribeTargetDeleted(handler: @escaping (Bool) -> ()) async -> AnyCancellable? { nil }
+ 
+ public func subscribeTargetOwner(handler: @escaping () async -> ()) async -> AnyCancellable? { nil }
+ 
+ 
+ public var undoTargetOwnerPublisher: AnyPublisher<NMUndoManageable, Never> {Empty().eraseToAnyPublisher()}
+ 
+ public let undoTargetOwner: NMUndoManageable? = nil
  
  public let id = UUID()
  
- @MainActor public lazy var undoManager = NMUndoManager(targetID: id)
+ public lazy var undoManager = NMUndoManager(targetID: id)
 
  public static let recoveryFolderName = UUID().uuidString
   // A name of temporary File Manager folder to keep recoverable file storage data.
@@ -193,6 +203,8 @@ public final class NMCoreDataModel: NMUndoManageable {
   self.modelName = name
   self.storeType = storeType
   self.locationsProvider = locationsProvider
+  
+  super.init()
   
   createRecoveryStorage()
    
